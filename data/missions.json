@@ -323,6 +323,18 @@
             "statut": "bloquee",
             "date_creation": "2026-08-02T01:59:03",
             "date_maj": "2026-08-02T01:59:04"
+        },
+        {
+            "id": "627a6321",
+            "nom": "Intégrer un routeur multi-IA pour éviter les blocages liés aux quotas",
+            "objectif": "Intégrer un routeur multi-IA pour éviter les blocages liés aux quotas.",
+            "agents": [
+                "05_architecte_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T03:25:22",
+            "date_maj": "2026-08-02T03:25:23"
         }
     ]
 }
