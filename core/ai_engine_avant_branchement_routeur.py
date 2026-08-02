@@ -417,3 +417,40 @@ class AIEngine:
                 return "[Secours Gemini] " + "".join(textes)
 
         raise Exception("Trop d'appels d'outils enchaines (Gemini).")
+
+    def _demander_openrouter(self, message, contexte="", historique=None):
+        headers = {
+            "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
+            "Content-Type": "application/json"
+        }
+
+        messages = []
+
+        if contexte:
+            messages.append({
+                "role": "system",
+                "content": contexte
+            })
+
+        messages.append({
+            "role": "user",
+            "content": message
+        })
+
+        payload = {
+            "model": "openai/gpt-4o-mini",
+            "messages": messages
+        }
+
+        r = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+
+        r.raise_for_status()
+        data = r.json()
+
+        return data["choices"][0]["message"]["content"]
+
