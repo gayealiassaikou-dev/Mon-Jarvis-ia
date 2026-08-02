@@ -52,6 +52,11 @@ class AIRouter:
                         message, contexte, historique
                     )
 
+                elif fournisseur == "openrouter":
+                    return self.ai_engine._demander_openrouter(
+                        message, contexte, historique
+                    )
+
                 else:
                     raise Exception(
                         f"{fournisseur} pas encore connecté"

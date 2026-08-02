@@ -2,7 +2,6 @@ import os
 import json
 import requests
 from dotenv import load_dotenv
-from ai_router import AIRouter
 from tools import lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier
 
 load_dotenv()
@@ -305,7 +304,6 @@ OUTILS_GEMINI = _convertir_outils_gemini(OUTILS)
 class AIEngine:
     def __init__(self, memory_manager=None):
         self.memory_manager = memory_manager
-        self.router = AIRouter(self)
         self.api_key = os.getenv("GROQ_API_KEY")
         self.url = "https://api.groq.com/openai/v1/chat/completions"
         self.model = "llama-3.3-70b-versatile"
@@ -417,40 +415,3 @@ class AIEngine:
                 return "[Secours Gemini] " + "".join(textes)
 
         raise Exception("Trop d'appels d'outils enchaines (Gemini).")
-
-    def _demander_openrouter(self, message, contexte="", historique=None):
-        headers = {
-            "Authorization": f"Bearer {os.getenv('OPENROUTER_API_KEY')}",
-            "Content-Type": "application/json"
-        }
-
-        messages = []
-
-        if contexte:
-            messages.append({
-                "role": "system",
-                "content": contexte
-            })
-
-        messages.append({
-            "role": "user",
-            "content": message
-        })
-
-        payload = {
-            "model": "openai/gpt-4o-mini",
-            "messages": messages
-        }
-
-        r = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=30
-        )
-
-        r.raise_for_status()
-        data = r.json()
-
-        return data["choices"][0]["message"]["content"]
-
