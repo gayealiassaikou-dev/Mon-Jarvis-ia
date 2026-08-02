@@ -59,6 +59,270 @@
             "statut": "en_cours",
             "date_creation": "2026-07-27T22:12:40",
             "date_maj": "2026-07-27T22:12:40"
+        },
+        {
+            "id": "606803f6",
+            "nom": "Tester l'application pour s'assurer de son fonctionnement correct",
+            "objectif": "Testez l'application pour s'assurer qu'elle fonctionne correctement et qu'elle répond aux besoins",
+            "agents": [
+                "08_testeur_ia"
+            ],
+            "priorite": "normale",
+            "statut": "en_cours",
+            "date_creation": "2026-07-30T03:12:19",
+            "date_maj": "2026-07-30T03:12:19"
+        },
+        {
+            "id": "046b6acd",
+            "nom": "Gerer la demande de l'utilisateur",
+            "objectif": "...",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-07-30T03:27:16",
+            "date_maj": "2026-07-30T03:27:20"
+        },
+        {
+            "id": "104d6828",
+            "nom": "Définir le rôle de l'utilisateur dans le système",
+            "objectif": "Mon rôle est de...",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-07-30T03:52:53",
+            "date_maj": "2026-07-30T03:53:00"
+        },
+        {
+            "id": "f0efe5da",
+            "nom": "Déterminer la prochaine étape de développement de l'assistant IA",
+            "objectif": "",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-07-30T21:46:48",
+            "date_maj": "2026-07-30T21:46:49"
+        },
+        {
+            "id": "a6b12a7a",
+            "nom": "Créer une application pour un salon de coiffure",
+            "objectif": "je veut cree une application pour un salon de coiffure",
+            "agents": [
+                "05_architecte_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-07-30T21:48:01",
+            "date_maj": "2026-07-30T21:48:11"
+        },
+        {
+            "id": "7e507add",
+            "nom": "Demander au directeur IA de traiter la demande utilisateur",
+            "objectif": "",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:35:01",
+            "date_maj": "2026-08-02T01:35:02"
+        },
+        {
+            "id": "4bd423bd",
+            "nom": "Decider d'une action appropriee suite a une demande vide",
+            "objectif": "",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:35:24",
+            "date_maj": "2026-08-02T01:35:26"
+        },
+        {
+            "id": "f702643b",
+            "nom": "Créer une application mobile pour rechercher des artistes ou chansons sur YouTube",
+            "objectif": "Créer une application mobile simple qui permet à un utilisateur d'appuyer sur un bouton microphone, de dire le nom d'un artiste ou d'une chanson, puis d'ouvrir automatiquement YouTube avec la recherche correspondante.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:35:30",
+            "date_maj": "2026-08-02T01:35:31"
+        },
+        {
+            "id": "e9613f7d",
+            "nom": "Gerer la demande utilisateur en fonction des besoins et des ressources disponibles",
+            "objectif": "",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:35:36",
+            "date_maj": "2026-08-02T01:35:37"
+        },
+        {
+            "id": "0b67a841",
+            "nom": "Determiner la mission principale de Jarvis",
+            "objectif": "Ta mission :",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:35:38",
+            "date_maj": "2026-08-02T01:35:39"
+        },
+        {
+            "id": "e2eca992",
+            "nom": "Déterminer les prochaines étapes de développement du projet en cours",
+            "objectif": "5. Donne les prochaines étapes de développement.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:35:48",
+            "date_maj": "2026-08-02T01:35:50"
+        },
+        {
+            "id": "1b155494",
+            "nom": "Gerer la demande utilisateur",
+            "objectif": "",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:35:50",
+            "date_maj": "2026-08-02T01:35:52"
+        },
+        {
+            "id": "0b728020",
+            "nom": "Ameliorer le systeme de gestion des projets",
+            "objectif": "Jarvis, améliore ton système de gestion des projets.",
+            "agents": [
+                "05_architecte_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-08-02T01:47:40",
+            "date_maj": "2026-08-02T01:47:53"
+        },
+        {
+            "id": "fd065977",
+            "nom": "Déterminer la réponse appropriée à la demande utilisateur vide",
+            "objectif": "",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:47:53",
+            "date_maj": "2026-08-02T01:47:55"
+        },
+        {
+            "id": "5d6ebb6a",
+            "nom": "Analyser et résoudre le problème détecté",
+            "objectif": "Problème détecté :",
+            "agents": [
+                "09_securite_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-08-02T01:47:56",
+            "date_maj": "2026-08-02T01:48:04"
+        },
+        {
+            "id": "be940ea2",
+            "nom": "Gérer la demande de l'utilisateur",
+            "objectif": "",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:48:11",
+            "date_maj": "2026-08-02T01:48:13"
+        },
+        {
+            "id": "07c6d2e9",
+            "nom": " Définir un objectif pour le système Jarvis",
+            "objectif": "Objectif :",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-08-02T01:48:14",
+            "date_maj": "2026-08-02T01:48:18"
+        },
+        {
+            "id": "ad1eb61c",
+            "nom": "Créer un système de projet actif pour gérer les projets de manière efficace",
+            "objectif": "Créer un système de projet actif.",
+            "agents": [
+                "05_architecte_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-08-02T01:48:19",
+            "date_maj": "2026-08-02T01:48:30"
+        },
+        {
+            "id": "09e37edc",
+            "nom": "Définir un projet comme projet actuel",
+            "objectif": "- Chaque projet doit pouvoir être défini comme projet actuel.",
+            "agents": [
+                "05_architecte_ia"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:48:37",
+            "date_maj": "2026-08-02T01:48:39"
+        },
+        {
+            "id": "d9474e35",
+            "nom": "Demander au directeur IA de formuler une reponse a une question vide",
+            "objectif": "",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:48:52",
+            "date_maj": "2026-08-02T01:48:53"
+        },
+        {
+            "id": "9fd03292",
+            "nom": "Analyser les fichiers pour proposer des corrections",
+            "objectif": "Analyse les fichiers nécessaires et propose une correction.",
+            "agents": [
+                "03_recherche"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:48:54",
+            "date_maj": "2026-08-02T01:49:03"
+        },
+        {
+            "id": "485100af",
+            "nom": "Identifier les actions qui modifient des fichiers pour garantir leur sécurité et integrité",
+            "objectif": "- les actions qui modifient des fichiers (validation obligatoire)",
+            "agents": [
+                "07_automatisation_ia"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-08-02T01:59:03",
+            "date_maj": "2026-08-02T01:59:04"
         }
     ]
 }

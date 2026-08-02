@@ -3,21 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <title>Jarvis</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
+
+<div class="container">
 
     <h1>🤖 Jarvis</h1>
     <p>Assistant IA opérationnel</p>
 
     <form action="/envoyer" method="post">
-        <input 
-            type="text" 
-            name="message" 
+        <input
+            type="text"
+            name="message"
             placeholder="Écris ta demande..."
             required
         >
+
         <button type="submit">Envoyer</button>
+        <button type="button">🎤</button>
     </form>
+
+    {% if message %}
+    <div class="message">
+        <h3>Vous :</h3>
+        <p>{{ message }}</p>
+    </div>
+    {% endif %}
+
+    {% if reponse %}
+    <div class="reponse">
+        <h3>Jarvis :</h3>
+        <p>{{ reponse }}</p>
+    </div>
+    {% endif %}
+
+</div>
 
 </body>
 </html>

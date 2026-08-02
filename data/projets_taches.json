@@ -3,22 +3,53 @@
         {
             "nom": "Application mobile de fitness",
             "statut": "en cours"
+        },
+        {
+            "nom": "Conception d'application",
+            "statut": "en cours"
+        },
+        {
+            "nom": "Application Salon de Coiffure",
+            "statut": "en cours"
+        },
+        {
+            "nom": "test officiel",
+            "statut": "en cours"
+        },
+        {
+            "nom": "Voice Music",
+            "statut": "en cours"
         }
     ],
     "taches": [
         {
-            "nom": "Concevoir l'interface utilisateur",
-            "projet": "Application mobile de fitness",
-            "statut": "en attente"
-        },
-        {
-            "nom": "Developper les fonctionnalites de suivi de l'activite physique",
-            "projet": "Application mobile de fitness",
-            "statut": "en attente"
-        },
-        {
             "nom": "Tester et deboguer l'application",
             "projet": "Application mobile de fitness",
+            "statut": "en attente"
+        },
+        {
+            "nom": "Définir les objectifs et la cible",
+            "projet": "Conception d'application",
+            "statut": "en attente"
+        },
+        {
+            "nom": "Développer le backend",
+            "projet": "Conception d'application",
+            "statut": "en attente"
+        },
+        {
+            "nom": "Tester l'application",
+            "projet": "Conception d'application",
+            "statut": "en attente"
+        },
+        {
+            "nom": "Déployer l'application",
+            "projet": "Conception d'application",
+            "statut": "en attente"
+        },
+        {
+            "nom": "Maintenir et mettre à jour l'application",
+            "projet": "Conception d'application",
             "statut": "en attente"
         }
     ]
