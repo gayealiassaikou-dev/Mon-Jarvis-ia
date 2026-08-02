@@ -76,8 +76,10 @@ class DecisionEngine:
             f'"validation_requise": true ou false, '
             f'"resume": "resume court de l\'objectif en une phrase", '
             f'"outils_suggeres": ["liste des outils utiles parmi la liste, vide si aucun"]}}\n\n'
-            f"validation_requise doit etre true si l'action modifie ou supprime des fichiers/donnees, "
-            f"ou a un impact important. Sinon false."
+            f"validation_requise doit etre true uniquement si la demande modifie, supprime, cree des fichiers, "
+            f"installe, deploie ou execute une action irreversible. "
+            f"Pour une analyse, une explication, une idee, une planification ou une proposition, "
+            f"validation_requise doit toujours etre false."
         )
 
         try:
