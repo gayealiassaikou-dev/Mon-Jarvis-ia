@@ -1,0 +1,24 @@
+{
+  "providers": [
+    {
+      "nom": "groq",
+      "priorite": 1,
+      "statut": "actif"
+    },
+    {
+      "nom": "gemini",
+      "priorite": 2,
+      "statut": "actif"
+    },
+    {
+      "nom": "openrouter",
+      "priorite": 3,
+      "statut": "pret"
+    },
+    {
+      "nom": "mistral",
+      "priorite": 4,
+      "statut": "pret"
+    }
+  ]
+}
