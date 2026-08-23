@@ -308,15 +308,18 @@ class AIEngine:
         self.router = AIRouter(self)
         self.api_key = os.getenv("GROQ_API_KEY")
         self.url = "https://api.groq.com/openai/v1/chat/completions"
-        self.model = "openai/gpt-oss-120b"
-        self.openrouter_key = os.getenv("OPENROUTER_API_KEY")
-        self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.openrouter_model = "meta-llama/llama-3.3-70b-instruct"
+        self.model = "llama-3.3-70b-versatile"
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
     def demander(self, message, contexte="", historique=None):
-        return self.router.demander(message, contexte, historique)
+        try:
+            return self._demander_groq(message, contexte, historique)
+        except Exception:
+            try:
+                return self._demander_gemini(message, contexte, historique)
+            except Exception as e:
+                return "Erreur IA (Groq et Gemini ont echoue) : " + str(e)
 
     def _executer_outil(self, nom_fonction, arguments):
         if nom_fonction == "memoriser_info" and self.memory_manager:
@@ -369,40 +372,7 @@ class AIEngine:
                 return choix["content"]
 
         raise Exception("Trop d'appels d'outils enchaines.")
-    def _demander_openrouter(self, message, contexte="", historique=None):
-        headers = {
-            "Authorization": f"Bearer {self.openrouter_key}",
-            "Content-Type": "application/json"
-        }
 
-        messages = []
-
-        if contexte:
-            messages.append({"role": "system", "content": contexte})
-
-        if historique:
-            for echange in historique:
-                messages.append({"role": "user", "content": echange["question"]})
-                messages.append({"role": "assistant", "content": echange["reponse"]})
-
-        messages.append({"role": "user", "content": message})
-
-        payload = {
-            "model": self.openrouter_model,
-            "messages": messages
-        }
-
-        reponse = requests.post(
-            self.openrouter_url,
-            headers=headers,
-            json=payload,
-            timeout=30
-        )
-
-        reponse.raise_for_status()
-
-        data = reponse.json()
-        return data["choices"][0]["message"]["content"]
     def _demander_gemini(self, message, contexte="", historique=None):
         contents = []
 

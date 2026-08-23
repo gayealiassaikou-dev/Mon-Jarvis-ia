@@ -51,6 +51,11 @@
             "nom": "Maintenir et mettre à jour l'application",
             "projet": "Conception d'application",
             "statut": "en attente"
+        },
+        {
+            "nom": "Test diagnostic",
+            "projet": "Mon-Jarvis-ia",
+            "statut": "en attente"
         }
     ]
 }
