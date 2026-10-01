@@ -6,7 +6,15 @@ import base64
 DOSSIER_AUTORISE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def _chemin_autorise(chemin_complet):
-    return os.path.commonpath([chemin_complet, DOSSIER_AUTORISE]) == DOSSIER_AUTORISE
+    chemin_reel = os.path.realpath(chemin_complet)
+    dossier_reel = os.path.realpath(DOSSIER_AUTORISE)
+
+    try:
+        return os.path.commonpath(
+            [chemin_reel, dossier_reel]
+        ) == dossier_reel
+    except ValueError:
+        return False
 
 FICHIERS_PROTEGES = [
     os.path.join(DOSSIER_AUTORISE, ".env"),
@@ -31,11 +39,19 @@ def _fichier_protege(chemin_complet):
 
 def lire_fichier(chemin):
     chemin_complet = os.path.abspath(chemin)
+
     if not _chemin_autorise(chemin_complet):
         return "Erreur : accès refusé en dehors du projet."
-    if not os.path.exists(chemin_complet):
+
+    chemin_reel = os.path.realpath(chemin_complet)
+
+    if _fichier_protege(chemin_reel):
+        return "Erreur : accès refusé, fichier ou dossier protégé."
+
+    if not os.path.exists(chemin_reel):
         return f"Erreur : le fichier {chemin} n'existe pas."
-    with open(chemin_complet, "r", encoding="utf-8") as f:
+
+    with open(chemin_reel, "r", encoding="utf-8") as f:
         return f.read()
 
 def ecrire_fichier(chemin, contenu):
@@ -61,24 +77,44 @@ def supprimer_fichier(chemin):
 
 def lister_fichiers(dossier="."):
     chemin_complet = os.path.abspath(dossier)
+
     if not _chemin_autorise(chemin_complet):
         return "Erreur : accès refusé en dehors du projet."
-    if not os.path.exists(chemin_complet):
+
+    chemin_reel = os.path.realpath(chemin_complet)
+
+    if _fichier_protege(chemin_reel):
+        return "Erreur : accès refusé, dossier protégé."
+
+    if not os.path.exists(chemin_reel):
         return f"Erreur : le dossier {dossier} n'existe pas."
-    if not os.path.isdir(chemin_complet):
+
+    if not os.path.isdir(chemin_reel):
         return f"Erreur : {dossier} n'est pas un dossier."
-    elements = os.listdir(chemin_complet)
+
+    elements = os.listdir(chemin_reel)
+
     if not elements:
         return f"Le dossier {dossier} est vide."
+
     return "\n".join(sorted(elements))
 
 def creer_dossier(chemin):
     chemin_complet = os.path.abspath(chemin)
+
     if not _chemin_autorise(chemin_complet):
         return "Erreur : accès refusé en dehors du projet."
-    if os.path.exists(chemin_complet):
+
+    chemin_reel = os.path.realpath(chemin_complet)
+
+    if _fichier_protege(chemin_reel):
+        return "Erreur : création refusée dans un dossier protégé."
+
+    if os.path.exists(chemin_reel):
         return f"Le dossier {chemin} existe deja."
-    os.makedirs(chemin_complet)
+
+    os.makedirs(chemin_reel)
+
     return f"Dossier {chemin} cree avec succes."
 
 def rechercher_web(requete):
