@@ -9,9 +9,10 @@ load_dotenv()
 
 class DecisionEngine:
 
-    def __init__(self, brain_manager, agent_manager):
+    def __init__(self, brain_manager, agent_manager, ai_engine):
         self.brain_manager = brain_manager
         self.agent_manager = agent_manager
+        self.ai_engine = ai_engine
         self.api_key = os.getenv("GROQ_API_KEY")
         self.url = "https://api.groq.com/openai/v1/chat/completions"
         self.model = "llama-3.3-70b-versatile"
@@ -83,7 +84,7 @@ class DecisionEngine:
         )
 
         try:
-            reponse = self._appeler_llm(prompt)
+            reponse = self.ai_engine.router.demander(prompt)
             reponse_nettoyee = self._nettoyer_json(reponse)
             data = json.loads(reponse_nettoyee)
 

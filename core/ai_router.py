@@ -57,6 +57,11 @@ class AIRouter:
                         message, contexte, historique
                     )
 
+                elif fournisseur == "mistral":
+                    return self.ai_engine._demander_mistral(
+                        message, contexte, historique
+                    )
+
                 else:
                     raise Exception(
                         f"{fournisseur} pas encore connecté"

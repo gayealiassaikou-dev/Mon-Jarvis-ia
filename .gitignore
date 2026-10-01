@@ -1,5 +1,65 @@
+# Python
 __pycache__/
 *.pyc
-*.log
+*.pyo
+
+# Secrets
 .env
 .env.save
+.env.*
+!.env.example
+
+# Mémoire personnelle de Jarvis
+memory/memory.json
+
+# État local / données temporaires
+data/stt_router_state.json
+
+# Fichiers audio temporaires et tests audio
+*.wav
+*.mp3
+*.m4a
+*.ogg
+*.flac
+audio_*
+test_*.wav
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Sauvegardes locales
+*.backup
+*.backup2
+*.bak
+*.bak2
+*.old
+*.orig
+*.sauvegarde*
+*.backup_*
+*.bak_*
+*.pre_*
+*.avant_*
+.gitignore.sauvegarde_*
+
+# Logs
+*.log
+jarvis_log.txt
+
+# Données / sauvegardes temporaires
+data/missions_avant_nettoyage.json
+
+# Archives / diagnostics temporaires
+archive/
+
+# Scripts locaux de réparation et tests expérimentaux
+ameliorer_gemini_vocal.py
+corriger_activation.py
+diagnostic_vocal.py
+reparer_voice_manager.py
+test_assemblyai.py
+test_creation.py
+test_groq_audio.mp4

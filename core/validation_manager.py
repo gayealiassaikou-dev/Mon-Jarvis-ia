@@ -12,9 +12,15 @@ class ValidationManager:
             "erreur ia"
         ]
 
-    def valider(self, reponse, mission_id=None):
+    def valider(self, reponse, mission_id=None, resultats_outils=None):
         if not reponse or not reponse.strip():
             return self._rejeter("Reponse vide", mission_id)
+
+        if resultats_outils:
+            echecs = [r for r in resultats_outils if str(r.get("resultat", "")).strip().lower().startswith("erreur")]
+            if echecs:
+                details = "; ".join(f"{r['outil']}: {r['resultat']}" for r in echecs)
+                return self._rejeter(f"Action(s) en echec detectee(s) : {details}", mission_id)
 
         reponse_min = reponse.lower()
 

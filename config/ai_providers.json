@@ -3,22 +3,38 @@
     {
       "nom": "groq",
       "priorite": 1,
-      "statut": "actif"
+      "statut": "actif",
+      "api_key_env": "GROQ_API_KEY",
+      "url": "https://api.groq.com/openai/v1/chat/completions",
+      "model": "openai/gpt-oss-120b",
+      "type": "openai_compatible"
     },
     {
       "nom": "gemini",
       "priorite": 2,
-      "statut": "actif"
+      "statut": "actif",
+      "api_key_env": "GEMINI_API_KEY",
+      "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+      "model": "gemini-flash-latest",
+      "type": "gemini"
     },
     {
       "nom": "openrouter",
       "priorite": 3,
-      "statut": "pret"
+      "statut": "pret",
+      "api_key_env": "OPENROUTER_API_KEY",
+      "url": "https://openrouter.ai/api/v1/chat/completions",
+      "model": "meta-llama/llama-3.3-70b-instruct",
+      "type": "openai_compatible"
     },
     {
       "nom": "mistral",
       "priorite": 4,
-      "statut": "pret"
+      "statut": "pret",
+      "api_key_env": "MISTRAL_API_KEY",
+      "url": "https://api.mistral.ai/v1/chat/completions",
+      "model": "mistral-small-latest",
+      "type": "openai_compatible"
     }
   ]
 }

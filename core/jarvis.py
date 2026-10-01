@@ -43,7 +43,8 @@ class Jarvis:
         self.contexte = charger_contexte()
         self.decision_engine = DecisionEngine(
             self.brain_manager,
-            self.agent_manager
+            self.agent_manager,
+            self.ai_engine
         )
         self.mission_manager = MissionManager()
         self.coordination_manager = CoordinationManager(self.mission_manager, self.logger)
@@ -77,28 +78,200 @@ class Jarvis:
         self.mission_manager.afficher_missions()
         print("Système prêt.")
 
-        while True:
-            commande = input("Vous : ")
+        mots_declencheurs_vocal = [
+            "parle moi",
+            "parle-moi",
+            "je veux parler",
+            "vocal",
+            "voix",
+            "parler"
+        ]
 
-            if commande.lower() in ["quitter", "exit", "stop"]:
+        mots_retour_texte = [
+            "reviens en texte",
+            "stop vocal",
+            "mode texte",
+            "retour texte",
+            "retourne en texte",
+            "mode écriture",
+            "mode ecriture",
+            "passe en texte",
+            "repasse en texte"
+        ]
+
+        while True:
+            try:
+                commande = input("Vous : ").strip()
+            except (KeyboardInterrupt, EOFError):
+                print()
                 self.logger.enregistrer("Arrêt de Jarvis")
                 print("Jarvis arrêté.")
                 break
 
-            mode_vocal = False
-            if commande.lower() in ["vocal", "voix", "parler"]:
-                print("[Ecoute en cours, parlez maintenant...]")
-                commande = self.voice_manager.ecouter_et_transcrire(5)
-                print(f"Vous (vocal) : {commande}")
-                mode_vocal = True
+            if not commande:
+                continue
 
-                if not commande or commande.startswith("Erreur"):
-                    print("[Rien compris, reessayez.]")
+            commande_lower = commande.lower()
+
+            if commande_lower in ["quitter", "exit", "stop"]:
+                self.logger.enregistrer("Arrêt de Jarvis")
+                print("Jarvis arrêté.")
+                break
+
+            if any(mot in commande_lower for mot in mots_declencheurs_vocal):
+                self.mode_vocal(mots_retour_texte)
+                continue
+
+            self.traiter_commande(commande)
+
+    def mode_vocal(self, mots_retour_texte):
+        print()
+        print("=" * 50)
+        print("🎙️ MODE VOCAL ACTIVÉ")
+        print("Dites « reviens en texte » pour quitter.")
+        print("=" * 50)
+
+        derniere_reponse = None
+        self._erreurs_vocales = 0
+
+        self.voice_manager.parler(
+            "Mode vocal activé. Parle après ce message, je t'écoute."
+        )
+
+        while True:
+            try:
+                print()
+                print("[🎙️ Écoute directe — parlez...]" )
+
+                commande_vocale = self.voice_manager.ecouter_et_transcrire(5)
+
+                if not commande_vocale:
+                    print("[Aucune parole détectée.]")
                     continue
 
-            reponse_pour_voix = self.traiter_commande(commande, retourner_reponse=True)
-            if mode_vocal and reponse_pour_voix:
-                self.voice_manager.parler(reponse_pour_voix)
+                if commande_vocale.startswith("Erreur"):
+                    if "aucune parole" in commande_vocale.lower():
+                        print("[Silence, je continue d'écouter.]")
+                        continue
+                    print(f"[Erreur vocale] {commande_vocale}")
+                    self._erreurs_vocales += 1
+                    if self._erreurs_vocales >= 3:
+                        print("[Trop d'erreurs, retour au mode texte.]")
+                        self.voice_manager.parler("Trop d'erreurs. Je repasse en mode texte.")
+                        break
+                    continue
+
+                print(f"👤 Vous : {commande_vocale}")
+                self._erreurs_vocales = 0
+
+                commande_lower = commande_vocale.lower().strip()
+
+                # ---------------------------------------------------------
+                # MODE ÉCOUTE DIRECTE
+                # Le mot d'activation "Jarvis" est désactivé.
+                # Toute phrase transcrite est traitée directement.
+                # ---------------------------------------------------------
+                print(f"[🎤 Commande vocale directe : {commande_vocale}]")
+
+                # ---------------------------------------------------------
+                # COMMANDES LOCALES : DATE ET HEURE
+                # Ces commandes ne doivent pas passer par l'IA.
+                # Le command_manager possède déjà la logique locale.
+                # ---------------------------------------------------------
+                reponse_locale = self.command_manager.traiter(commande_vocale)
+
+                if reponse_locale.startswith(("Il est ", "Nous sommes ")):
+                    print("[⚡ Commande locale date/heure.]")
+                    derniere_reponse = reponse_locale
+                    print("[🔊 Jarvis parle...]")
+                    self.voice_manager.parler(reponse_locale)
+                    continue
+
+
+                if any(mot in commande_lower for mot in mots_retour_texte):
+                    print()
+                    print("[📝 Retour au mode texte.]")
+                    self.voice_manager.parler(
+                        "D'accord. Je repasse en mode texte."
+                    )
+                    break
+
+                if commande_lower in ["quitter", "exit", "arrête jarvis", "arrête toi"]:
+                    self.voice_manager.parler("D'accord. J'arrête Jarvis.")
+                    self.logger.enregistrer("Arrêt de Jarvis par commande vocale")
+                    print("Jarvis arrêté.")
+                    return
+
+                if commande_lower in [
+                    "plus lentement",
+                    "parle plus lentement",
+                    "ralentis",
+                    "ralentis ta voix"
+                ]:
+                    self.voice_manager.definir_vitesse(0.8)
+                    self.voice_manager.parler(
+                        "D'accord, je parle plus lentement."
+                    )
+                    continue
+
+                if commande_lower in [
+                    "plus rapidement",
+                    "parle plus rapidement",
+                    "accélère",
+                    "accelere",
+                    "accélère ta voix",
+                    "accelere ta voix"
+                ]:
+                    self.voice_manager.definir_vitesse(1.2)
+                    self.voice_manager.parler(
+                        "D'accord, je parle plus rapidement."
+                    )
+                    continue
+
+                if commande_lower in [
+                    "vitesse normale",
+                    "reviens à la vitesse normale",
+                    "reviens a la vitesse normale",
+                    "revient à la vitesse normale",
+                    "revient a la vitesse normale"
+                ]:
+                    self.voice_manager.definir_vitesse(1.0)
+                    self.voice_manager.parler(
+                        "D'accord, je reviens à une vitesse normale."
+                    )
+                    continue
+
+                if commande_lower in ["répète", "repete", "répète ça", "repete ça"]:
+                    if derniere_reponse:
+                        print("[🔁 Répétition de la dernière réponse.]")
+                        self.voice_manager.parler(derniere_reponse)
+                    else:
+                        self.voice_manager.parler(
+                            "Je n'ai pas encore de réponse à répéter."
+                        )
+                    continue
+
+                print("[🧠 Jarvis réfléchit...]")
+
+                reponse = self.traiter_commande(
+                    commande_vocale,
+                    retourner_reponse=True
+                )
+
+                if reponse:
+                    derniere_reponse = reponse
+                    print("[🔊 Jarvis parle...]")
+                    self.voice_manager.parler(reponse)
+
+            except KeyboardInterrupt:
+                print()
+                print("[Retour au mode texte.]")
+                break
+            except Exception as e:
+                print(f"[Erreur mode vocal] {e}")
+                self.voice_manager.parler(
+                    "Une erreur est survenue. Je continue à t'écouter."
+                )
 
     def traiter_commande(self, commande, retourner_reponse=False):
         self.logger.enregistrer(f"Commande reçue : {commande}")
@@ -131,20 +304,18 @@ class Jarvis:
 
             historique = self.memory_manager.obtenir_historique_recent()
             reponse = self.ai_engine.demander(commande, contexte=contexte_complet, historique=historique)
-
-            validation = self.validation_manager.valider(reponse, mission_id)
+            validation = self.validation_manager.valider(reponse, mission_id, self.ai_engine.derniers_resultats_outils)
             if not validation["valide"]:
                 print(f"[Validation echouee : {validation['avertissement']}]")
                 if mission_id:
                     self.mission_manager.mettre_a_jour_statut(mission_id, "bloquee")
             elif validation.get("avertissement"):
                 print(f"[Avertissement : {validation['avertissement']}]")
-
             self.coordination_manager.superviser_resultat(reponse, mission_id)
             reponse = self.coordination_manager.livrer(reponse, mission_id)
 
             print(reponse)
-            if not reponse.startswith("Erreur IA") and not reponse.startswith("Toutes les IA sont indisponibles"):
+            if isinstance(reponse, str) and not reponse.startswith("Erreur IA") and not reponse.startswith("Toutes les IA sont indisponibles"):
                 reponse_a_memoriser = reponse.replace("[Secours Gemini] ", "").strip()
                 self.memory_manager.ajouter_echange(commande, reponse_a_memoriser)
 

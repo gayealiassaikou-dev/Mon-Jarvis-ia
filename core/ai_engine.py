@@ -305,51 +305,80 @@ OUTILS_GEMINI = _convertir_outils_gemini(OUTILS)
 class AIEngine:
     def __init__(self, memory_manager=None):
         self.memory_manager = memory_manager
+        self.derniers_resultats_outils = []
+
+        config_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "config",
+            "ai_providers.json"
+        )
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+
+        self.providers = {
+            p["nom"]: p
+            for p in config.get("providers", [])
+        }
+
+        groq = self.providers.get("groq", {})
+        openrouter = self.providers.get("openrouter", {})
+        gemini = self.providers.get("gemini", {})
+        mistral = self.providers.get("mistral", {})
+
+        self.api_key = os.getenv(groq.get("api_key_env", "GROQ_API_KEY"))
+        self.url = groq.get("url")
+        self.model = groq.get("model")
+
+        self.openrouter_key = os.getenv(
+            openrouter.get("api_key_env", "OPENROUTER_API_KEY")
+        )
+        self.openrouter_url = openrouter.get("url")
+        self.openrouter_model = openrouter.get("model")
+
+        self.gemini_key = os.getenv(
+            gemini.get("api_key_env", "GEMINI_API_KEY")
+        )
+        self.gemini_url = gemini.get("url")
+
+        self.mistral_key = os.getenv(
+            mistral.get("api_key_env", "MISTRAL_API_KEY")
+        )
+        self.mistral_url = mistral.get("url")
+        self.mistral_model = mistral.get("model")
+
         self.router = AIRouter(self)
-        self.api_key = os.getenv("GROQ_API_KEY")
-        self.url = "https://api.groq.com/openai/v1/chat/completions"
-        self.model = "openai/gpt-oss-120b"
-        self.openrouter_key = os.getenv("OPENROUTER_API_KEY")
-        self.openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
-        self.openrouter_model = "meta-llama/llama-3.3-70b-instruct"
-        self.gemini_key = os.getenv("GEMINI_API_KEY")
-        self.gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
 
     def demander(self, message, contexte="", historique=None):
+        self.derniers_resultats_outils = []
         return self.router.demander(message, contexte, historique)
 
     def _executer_outil(self, nom_fonction, arguments):
         if nom_fonction == "memoriser_info" and self.memory_manager:
-            return self.memory_manager.memoriser(arguments.get("categorie"), arguments.get("contenu"))
-        if nom_fonction == "rechercher_souvenir" and self.memory_manager:
-            return self.memory_manager.rechercher_souvenir(arguments.get("mot_cle"))
-        fonction = FONCTIONS_DISPONIBLES.get(nom_fonction)
-        return fonction(**arguments) if fonction else "Outil inconnu."
+            resultat = self.memory_manager.memoriser(arguments.get("categorie"), arguments.get("contenu"))
+        elif nom_fonction == "rechercher_souvenir" and self.memory_manager:
+            resultat = self.memory_manager.rechercher_souvenir(arguments.get("mot_cle"))
+        else:
+            fonction = FONCTIONS_DISPONIBLES.get(nom_fonction)
+            resultat = fonction(**arguments) if fonction else "Outil inconnu."
+        self.derniers_resultats_outils.append({"outil": nom_fonction, "resultat": str(resultat)})
+        return resultat
 
-    def _demander_groq(self, message, contexte="", historique=None):
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-
+    def _appeler_openai_compatible(self, url, headers, model, message, contexte="", historique=None, outils=None):
         messages = []
         if contexte:
             messages.append({"role": "system", "content": contexte})
-
         if historique:
             for echange in historique:
                 messages.append({"role": "user", "content": echange["question"]})
                 messages.append({"role": "assistant", "content": echange["reponse"]})
-
         messages.append({"role": "user", "content": message})
 
         for _ in range(5):
-            payload = {
-                "model": self.model,
-                "messages": messages,
-                "tools": OUTILS
-            }
-            reponse = requests.post(self.url, headers=headers, json=payload, timeout=30)
+            payload = {"model": model, "messages": messages}
+            if outils:
+                payload["tools"] = outils
+            reponse = requests.post(url, headers=headers, json=payload, timeout=30)
             reponse.raise_for_status()
             data = reponse.json()
             choix = data["choices"][0]["message"]
@@ -369,40 +398,32 @@ class AIEngine:
                 return choix["content"]
 
         raise Exception("Trop d'appels d'outils enchaines.")
+
+    def _demander_groq(self, message, contexte="", historique=None):
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        return self._appeler_openai_compatible(
+            self.url, headers, self.model, message, contexte, historique, outils=OUTILS
+        )
     def _demander_openrouter(self, message, contexte="", historique=None):
         headers = {
             "Authorization": f"Bearer {self.openrouter_key}",
             "Content-Type": "application/json"
         }
-
-        messages = []
-
-        if contexte:
-            messages.append({"role": "system", "content": contexte})
-
-        if historique:
-            for echange in historique:
-                messages.append({"role": "user", "content": echange["question"]})
-                messages.append({"role": "assistant", "content": echange["reponse"]})
-
-        messages.append({"role": "user", "content": message})
-
-        payload = {
-            "model": self.openrouter_model,
-            "messages": messages
+        return self._appeler_openai_compatible(
+            self.openrouter_url, headers, self.openrouter_model, message, contexte, historique, outils=OUTILS
+        )
+    def _demander_mistral(self, message, contexte="", historique=None):
+        headers = {
+            "Authorization": f"Bearer {self.mistral_key}",
+            "Content-Type": "application/json"
         }
-
-        reponse = requests.post(
-            self.openrouter_url,
-            headers=headers,
-            json=payload,
-            timeout=30
+        return self._appeler_openai_compatible(
+            self.mistral_url, headers, self.mistral_model, message, contexte, historique, outils=OUTILS
         )
 
-        reponse.raise_for_status()
-
-        data = reponse.json()
-        return data["choices"][0]["message"]["content"]
     def _demander_gemini(self, message, contexte="", historique=None):
         contents = []
 
