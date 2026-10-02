@@ -19,6 +19,7 @@ from coordination_manager import CoordinationManager
 from validation_manager import ValidationManager
 from voice_manager import VoiceManager
 from ai_engine import AIEngine
+from agent_permissions import obtenir_outils_autorises
 from contexte_ia import charger_contexte
 
 
@@ -303,7 +304,8 @@ class Jarvis:
             contexte_complet = self.contexte + "\n\n" + contexte_agent
 
             historique = self.memory_manager.obtenir_historique_recent()
-            reponse = self.ai_engine.demander(commande, contexte=contexte_complet, historique=historique)
+            outils_autorises = obtenir_outils_autorises(agent)
+            reponse = self.ai_engine.demander(commande, contexte=contexte_complet, historique=historique, outils_autorises=outils_autorises)
             validation = self.validation_manager.valider(reponse, mission_id, self.ai_engine.derniers_resultats_outils)
             if not validation["valide"]:
                 print(f"[Validation echouee : {validation['avertissement']}]")

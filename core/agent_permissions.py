@@ -4,7 +4,8 @@ TOUS_LES_OUTILS = [
     "rechercher_web",
     "creer_projet", "ajouter_tache", "lister_projets", "lister_taches",
     "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet",
-    "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier"
+    "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier",
+    "memoriser_info", "rechercher_souvenir"
 ]
 
 PERMISSIONS_AGENTS = {
@@ -34,7 +35,8 @@ PERMISSIONS_AGENTS = {
     ],
 
     "06_memoire_ia": [
-        "lire_fichier", "ecrire_fichier", "lister_fichiers"
+        "lire_fichier", "ecrire_fichier", "lister_fichiers",
+        "memoriser_info", "rechercher_souvenir"
     ],
 
     "07_automatisation_ia": [

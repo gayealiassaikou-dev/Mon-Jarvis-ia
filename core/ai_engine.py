@@ -349,11 +349,32 @@ class AIEngine:
 
         self.router = AIRouter(self)
 
-    def demander(self, message, contexte="", historique=None):
+    def demander(self, message, contexte="", historique=None, outils_autorises=None):
         self.derniers_resultats_outils = []
-        return self.router.demander(message, contexte, historique)
+        ancien_outils_autorises = getattr(self, "outils_autorises", None)
+        self.outils_autorises = outils_autorises
+        try:
+            return self.router.demander(message, contexte, historique)
+        finally:
+            self.outils_autorises = ancien_outils_autorises
+
+    def _obtenir_outils_autorises(self):
+        outils_autorises = getattr(self, "outils_autorises", None)
+
+        if outils_autorises is None:
+            return OUTILS
+
+        return [
+            outil for outil in OUTILS
+            if outil.get("function", {}).get("name") in outils_autorises
+        ]
 
     def _executer_outil(self, nom_fonction, arguments):
+        outils_autorises = getattr(self, "outils_autorises", None)
+        if outils_autorises is not None and nom_fonction not in outils_autorises:
+            resultat = f"Erreur : loutil {nom_fonction} nest pas autorise pour cette execution."
+            self.derniers_resultats_outils.append({"outil": nom_fonction, "resultat": str(resultat)})
+            return resultat
         if nom_fonction == "memoriser_info" and self.memory_manager:
             resultat = self.memory_manager.memoriser(arguments.get("categorie"), arguments.get("contenu"))
         elif nom_fonction == "rechercher_souvenir" and self.memory_manager:
@@ -405,7 +426,7 @@ class AIEngine:
             "Content-Type": "application/json"
         }
         return self._appeler_openai_compatible(
-            self.url, headers, self.model, message, contexte, historique, outils=OUTILS
+            self.url, headers, self.model, message, contexte, historique, outils=self._obtenir_outils_autorises()
         )
     def _demander_openrouter(self, message, contexte="", historique=None):
         headers = {
@@ -413,7 +434,7 @@ class AIEngine:
             "Content-Type": "application/json"
         }
         return self._appeler_openai_compatible(
-            self.openrouter_url, headers, self.openrouter_model, message, contexte, historique, outils=OUTILS
+            self.openrouter_url, headers, self.openrouter_model, message, contexte, historique, outils=self._obtenir_outils_autorises()
         )
     def _demander_mistral(self, message, contexte="", historique=None):
         headers = {
@@ -421,7 +442,7 @@ class AIEngine:
             "Content-Type": "application/json"
         }
         return self._appeler_openai_compatible(
-            self.mistral_url, headers, self.mistral_model, message, contexte, historique, outils=OUTILS
+            self.mistral_url, headers, self.mistral_model, message, contexte, historique, outils=self._obtenir_outils_autorises()
         )
 
     def _demander_gemini(self, message, contexte="", historique=None):
@@ -434,7 +455,7 @@ class AIEngine:
 
         contents.append({"role": "user", "parts": [{"text": message}]})
 
-        payload = {"contents": contents, "tools": OUTILS_GEMINI}
+        payload = {"contents": contents, "tools": _convertir_outils_gemini(self._obtenir_outils_autorises())}
         if contexte:
             payload["systemInstruction"] = {"parts": [{"text": contexte}]}
 
