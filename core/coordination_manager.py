@@ -26,7 +26,7 @@ class CoordinationManager:
         self.mission_manager.mettre_a_jour_statut(mission_id, "en_cours")
         self.logger.enregistrer(f"[Coordination] Mission {mission_id} demarree.")
 
-    def superviser_resultat(self, reponse, mission_id=None):
+    def superviser_resultat(self, reponse, mission_id=None, validation=None):
         erreur_detectee = False
 
         if not reponse or not reponse.strip():
@@ -34,13 +34,20 @@ class CoordinationManager:
         elif reponse.startswith("Erreur IA"):
             erreur_detectee = True
 
+        if validation is not None and not validation.get("valide", False):
+            erreur_detectee = True
+
         if mission_id:
             if erreur_detectee:
                 self.mission_manager.mettre_a_jour_statut(mission_id, "bloquee")
-                self.logger.enregistrer(f"[Coordination] Mission {mission_id} bloquee - erreur detectee.")
+                self.logger.enregistrer(
+                    f"[Coordination] Mission {mission_id} bloquee - validation ou erreur detectee."
+                )
             else:
                 self.mission_manager.mettre_a_jour_statut(mission_id, "terminee")
-                self.logger.enregistrer(f"[Coordination] Mission {mission_id} terminee avec succes.")
+                self.logger.enregistrer(
+                    f"[Coordination] Mission {mission_id} terminee avec succes."
+                )
 
         return not erreur_detectee
 

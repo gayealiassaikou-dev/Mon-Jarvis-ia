@@ -313,7 +313,11 @@ class Jarvis:
                     self.mission_manager.mettre_a_jour_statut(mission_id, "bloquee")
             elif validation.get("avertissement"):
                 print(f"[Avertissement : {validation['avertissement']}]")
-            self.coordination_manager.superviser_resultat(reponse, mission_id)
+            self.coordination_manager.superviser_resultat(
+                reponse,
+                mission_id,
+                validation=validation
+            )
             reponse = self.coordination_manager.livrer(reponse, mission_id)
 
             print(reponse)
