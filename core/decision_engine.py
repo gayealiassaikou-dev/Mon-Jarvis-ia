@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from dotenv import load_dotenv
-from agent_permissions import filtrer_outils
+from agent_permissions import filtrer_outils, TOUS_LES_OUTILS
 
 load_dotenv()
 
@@ -17,16 +17,10 @@ class DecisionEngine:
         self.url = "https://api.groq.com/openai/v1/chat/completions"
         self.model = "llama-3.3-70b-versatile"
 
-        self.outils_disponibles = [
-            "lire_fichier",
-            "ecrire_fichier",
-            "supprimer_fichier",
-            "rechercher_web",
-            "creer_projet",
-            "ajouter_tache",
-            "lister_projets",
-            "lister_taches"
-        ]
+        # Source unique de verite pour le catalogue des outils.
+        # Les permissions de chaque agent sont appliquees ensuite
+        # par filtrer_outils().
+        self.outils_disponibles = list(TOUS_LES_OUTILS)
 
     def _appeler_llm(self, prompt, timeout=15):
         headers = {
