@@ -77,6 +77,17 @@ class AIRouter:
                         fournisseur
                     )
 
+                # Si un outil a déjà été engagé, l'erreur peut être
+                # survenue après une action réelle. Ne pas relancer
+                # automatiquement la même demande avec un autre fournisseur.
+                if getattr(self.ai_engine, "action_engagee", False):
+                    return (
+                        "Erreur IA : une action a déjà été engagée "
+                        f"avec {fournisseur}. "
+                        "Fallback automatique annulé pour éviter "
+                        "une double exécution."
+                    )
+
                 continue
 
         return (

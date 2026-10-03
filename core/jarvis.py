@@ -304,9 +304,43 @@ class Jarvis:
             contexte_complet = self.contexte + "\n\n" + contexte_agent
 
             historique = self.memory_manager.obtenir_historique_recent()
-            outils_autorises = obtenir_outils_autorises(agent)
-            reponse = self.ai_engine.demander(commande, contexte=contexte_complet, historique=historique, outils_autorises=outils_autorises)
+
+            # Le DecisionEngine choisit les outils nécessaires à cette demande.
+            # On applique une seconde fois les permissions de l'agent
+            # avant de transmettre les outils à l'AIEngine.
+            outils_suggeres = decision.get("outils_suggeres", [])
+            outils_autorises_agent = obtenir_outils_autorises(agent)
+            outils_autorises = [
+                outil for outil in outils_suggeres
+                if outil in outils_autorises_agent
+            ]
+
+            reponse = self.ai_engine.demander(
+                commande,
+                contexte=contexte_complet,
+                historique=historique,
+                outils_autorises=outils_autorises
+            )
             validation = self.validation_manager.valider(reponse, mission_id, self.ai_engine.derniers_resultats_outils)
+            # Correction automatique : une seule nouvelle tentative, seulement
+            # si la politique de ValidationManager l'autorise.
+            if not validation["valide"]:
+                diagnostic = self.validation_manager.diagnostiquer_echec(
+                    validation, self.ai_engine.derniers_resultats_outils
+                )
+                politique = self.validation_manager.autoriser_correction(
+                    diagnostic, self.ai_engine.derniers_resultats_outils
+                )
+                if politique["autorisee"]:
+                    print(f"[Correction automatique : nouvelle tentative unique pour {diagnostic['outil']}]")
+                    if self.ai_engine.rejouer_outil_echoue(diagnostic["outil"], outils_autorises):
+                        validation = self.validation_manager.valider(
+                            reponse, mission_id, self.ai_engine.derniers_resultats_outils
+                        )
+                        if validation["valide"]:
+                            print("[Correction automatique reussie]")
+                else:
+                    self.logger.enregistrer(f"[Correction] Refusee : {politique['raison']}")
             if not validation["valide"]:
                 print(f"[Validation echouee : {validation['avertissement']}]")
                 if mission_id:

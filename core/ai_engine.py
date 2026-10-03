@@ -307,6 +307,10 @@ class AIEngine:
         self.memory_manager = memory_manager
         self.derniers_resultats_outils = []
 
+        # Indique qu'une action d'outil a déjà été engagée
+        # pendant la demande courante.
+        self.action_engagee = False
+
         config_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "config",
@@ -350,6 +354,8 @@ class AIEngine:
         self.router = AIRouter(self)
 
     def demander(self, message, contexte="", historique=None, outils_autorises=None):
+        # Nouvelle demande : aucune action n'est encore engagée.
+        self.action_engagee = False
         self.derniers_resultats_outils = []
         ancien_outils_autorises = getattr(self, "outils_autorises", None)
         self.outils_autorises = outils_autorises
@@ -369,21 +375,513 @@ class AIEngine:
             if outil.get("function", {}).get("name") in outils_autorises
         ]
 
+    def rejouer_outil_echoue(self, outil, outils_autorises=None):
+        """
+        Rejoue UNE seule fois un outil dont la verification a echoue,
+        avec les memes arguments, puis remplace l'ancien resultat en
+        echec par le nouveau. Retourne True si le rejeu a eu lieu.
+        L'autorisation doit deja avoir ete donnee par
+        ValidationManager.autoriser_correction.
+        """
+        entree = None
+        for r in self.derniers_resultats_outils:
+            verification = r.get("verification")
+            if (
+                r.get("outil") == outil
+                and isinstance(verification, dict)
+                and verification.get("verifie") is False
+            ):
+                entree = r
+                break
+
+        if entree is None:
+            return False
+
+        arguments = entree.get("arguments")
+        if not isinstance(arguments, dict):
+            return False
+
+        ancien_outils_autorises = getattr(self, "outils_autorises", None)
+        self.outils_autorises = outils_autorises
+        try:
+            self._executer_outil(outil, dict(arguments))
+        except Exception:
+            return False
+        finally:
+            self.outils_autorises = ancien_outils_autorises
+
+        self.derniers_resultats_outils[:] = [
+            r for r in self.derniers_resultats_outils if r is not entree
+        ]
+        return True
+
     def _executer_outil(self, nom_fonction, arguments):
         outils_autorises = getattr(self, "outils_autorises", None)
+
         if outils_autorises is not None and nom_fonction not in outils_autorises:
-            resultat = f"Erreur : loutil {nom_fonction} nest pas autorise pour cette execution."
-            self.derniers_resultats_outils.append({"outil": nom_fonction, "resultat": str(resultat)})
+            resultat = (
+                f"Erreur : loutil {nom_fonction} "
+                "nest pas autorise pour cette execution."
+            )
+            self.derniers_resultats_outils.append({
+                "outil": nom_fonction,
+                "arguments": arguments,
+                "resultat": str(resultat)
+            })
             return resultat
-        if nom_fonction == "memoriser_info" and self.memory_manager:
-            resultat = self.memory_manager.memoriser(arguments.get("categorie"), arguments.get("contenu"))
-        elif nom_fonction == "rechercher_souvenir" and self.memory_manager:
-            resultat = self.memory_manager.rechercher_souvenir(arguments.get("mot_cle"))
-        else:
-            fonction = FONCTIONS_DISPONIBLES.get(nom_fonction)
-            resultat = fonction(**arguments) if fonction else "Outil inconnu."
-        self.derniers_resultats_outils.append({"outil": nom_fonction, "resultat": str(resultat)})
+
+        # À partir de ce point, l'exécution d'un outil va réellement
+        # pouvoir produire un effet. Une erreur ultérieure ne doit
+        # donc pas provoquer automatiquement un fallback fournisseur.
+        self.action_engagee = True
+
+        try:
+            if nom_fonction == "memoriser_info" and self.memory_manager:
+                resultat = self.memory_manager.memoriser(
+                    arguments.get("categorie"),
+                    arguments.get("contenu")
+                )
+
+            elif nom_fonction == "rechercher_souvenir" and self.memory_manager:
+                resultat = self.memory_manager.rechercher_souvenir(
+                    arguments.get("mot_cle")
+                )
+
+            else:
+                fonction = FONCTIONS_DISPONIBLES.get(nom_fonction)
+
+                if fonction is None:
+                    resultat = "Erreur outil : outil inconnu."
+                else:
+                    resultat = fonction(**arguments)
+
+        except Exception as e:
+            resultat = (
+                "Erreur outil : exception pendant l'exécution : "
+                f"{type(e).__name__}: {e}"
+            )
+
+        verification = self._verifier_resultat_outil(
+            nom_fonction,
+            arguments,
+            resultat
+        )
+
+        self.derniers_resultats_outils.append({
+            "outil": nom_fonction,
+            "arguments": arguments,
+            "resultat": str(resultat),
+            "verification": verification
+        })
+
         return resultat
+
+    def _verifier_resultat_outil(self, nom_fonction, arguments, resultat):
+        """
+        Verifie reellement le resultat d'une action executee par un outil.
+
+        Pour l'instant, ecrire_fichier et creer_dossier disposent d'une
+        verification specifique.
+        Les autres outils restent inchanges jusqu'a leur audit individuel.
+        """
+
+        if nom_fonction == "creer_dossier":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"La creation du dossier a echoue : {resultat}"
+                }
+
+            chemin = arguments.get("chemin")
+
+            if not chemin:
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : chemin absent des arguments."
+                }
+
+            chemin_reel = os.path.realpath(os.path.abspath(chemin))
+
+            if not os.path.exists(chemin_reel):
+                return {
+                    "verifie": False,
+                    "details": "Le dossier demande n'existe pas apres sa creation."
+                }
+
+            if not os.path.isdir(chemin_reel):
+                return {
+                    "verifie": False,
+                    "details": "Le chemin existe apres l'action mais ce n'est pas un dossier."
+                }
+
+            return {
+                "verifie": True,
+                "details": "Le dossier a ete verifie physiquement et existe bien."
+            }
+        if nom_fonction == "supprimer_tache":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"L'action de suppression a echoue : {resultat}"
+                }
+
+            nom = arguments.get("nom")
+
+            if not nom:
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : nom de la tache absent des arguments."
+                }
+
+            liste = lister_taches()
+
+            if isinstance(liste, str) and liste.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"Lecture de verification echouee : {liste}"
+                }
+
+            lignes = liste.splitlines()
+
+            for ligne in lignes:
+                if ligne.startswith(f"- {nom} ["):
+                    return {
+                        "verifie": False,
+                        "details": "La tache existe encore apres la suppression."
+                    }
+
+            return {
+                "verifie": True,
+                "details": "La tache a ete verifiee et n'existe plus."
+            }
+
+        if nom_fonction == "supprimer_projet":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"L'action de suppression a echoue : {resultat}"
+                }
+
+            nom = arguments.get("nom")
+
+            if not nom:
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : nom du projet absent des arguments."
+                }
+
+            liste = lister_projets()
+
+            if isinstance(liste, str) and liste.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"Lecture de verification echouee : {liste}"
+                }
+
+            lignes = liste.splitlines()
+
+            for ligne in lignes:
+                if ligne.startswith(f"- {nom} ("):
+                    return {
+                        "verifie": False,
+                        "details": "Le projet existe encore apres la suppression."
+                    }
+
+            return {
+                "verifie": True,
+                "details": "Le projet a ete verifie et n'existe plus."
+            }
+
+        if nom_fonction == "ajouter_tache":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"L'ajout de la tache a echoue : {resultat}"
+                }
+
+            nom = arguments.get("nom")
+            projet = arguments.get("projet", "")
+
+            if not nom:
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : nom de la tache absent des arguments."
+                }
+
+            liste = lister_taches()
+
+            if isinstance(liste, str) and liste.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"Lecture de verification echouee : {liste}"
+                }
+
+            nom_recherche = nom.strip().lower()
+            projet_recherche = projet.strip().lower()
+
+            for ligne in liste.splitlines():
+                if not ligne.startswith("- "):
+                    continue
+
+                contenu = ligne[2:]
+
+                if " [" not in contenu or "]" not in contenu:
+                    continue
+
+                nom_tache, suite = contenu.split(" [", 1)
+                statut, reste = suite.split("]", 1)
+
+                projet_trouve = ""
+
+                if "(projet:" in reste and reste.endswith(")"):
+                    projet_trouve = reste.split("(projet:", 1)[1][:-1].strip()
+
+                if (
+                    nom_tache.strip().lower() == nom_recherche
+                    and projet_trouve.strip().lower() == projet_recherche
+                ):
+                    if statut.strip().lower() == "en attente":
+                        return {
+                            "verifie": True,
+                            "details": "La tache a ete relue et existe bien avec le statut 'en attente'."
+                        }
+
+                    return {
+                        "verifie": False,
+                        "details": f"La tache existe mais son statut est '{statut}' au lieu de 'en attente'."
+                    }
+
+            return {
+                "verifie": False,
+                "details": "La tache n'existe pas lors de la verification apres son ajout."
+            }
+
+        if nom_fonction == "creer_projet":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"La creation du projet a echoue : {resultat}"
+                }
+
+            nom = arguments.get("nom")
+
+            if not nom:
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : nom du projet absent des arguments."
+                }
+
+            liste = lister_projets()
+
+            if isinstance(liste, str) and liste.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"Lecture de verification echouee : {liste}"
+                }
+
+            nom_recherche = nom.strip().lower()
+
+            for ligne in liste.splitlines():
+                if not ligne.startswith("- "):
+                    continue
+
+                contenu = ligne[2:]
+
+                if " (" not in contenu or not contenu.endswith(")"):
+                    continue
+
+                nom_projet, statut = contenu.rsplit(" (", 1)
+                statut = statut[:-1]
+
+                if nom_projet.strip().lower() == nom_recherche:
+                    if statut.strip().lower() == "en cours":
+                        return {
+                            "verifie": True,
+                            "details": "Le projet a ete relu et existe bien avec le statut 'en cours'."
+                        }
+
+                    return {
+                        "verifie": False,
+                        "details": f"Le projet existe mais son statut est '{statut}' au lieu de 'en cours'."
+                    }
+
+            return {
+                "verifie": False,
+                "details": "Le projet n'existe pas lors de la verification apres sa creation."
+            }
+
+        if nom_fonction == "modifier_statut_projet":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"La modification du statut a echoue : {resultat}"
+                }
+
+            nom = arguments.get("nom")
+            nouveau_statut = arguments.get("nouveau_statut")
+
+            if not nom or not nouveau_statut:
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : nom ou nouveau statut absent des arguments."
+                }
+
+            statut_attendu = nouveau_statut.strip().lower()
+            liste = lister_projets()
+
+            if isinstance(liste, str) and liste.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"Lecture de verification echouee : {liste}"
+                }
+
+            nom_recherche = nom.strip().lower()
+
+            for ligne in liste.splitlines():
+                if not ligne.startswith("- "):
+                    continue
+
+                contenu = ligne[2:]
+
+                if " (" not in contenu or not contenu.endswith(")"):
+                    continue
+
+                nom_projet, statut = contenu.rsplit(" (", 1)
+                statut = statut[:-1]
+
+                if nom_projet.strip().lower() == nom_recherche:
+                    if statut == statut_attendu:
+                        return {
+                            "verifie": True,
+                            "details": "Le projet a ete relu et son statut correspond au statut demande."
+                        }
+
+                    return {
+                        "verifie": False,
+                        "details": f"Le projet existe mais son statut est '{statut}' au lieu de '{statut_attendu}'."
+                    }
+
+            return {
+                "verifie": False,
+                "details": "Le projet est introuvable lors de la verification."
+            }
+
+        if nom_fonction == "terminer_tache":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"L'action de terminaison a echoue : {resultat}"
+                }
+
+            nom = arguments.get("nom")
+
+            if not nom:
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : nom de la tache absent des arguments."
+                }
+
+            liste = lister_taches()
+
+            if isinstance(liste, str) and liste.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"Lecture de verification echouee : {liste}"
+                }
+
+            ligne_attendue = f"- {nom} [terminee]"
+
+            lignes = liste.splitlines()
+
+            for ligne in lignes:
+                if ligne == ligne_attendue or ligne.startswith(
+                    ligne_attendue + " (projet:"
+                ):
+                    return {
+                        "verifie": True,
+                        "details": "La tache a ete relue et son statut est bien terminee."
+                    }
+
+            return {
+                "verifie": False,
+                "details": "La tache existe encore mais son statut n'est pas terminee."
+            }
+
+        if nom_fonction == "supprimer_fichier":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"L'action de suppression a echoue : {resultat}"
+                }
+
+            chemin = arguments.get("chemin")
+
+            if not chemin:
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : chemin absent des arguments."
+                }
+
+            chemin_reel = os.path.realpath(os.path.abspath(chemin))
+
+            if os.path.exists(chemin_reel):
+                return {
+                    "verifie": False,
+                    "details": "Le fichier existe encore apres la suppression."
+                }
+
+            return {
+                "verifie": True,
+                "details": "Le fichier a ete verifie physiquement et n'existe plus."
+            }
+
+        if nom_fonction != "ecrire_fichier":
+            return {
+                "verifie": None,
+                "details": "Aucune verification specifique disponible pour cet outil."
+            }
+
+        # Si l'action elle-meme a echoue, inutile de tenter une seconde
+        # operation de lecture pour verifier son resultat.
+        if isinstance(resultat, str) and resultat.startswith("Erreur"):
+            return {
+                "verifie": False,
+                "details": f"L'action d'ecriture a echoue : {resultat}"
+            }
+
+        chemin = arguments.get("chemin")
+        contenu_attendu = arguments.get("contenu")
+
+        if not chemin:
+            return {
+                "verifie": False,
+                "details": "Verification impossible : chemin absent des arguments."
+            }
+
+        if contenu_attendu is None:
+            return {
+                "verifie": False,
+                "details": "Verification impossible : contenu absent des arguments."
+            }
+
+        contenu_lu = lire_fichier(chemin)
+
+        if contenu_lu.startswith("Erreur"):
+            return {
+                "verifie": False,
+                "details": f"Lecture de verification echouee : {contenu_lu}"
+            }
+
+        if contenu_lu != contenu_attendu:
+            return {
+                "verifie": False,
+                "details": "Le contenu relu ne correspond pas au contenu demande."
+            }
+
+        return {
+            "verifie": True,
+            "details": "Le fichier a ete relu et son contenu correspond exactement a la demande."
+        }
 
     def _appeler_openai_compatible(self, url, headers, model, message, contexte="", historique=None, outils=None):
         messages = []
@@ -408,8 +906,45 @@ class AIEngine:
                 messages.append(choix)
                 for appel in choix["tool_calls"]:
                     nom_fonction = appel["function"]["name"]
-                    arguments = json.loads(appel["function"]["arguments"]) or {}
-                    resultat = self._executer_outil(nom_fonction, arguments)
+
+                    try:
+                        arguments = json.loads(
+                            appel["function"].get("arguments", "{}")
+                        ) or {}
+
+                    except json.JSONDecodeError as e:
+                        resultat = (
+                            "Erreur outil : arguments JSON invalides : "
+                            f"{e}"
+                        )
+
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": appel["id"],
+                            "content": str(resultat)
+                        })
+
+                        continue
+
+                    except (TypeError, AttributeError) as e:
+                        resultat = (
+                            "Erreur outil : arguments de Tool Calling "
+                            f"invalides : {type(e).__name__}: {e}"
+                        )
+
+                        messages.append({
+                            "role": "tool",
+                            "tool_call_id": appel["id"],
+                            "content": str(resultat)
+                        })
+
+                        continue
+
+                    resultat = self._executer_outil(
+                        nom_fonction,
+                        arguments
+                    )
+
                     messages.append({
                         "role": "tool",
                         "tool_call_id": appel["id"],
