@@ -61,6 +61,36 @@ class ValidationManager:
                 )
 
         if resultats_outils:
+            # PATCH6_PREUVE_SUCCES_V1
+            # Une action executee n'est validee que si une preuve
+            # independante affirme explicitement verifie=True.
+            preuves_absentes = [
+                r for r in resultats_outils
+                if r.get("execute") is True
+                and not (
+                    isinstance(r.get("verification"), dict)
+                    and r["verification"].get("verifie") is True
+                )
+            ]
+
+            if preuves_absentes:
+                details = "; ".join(
+                    f"{r.get('outil', 'outil inconnu')}: "
+                    f"{(
+                        r.get('verification', {}).get(
+                            'details',
+                            'Preuve de succes absente.'
+                        )
+                        if isinstance(r.get('verification'), dict)
+                        else 'Preuve de succes absente.'
+                    )}"
+                    for r in preuves_absentes
+                )
+                return self._rejeter(
+                    f"Preuve de succes absente ou invalide : {details}",
+                    mission_id,
+                )
+
             echecs_verification = [
                 r for r in resultats_outils
                 if isinstance(r.get("verification"), dict)
@@ -75,7 +105,7 @@ class ValidationManager:
                 )
                 return self._rejeter(
                     f"Verification d'action echouee : {details}",
-                    mission_id
+                    mission_id,
                 )
 
         reponse_min = reponse.lower()

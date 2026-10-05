@@ -765,12 +765,15 @@ class AIEngine:
         # -----------------------------------------------------
         if not execute:
             statut = "echec_execution"
-        elif isinstance(verification, dict) and verification.get("verifie") is False:
-            statut = "verification_echec"
         elif str(resultat).startswith("Erreur"):
             statut = "echec_execution"
-        else:
+        elif (
+            isinstance(verification, dict)
+            and verification.get("verifie") is True
+        ):
             statut = "succes"
+        else:
+            statut = "verification_echec"
 
         entree = self._normaliser_resultat_outil(
             nom_fonction,
