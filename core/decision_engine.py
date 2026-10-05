@@ -137,6 +137,76 @@ class DecisionEngine:
 
         return texte.strip()
 
+    DESCRIPTIONS_AGENTS = {
+        "00_directeur_ia": (
+            "Coordonne les missions complexes, décompose les objectifs "
+            "et orchestre les autres agents. À privilégier lorsqu'aucun "
+            "spécialiste unique ne correspond clairement à la demande."
+        ),
+        "01_developpeur": (
+            "Développe et corrige du code, manipule les fichiers du projet, "
+            "travaille sur les applications et utilise GitHub pour les "
+            "actions techniques."
+        ),
+        "02_designer": (
+            "Conçoit les interfaces, l'UX, l'UI, les maquettes et "
+            "l'identité visuelle des produits numériques."
+        ),
+        "03_recherche": (
+            "Effectue des recherches, compare des solutions et vérifie "
+            "des informations et des sources."
+        ),
+        "04_business": (
+            "Analyse le marché, les utilisateurs, la concurrence, la "
+            "monétisation, le marketing et les modèles économiques."
+        ),
+        "05_architecte_ia": (
+            "Conçoit l'architecture logicielle et IA, les composants, "
+            "les technologies et la structure globale d'un système."
+        ),
+        "06_memoire_ia": (
+            "Gère la mémorisation, l'organisation et la récupération "
+            "des informations importantes."
+        ),
+        "07_automatisation_ia": (
+            "Conçoit et exécute des automatisations, workflows, "
+            "intégrations et tâches répétitives."
+        ),
+        "08_testeur_ia": (
+            "Teste les logiciels, détecte les bugs et vérifie la qualité "
+            "et la stabilité des réalisations."
+        ),
+        "09_securite_ia": (
+            "Analyse les risques, permissions, secrets, dépendances "
+            "et problèmes de sécurité."
+        ),
+        "10_assistant_vocal_ia": (
+            "Travaille sur la voix, la reconnaissance vocale, la synthèse "
+            "vocale et les interactions vocales."
+        ),
+        "11_gestionnaire_outils_ia": (
+            "Sélectionne les outils et ressources les plus adaptés "
+            "à une mission et organise leur utilisation."
+        ),
+    }
+
+    OUTILS_AGENTS_SPECIALISES = {
+        "ecrire_fichier": "01_developpeur",
+        "supprimer_fichier": "01_developpeur",
+        "creer_dossier": "01_developpeur",
+        "github_ecrire_fichier": "01_developpeur",
+        "github_creer_repo": "01_developpeur",
+        "rechercher_web": "03_recherche",
+        "memoriser_info": "06_memoire_ia",
+        "rechercher_souvenir": "06_memoire_ia",
+        "creer_projet": "07_automatisation_ia",
+        "ajouter_tache": "07_automatisation_ia",
+        "terminer_tache": "07_automatisation_ia",
+        "supprimer_tache": "07_automatisation_ia",
+        "supprimer_projet": "07_automatisation_ia",
+        "modifier_statut_projet": "07_automatisation_ia",
+    }
+
     def _construire_catalogue_outils(self):
         """
         Construit la description sémantique des outils disponibles.
@@ -158,6 +228,76 @@ class DecisionEngine:
 
         return "\n".join(lignes)
 
+    def _construire_catalogue_agents(self, liste_agents):
+        """
+        Construit le catalogue des agents réellement chargés par Jarvis.
+
+        Les profils sont fournis au moteur de décision afin que le LLM
+        choisisse un spécialiste sur la base de son rôle réel et non
+        uniquement sur son nom.
+        """
+
+        lignes = []
+
+        for agent in liste_agents:
+            description = self.DESCRIPTIONS_AGENTS.get(
+                agent,
+                "Agent spécialisé dont le rôle détaillé n'est pas défini."
+            )
+
+            lignes.append(
+                f"- {agent} : {description}"
+            )
+
+        return "\n".join(lignes)
+
+    def _decision_securisee(self, demande, raison):
+        """
+        Produit une décision sans action lorsqu'une décision du LLM
+        ne peut pas être considérée comme fiable.
+        """
+
+        print(
+            "[DecisionEngine] Décision sécurisée : "
+            f"{raison}"
+        )
+
+        return {
+            "agent": "00_directeur_ia",
+            "analyse": {
+                "difficulte": "moyenne",
+                "risques": "eleve",
+                "validation_requise": True,
+                "resume": demande
+            },
+            "outils_suggeres": [],
+            "decision_securisee": True,
+            "raison_decision": raison,
+        }
+
+    def _verifier_coherence_agent_outils(self, agent, outils):
+        """
+        Vérifie qu'un agent spécialisé n'est pas associé à un outil
+        manifestement réservé à un autre domaine.
+
+        Le Directeur IA et le Gestionnaire des Outils IA restent des
+        agents d'orchestration et ne déclenchent pas cette contrainte.
+        """
+
+        if agent in {
+            "00_directeur_ia",
+            "11_gestionnaire_outils_ia",
+        }:
+            return True
+
+        for outil in outils:
+            agent_attendu = self.OUTILS_AGENTS_SPECIALISES.get(outil)
+
+            if agent_attendu and agent != agent_attendu:
+                return False
+
+        return True
+
     def decider(self, demande):
         liste_agents = list(self.agent_manager.agents.keys())
 
@@ -173,6 +313,7 @@ class DecisionEngine:
         }
 
         catalogue_outils = self._construire_catalogue_outils()
+        catalogue_agents = self._construire_catalogue_agents(liste_agents)
 
         prompt = (
             "Tu es le moteur de décision de Jarvis.\n\n"
@@ -180,7 +321,8 @@ class DecisionEngine:
             "Ton rôle est d'analyser la demande utilisateur et de déterminer "
             "quel agent doit la traiter ainsi que les outils nécessaires.\n\n"
 
-            f"Agents disponibles : {', '.join(liste_agents)}.\n\n"
+            "Agents disponibles et responsabilités :\n"
+            f"{catalogue_agents}\n\n"
 
             "Outils disponibles et leurs fonctions :\n"
             f"{catalogue_outils}\n\n"
@@ -189,6 +331,30 @@ class DecisionEngine:
 
             "Sélectionne uniquement les outils réellement nécessaires "
             "à l'exécution de la demande.\n\n"
+
+            "Règles de routage des agents :\n"
+            "- Choisis l'agent dont la responsabilité correspond le mieux "
+            "à l'objectif réel de la demande.\n"
+            "- Pour du code, des bugs, des fichiers du projet ou une action "
+            "GitHub technique, privilégie 01_developpeur.\n"
+            "- Pour une architecture logicielle ou IA, privilégie "
+            "05_architecte_ia.\n"
+            "- Pour une recherche d'informations, privilégie 03_recherche.\n"
+            "- Pour des tests ou une vérification de qualité, privilégie "
+            "08_testeur_ia.\n"
+            "- Pour la sécurité, les permissions ou les secrets, privilégie "
+            "09_securite_ia.\n"
+            "- Pour la mémoire, privilégie 06_memoire_ia.\n"
+            "- Pour l'automatisation et les workflows, privilégie "
+            "07_automatisation_ia.\n"
+            "- Pour le design et l'UX/UI, privilégie 02_designer.\n"
+            "- Pour le business, le marché ou la monétisation, privilégie "
+            "04_business.\n"
+            "- Pour la voix, privilégie 10_assistant_vocal_ia.\n"
+            "- Pour une orchestration réellement transversale, utilise "
+            "00_directeur_ia.\n"
+            "- Ne choisis jamais un agent uniquement à partir de son numéro "
+            "ou de son nom.\n\n"
 
             "Règles importantes pour les outils :\n"
             "- Pour créer un dépôt GitHub, utilise github_creer_repo.\n"
@@ -249,10 +415,19 @@ class DecisionEngine:
                     "La decision du LLM n'est pas un objet JSON."
                 )
 
-            agent = data.get("agent", "00_directeur_ia")
+            agent = data.get("agent")
+
+            if not isinstance(agent, str) or not agent.strip():
+                return self._decision_securisee(
+                    demande,
+                    "Agent absent ou vide dans la décision du LLM."
+                )
 
             if agent not in liste_agents:
-                agent = "00_directeur_ia"
+                return self._decision_securisee(
+                    demande,
+                    f"Agent inconnu retourné par le LLM : {agent!r}"
+                )
 
             outils = data.get("outils_suggeres", [])
 
@@ -270,6 +445,12 @@ class DecisionEngine:
             # Barrière de sécurité : les outils proposés par le LLM
             # sont toujours filtrés par les permissions de l'agent.
             outils = filtrer_outils(agent, outils)
+
+            if not self._verifier_coherence_agent_outils(agent, outils):
+                return self._decision_securisee(
+                    demande,
+                    "Incohérence détectée entre l'agent choisi et les outils."
+                )
 
             return {
                 "agent": agent,
