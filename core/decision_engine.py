@@ -219,10 +219,35 @@ class DecisionEngine:
         )
 
         try:
-            reponse = self.ai_engine.router.demander(prompt)
+            # Appel sans aucun outil : la decision ne doit jamais
+            # executer d'action. ai_engine.demander remet aussi a zero
+            # action_engagee avant l'appel.
+            reponse = self.ai_engine.demander(
+                prompt,
+                outils_autorises=[],
+                mode_action=False,
+            )
+
+            if not isinstance(reponse, str) or not reponse.strip():
+                raise ValueError(
+                    "Reponse du LLM vide ou invalide : "
+                    f"{type(reponse).__name__}"
+                )
 
             reponse_nettoyee = self._nettoyer_json(reponse)
-            data = json.loads(reponse_nettoyee)
+            try:
+                data = json.loads(reponse_nettoyee)
+            except json.JSONDecodeError:
+                print(
+                    "[DecisionEngine] Reponse non JSON : "
+                    f"{reponse[:300]!r}"
+                )
+                raise
+
+            if not isinstance(data, dict):
+                raise ValueError(
+                    "La decision du LLM n'est pas un objet JSON."
+                )
 
             agent = data.get("agent", "00_directeur_ia")
 
