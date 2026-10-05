@@ -1327,7 +1327,21 @@ class AIEngine:
                         "content": str(resultat)
                     })
             else:
-                return choix["content"]
+                contenu = choix.get("content")
+
+                # Reponse vide sans aucune action engagee : on leve une
+                # erreur pour que le routeur essaie le fournisseur suivant.
+                # Si une action a deja ete engagee, on garde le comportement
+                # actuel : ni rejeu ni fallback (anti-double-execution).
+                if (
+                    not isinstance(contenu, str) or not contenu.strip()
+                ) and not getattr(self, "action_engagee", False):
+                    raise Exception(
+                        "Reponse vide du fournisseur "
+                        "(content absent ou vide)."
+                    )
+
+                return contenu
 
         raise Exception("Trop d'appels d'outils enchaines.")
 
