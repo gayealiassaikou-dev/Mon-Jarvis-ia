@@ -169,6 +169,11 @@ def _sauvegarder_donnees(donnees):
     with open(CHEMIN_DONNEES, "w", encoding="utf-8") as f:
         json.dump(donnees, f, indent=4, ensure_ascii=False)
 
+
+def lire_etat_projets_taches():
+    """Retourne l'etat structure des projets et des taches."""
+    return _charger_donnees()
+
 def creer_projet(nom):
     donnees = _charger_donnees()
     for p in donnees["projets"]:

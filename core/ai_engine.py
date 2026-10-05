@@ -3,7 +3,7 @@ import json
 import requests
 from dotenv import load_dotenv
 from ai_router import AIRouter
-from tools import lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo
+from tools import lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
 
 load_dotenv()
 
@@ -477,10 +477,10 @@ class AIEngine:
                 statut = "arguments_invalides"
             elif not execute:
                 statut = "echec_execution"
-            elif verification.get("verifie") is False:
-                statut = "verification_echec"
-            else:
+            elif verification.get("verifie") is True:
                 statut = "succes"
+            else:
+                statut = "verification_echec"
 
         return {
             "outil": nom_fonction,
@@ -1010,6 +1010,57 @@ class AIEngine:
                 "verifie": True,
                 "details": "Le dossier a ete verifie physiquement et existe bien."
             }
+        if nom_fonction in {
+            "lire_fichier",
+            "lister_fichiers",
+            "lister_projets",
+            "lister_taches",
+        }:
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"{nom_fonction} a retourne une erreur : {resultat}",
+                }
+
+            return {
+                "verifie": True,
+                "details": (
+                    f"{nom_fonction} execute avec succes ; "
+                    "le resultat respecte le contrat de lecture."
+                ),
+            }
+
+        if nom_fonction in {
+            "github_lire_fichier",
+            "github_lister_repos",
+            "rechercher_web",
+        }:
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": (
+                        f"{nom_fonction} a retourne une erreur : "
+                        f"{resultat}"
+                    ),
+                }
+
+            if not isinstance(resultat, str):
+                return {
+                    "verifie": False,
+                    "details": (
+                        f"{nom_fonction} a retourne un type invalide : "
+                        f"{type(resultat).__name__}."
+                    ),
+                }
+
+            return {
+                "verifie": True,
+                "details": (
+                    f"{nom_fonction} execute avec succes ; "
+                    "le resultat respecte le contrat de lecture externe."
+                ),
+            }
+
         if nom_fonction == "supprimer_tache":
             if isinstance(resultat, str) and resultat.startswith("Erreur"):
                 return {
@@ -1018,29 +1069,26 @@ class AIEngine:
                 }
 
             nom = arguments.get("nom")
-
-            if not nom:
+            if not isinstance(nom, str) or not nom.strip():
                 return {
                     "verifie": False,
                     "details": "Verification impossible : nom de la tache absent des arguments."
                 }
 
-            liste = lister_taches()
+            etat = lire_etat_projets_taches()
+            taches = etat.get("taches", [])
 
-            if isinstance(liste, str) and liste.startswith("Erreur"):
+            existe = any(
+                isinstance(t, dict)
+                and t.get("nom", "").strip().lower() == nom.strip().lower()
+                for t in taches
+            )
+
+            if existe:
                 return {
                     "verifie": False,
-                    "details": f"Lecture de verification echouee : {liste}"
+                    "details": "La tache existe encore apres la suppression."
                 }
-
-            lignes = liste.splitlines()
-
-            for ligne in lignes:
-                if ligne.startswith(f"- {nom} ["):
-                    return {
-                        "verifie": False,
-                        "details": "La tache existe encore apres la suppression."
-                    }
 
             return {
                 "verifie": True,
@@ -1055,29 +1103,26 @@ class AIEngine:
                 }
 
             nom = arguments.get("nom")
-
-            if not nom:
+            if not isinstance(nom, str) or not nom.strip():
                 return {
                     "verifie": False,
                     "details": "Verification impossible : nom du projet absent des arguments."
                 }
 
-            liste = lister_projets()
+            etat = lire_etat_projets_taches()
+            projets = etat.get("projets", [])
 
-            if isinstance(liste, str) and liste.startswith("Erreur"):
+            existe = any(
+                isinstance(p, dict)
+                and p.get("nom", "").strip().lower() == nom.strip().lower()
+                for p in projets
+            )
+
+            if existe:
                 return {
                     "verifie": False,
-                    "details": f"Lecture de verification echouee : {liste}"
+                    "details": "Le projet existe encore apres la suppression."
                 }
-
-            lignes = liste.splitlines()
-
-            for ligne in lignes:
-                if ligne.startswith(f"- {nom} ("):
-                    return {
-                        "verifie": False,
-                        "details": "Le projet existe encore apres la suppression."
-                    }
 
             return {
                 "verifie": True,
@@ -1094,48 +1139,29 @@ class AIEngine:
             nom = arguments.get("nom")
             projet = arguments.get("projet", "")
 
-            if not nom:
+            if not isinstance(nom, str) or not nom.strip():
                 return {
                     "verifie": False,
                     "details": "Verification impossible : nom de la tache absent des arguments."
                 }
 
-            liste = lister_taches()
+            etat = lire_etat_projets_taches()
+            taches = etat.get("taches", [])
 
-            if isinstance(liste, str) and liste.startswith("Erreur"):
-                return {
-                    "verifie": False,
-                    "details": f"Lecture de verification echouee : {liste}"
-                }
-
-            nom_recherche = nom.strip().lower()
-            projet_recherche = projet.strip().lower()
-
-            for ligne in liste.splitlines():
-                if not ligne.startswith("- "):
+            for tache in taches:
+                if not isinstance(tache, dict):
                     continue
 
-                contenu = ligne[2:]
+                meme_nom = tache.get("nom", "").strip().lower() == nom.strip().lower()
+                meme_projet = tache.get("projet", "").strip().lower() == projet.strip().lower()
 
-                if " [" not in contenu or "]" not in contenu:
-                    continue
+                if meme_nom and meme_projet:
+                    statut = tache.get("statut", "").strip().lower()
 
-                nom_tache, suite = contenu.split(" [", 1)
-                statut, reste = suite.split("]", 1)
-
-                projet_trouve = ""
-
-                if "(projet:" in reste and reste.endswith(")"):
-                    projet_trouve = reste.split("(projet:", 1)[1][:-1].strip()
-
-                if (
-                    nom_tache.strip().lower() == nom_recherche
-                    and projet_trouve.strip().lower() == projet_recherche
-                ):
-                    if statut.strip().lower() == "en attente":
+                    if statut == "en attente":
                         return {
                             "verifie": True,
-                            "details": "La tache a ete relue et existe bien avec le statut 'en attente'."
+                            "details": "La tache a ete relue dans l'etat structure et existe avec le statut 'en attente'."
                         }
 
                     return {
@@ -1157,39 +1183,26 @@ class AIEngine:
 
             nom = arguments.get("nom")
 
-            if not nom:
+            if not isinstance(nom, str) or not nom.strip():
                 return {
                     "verifie": False,
                     "details": "Verification impossible : nom du projet absent des arguments."
                 }
 
-            liste = lister_projets()
+            etat = lire_etat_projets_taches()
+            projets = etat.get("projets", [])
 
-            if isinstance(liste, str) and liste.startswith("Erreur"):
-                return {
-                    "verifie": False,
-                    "details": f"Lecture de verification echouee : {liste}"
-                }
-
-            nom_recherche = nom.strip().lower()
-
-            for ligne in liste.splitlines():
-                if not ligne.startswith("- "):
+            for projet in projets:
+                if not isinstance(projet, dict):
                     continue
 
-                contenu = ligne[2:]
+                if projet.get("nom", "").strip().lower() == nom.strip().lower():
+                    statut = projet.get("statut", "").strip().lower()
 
-                if " (" not in contenu or not contenu.endswith(")"):
-                    continue
-
-                nom_projet, statut = contenu.rsplit(" (", 1)
-                statut = statut[:-1]
-
-                if nom_projet.strip().lower() == nom_recherche:
-                    if statut.strip().lower() == "en cours":
+                    if statut == "en cours":
                         return {
                             "verifie": True,
-                            "details": "Le projet a ete relu et existe bien avec le statut 'en cours'."
+                            "details": "Le projet a ete relu dans l'etat structure et existe avec le statut 'en cours'."
                         }
 
                     return {
@@ -1212,40 +1225,32 @@ class AIEngine:
             nom = arguments.get("nom")
             nouveau_statut = arguments.get("nouveau_statut")
 
-            if not nom or not nouveau_statut:
+            if (
+                not isinstance(nom, str) or not nom.strip()
+                or not isinstance(nouveau_statut, str) or not nouveau_statut.strip()
+            ):
                 return {
                     "verifie": False,
                     "details": "Verification impossible : nom ou nouveau statut absent des arguments."
                 }
 
-            statut_attendu = nouveau_statut.strip().lower()
-            liste = lister_projets()
-
-            if isinstance(liste, str) and liste.startswith("Erreur"):
-                return {
-                    "verifie": False,
-                    "details": f"Lecture de verification echouee : {liste}"
-                }
-
             nom_recherche = nom.strip().lower()
+            statut_attendu = nouveau_statut.strip().lower()
 
-            for ligne in liste.splitlines():
-                if not ligne.startswith("- "):
+            etat = lire_etat_projets_taches()
+            projets = etat.get("projets", [])
+
+            for projet in projets:
+                if not isinstance(projet, dict):
                     continue
 
-                contenu = ligne[2:]
+                if projet.get("nom", "").strip().lower() == nom_recherche:
+                    statut = projet.get("statut", "").strip().lower()
 
-                if " (" not in contenu or not contenu.endswith(")"):
-                    continue
-
-                nom_projet, statut = contenu.rsplit(" (", 1)
-                statut = statut[:-1]
-
-                if nom_projet.strip().lower() == nom_recherche:
                     if statut == statut_attendu:
                         return {
                             "verifie": True,
-                            "details": "Le projet a ete relu et son statut correspond au statut demande."
+                            "details": "Le projet a ete relu dans l'etat structure et son statut correspond au statut demande."
                         }
 
                     return {
@@ -1267,36 +1272,36 @@ class AIEngine:
 
             nom = arguments.get("nom")
 
-            if not nom:
+            if not isinstance(nom, str) or not nom.strip():
                 return {
                     "verifie": False,
                     "details": "Verification impossible : nom de la tache absent des arguments."
                 }
 
-            liste = lister_taches()
+            etat = lire_etat_projets_taches()
+            taches = etat.get("taches", [])
 
-            if isinstance(liste, str) and liste.startswith("Erreur"):
-                return {
-                    "verifie": False,
-                    "details": f"Lecture de verification echouee : {liste}"
-                }
+            for tache in taches:
+                if not isinstance(tache, dict):
+                    continue
 
-            ligne_attendue = f"- {nom} [terminee]"
+                if tache.get("nom", "").strip().lower() == nom.strip().lower():
+                    statut = tache.get("statut", "").strip().lower()
 
-            lignes = liste.splitlines()
+                    if statut == "terminee":
+                        return {
+                            "verifie": True,
+                            "details": "La tache a ete relue dans l'etat structure et son statut est bien terminee."
+                        }
 
-            for ligne in lignes:
-                if ligne == ligne_attendue or ligne.startswith(
-                    ligne_attendue + " (projet:"
-                ):
                     return {
-                        "verifie": True,
-                        "details": "La tache a ete relue et son statut est bien terminee."
+                        "verifie": False,
+                        "details": f"La tache existe mais son statut est '{statut}' au lieu de 'terminee'."
                     }
 
             return {
                 "verifie": False,
-                "details": "La tache existe encore mais son statut n'est pas terminee."
+                "details": "La tache est introuvable lors de la verification."
             }
 
         if nom_fonction == "supprimer_fichier":
@@ -1326,6 +1331,7 @@ class AIEngine:
                 "verifie": True,
                 "details": "Le fichier a ete verifie physiquement et n'existe plus."
             }
+
 
         if nom_fonction != "ecrire_fichier":
             return {
