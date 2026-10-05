@@ -2,6 +2,11 @@ class ValidationManager:
 
     def __init__(self, logger):
         self.logger = logger
+
+        # Une seule correction automatique autorisée par demande.
+        self.corrections_utilisees = 0
+        self.max_corrections = 1
+
         self.signaux_incertitude = [
             "je ne sais pas",
             "je ne peux pas",
@@ -91,15 +96,23 @@ class ValidationManager:
 
         if echecs_action:
             premier = echecs_action[0]
+            outil = premier.get("outil")
+
+            # Une erreur d'exécution n'est pas automatiquement rejouable.
+            # La politique d'autorisation décide séparément si une correction
+            # peut être tentée.
             return {
                 "echec": True,
                 "type": "action",
-                "outil": premier.get("outil"),
-                "corrigeable": False,
-                "raison": validation.get(
-                    "avertissement",
-                    "Une action d'outil a echoue."
-                )
+                "outil": outil,
+                "corrigeable": outil == "ecrire_fichier",
+                "raison": str(premier.get(
+                    "resultat",
+                    validation.get(
+                        "avertissement",
+                        "Une action d'outil a echoue."
+                    )
+                ))
             }
 
         echecs_verification = [
@@ -111,11 +124,13 @@ class ValidationManager:
         if echecs_verification:
             premier = echecs_verification[0]
             verification = premier.get("verification", {})
+            outil = premier.get("outil")
+
             return {
                 "echec": True,
                 "type": "verification",
-                "outil": premier.get("outil"),
-                "corrigeable": False,
+                "outil": outil,
+                "corrigeable": outil == "ecrire_fichier",
                 "raison": verification.get(
                     "details",
                     validation.get(
@@ -216,15 +231,27 @@ class ValidationManager:
                 )
             }
 
+        if self.corrections_utilisees >= self.max_corrections:
+            return {
+                "autorisee": False,
+                "raison": (
+                    "La limite d'une correction automatique par demande "
+                    "a deja ete atteinte."
+                )
+            }
+
+        self.corrections_utilisees += 1
+
         self.logger.enregistrer(
-            f"[Validation] Correction automatique autorisee pour '{outil}'."
+            f"[Validation] Correction automatique autorisee pour '{outil}'. "
+            f"Utilisation {self.corrections_utilisees}/{self.max_corrections}."
         )
 
         return {
             "autorisee": True,
             "raison": (
-                f"L'outil '{outil}' est autorise a etre rejoue "
-                "une seule fois par la future boucle de correction."
+                f"L'outil '{outil}' est autorise a etre rejoue une seule fois "
+                "par demande."
             )
         }
 

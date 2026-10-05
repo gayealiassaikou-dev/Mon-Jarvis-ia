@@ -4,7 +4,7 @@ TOUS_LES_OUTILS = [
     "rechercher_web",
     "creer_projet", "ajouter_tache", "lister_projets", "lister_taches",
     "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet",
-    "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier",
+    "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
     "memoriser_info", "rechercher_souvenir"
 ]
 
@@ -14,7 +14,7 @@ PERMISSIONS_AGENTS = {
     "01_developpeur": [
         "lire_fichier", "ecrire_fichier", "supprimer_fichier",
         "lister_fichiers", "creer_dossier",
-        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier"
+        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo"
     ],
 
     "02_designer": [
@@ -41,7 +41,7 @@ PERMISSIONS_AGENTS = {
 
     "07_automatisation_ia": [
         "lire_fichier", "ecrire_fichier", "lister_fichiers", "creer_dossier",
-        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier",
+        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
         "creer_projet", "ajouter_tache",
         "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet"
     ],

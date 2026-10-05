@@ -50,6 +50,7 @@ class Jarvis:
         self.mission_manager = MissionManager()
         self.coordination_manager = CoordinationManager(self.mission_manager, self.logger)
         self.validation_manager = ValidationManager(self.logger)
+        self.ai_engine.validation_manager = self.validation_manager
         self.voice_manager = VoiceManager()
 
         self.nom = self.config["nom"]
@@ -106,7 +107,7 @@ class Jarvis:
             except (KeyboardInterrupt, EOFError):
                 print()
                 self.logger.enregistrer("Arrêt de Jarvis")
-                print("Jarvis arrêté.")
+                print("Samba Sarr arrêté.")
                 break
 
             if not commande:
@@ -116,7 +117,7 @@ class Jarvis:
 
             if commande_lower in ["quitter", "exit", "stop"]:
                 self.logger.enregistrer("Arrêt de Jarvis")
-                print("Jarvis arrêté.")
+                print("Samba Sarr arrêté.")
                 break
 
             if any(mot in commande_lower for mot in mots_declencheurs_vocal):
@@ -184,7 +185,7 @@ class Jarvis:
                 if reponse_locale.startswith(("Il est ", "Nous sommes ")):
                     print("[⚡ Commande locale date/heure.]")
                     derniere_reponse = reponse_locale
-                    print("[🔊 Jarvis parle...]")
+                    print("[🔊 Samba Sarr parle...]")
                     self.voice_manager.parler(reponse_locale)
                     continue
 
@@ -198,9 +199,9 @@ class Jarvis:
                     break
 
                 if commande_lower in ["quitter", "exit", "arrête jarvis", "arrête toi"]:
-                    self.voice_manager.parler("D'accord. J'arrête Jarvis.")
+                    self.voice_manager.parler("D'accord. J'arrête Samba Sarr.")
                     self.logger.enregistrer("Arrêt de Jarvis par commande vocale")
-                    print("Jarvis arrêté.")
+                    print("Samba Sarr arrêté.")
                     return
 
                 if commande_lower in [
@@ -252,7 +253,7 @@ class Jarvis:
                         )
                     continue
 
-                print("[🧠 Jarvis réfléchit...]")
+                print("[🧠 Samba Sarr réfléchit...]")
 
                 reponse = self.traiter_commande(
                     commande_vocale,
@@ -261,7 +262,7 @@ class Jarvis:
 
                 if reponse:
                     derniere_reponse = reponse
-                    print("[🔊 Jarvis parle...]")
+                    print("[🔊 Samba Sarr parle...]")
                     self.voice_manager.parler(reponse)
 
             except KeyboardInterrupt:
@@ -275,6 +276,8 @@ class Jarvis:
                 )
 
     def traiter_commande(self, commande, retourner_reponse=False):
+        # Nouvelle commande utilisateur = nouvelle fenêtre de correction automatique.
+        self.validation_manager.corrections_utilisees = 0
         self.logger.enregistrer(f"Commande reçue : {commande}")
 
         resultat = self.command_manager.traiter(commande)
@@ -319,34 +322,123 @@ class Jarvis:
                 commande,
                 contexte=contexte_complet,
                 historique=historique,
-                outils_autorises=outils_autorises
+                outils_autorises=outils_autorises,
+                mode_action=bool(outils_autorises),
             )
-            validation = self.validation_manager.valider(reponse, mission_id, self.ai_engine.derniers_resultats_outils)
-            # Correction automatique : une seule nouvelle tentative, seulement
-            # si la politique de ValidationManager l'autorise.
+            validation = self.validation_manager.valider(
+                reponse, mission_id, self.ai_engine.derniers_resultats_outils
+            )
+
+            # Le CoordinationManager décide de la suite à donner.
             if not validation["valide"]:
-                diagnostic = self.validation_manager.diagnostiquer_echec(
-                    validation, self.ai_engine.derniers_resultats_outils
+                suite_action = self.coordination_manager.decider_suite_action(
+                    self.ai_engine.derniers_resultats_outils,
+                    validation,
+                    self.validation_manager
                 )
-                politique = self.validation_manager.autoriser_correction(
-                    diagnostic, self.ai_engine.derniers_resultats_outils
-                )
-                if politique["autorisee"]:
-                    print(f"[Correction automatique : nouvelle tentative unique pour {diagnostic['outil']}]")
-                    if self.ai_engine.rejouer_outil_echoue(diagnostic["outil"], outils_autorises):
-                        validation = self.validation_manager.valider(
-                            reponse, mission_id, self.ai_engine.derniers_resultats_outils
+
+                if suite_action["decision"] == "corriger":
+                    diagnostic = suite_action.get("diagnostic", {})
+                    outil = diagnostic.get("outil")
+
+                    print(
+                        f"[Correction automatique : nouvelle tentative unique pour "
+                        f"{outil}]"
+                    )
+
+                    if outil and self.ai_engine.rejouer_outil_echoue(
+                        outil, outils_autorises
+                    ):
+                        # Le rejeu a réussi : on récupère son résultat vérifié.
+                        resultat_correction = None
+                        for resultat in reversed(self.ai_engine.derniers_resultats_outils):
+                            if resultat.get("outil") == outil:
+                                resultat_correction = resultat
+                                break
+
+                        verification_correction = (
+                            resultat_correction.get("verification", {})
+                            if resultat_correction
+                            else {}
                         )
-                        if validation["valide"]:
+
+                        if verification_correction.get("verifie") is True:
                             print("[Correction automatique reussie]")
-                else:
-                    self.logger.enregistrer(f"[Correction] Refusee : {politique['raison']}")
+
+                            # Nouvelle réponse du modèle basée sur le résultat corrigé.
+                            # Aucun outil n'est transmis ici afin d'éviter une nouvelle
+                            # exécution du même outil.
+                            contexte_correction = (
+                                contexte_complet
+                                + "\n\nRésultat de la correction automatique :\n"
+                                + str(resultat_correction.get("resultat", ""))
+                                + "\nLa vérification de l'action est réussie. "
+                                "Réponds maintenant à la demande de l'utilisateur "
+                                "en tenant compte de ce résultat, sans exécuter "
+                                "d'autre outil."
+                            )
+
+                            reponse = self.ai_engine.demander(
+                                commande,
+                                contexte=contexte_correction,
+                                historique=historique,
+                                outils_autorises=[]
+                            )
+
+                            # Si le modele ne fournit aucune reponse apres
+                            # une correction pourtant verifiee, utiliser le
+                            # resultat verifie de l'outil comme secours local.
+                            if not reponse or not reponse.strip():
+                                reponse = (
+                                    "Correction automatique réussie et vérifiée. "
+                                    + str(resultat_correction.get("resultat", ""))
+                                )
+
+                            validation = self.validation_manager.valider(
+                                reponse,
+                                mission_id,
+                                self.ai_engine.derniers_resultats_outils
+                            )
+                        else:
+                            self.logger.enregistrer(
+                                "[Correction] Rejeu effectué mais vérification toujours échouée."
+                            )
+                    else:
+                        self.logger.enregistrer(
+                            "[Correction] Rejeu impossible."
+                        )
+
+                elif suite_action["decision"] == "bloquer":
+                    correction = suite_action.get("correction", {})
+                    self.logger.enregistrer(
+                        f"[Correction] Refusee : "
+                        f"{correction.get('raison', 'Correction non autorisee.')}"
+                    )
+
+            # VERROU : un échec réel ne doit jamais être présenté comme une réussite.
             if not validation["valide"]:
-                print(f"[Validation echouee : {validation['avertissement']}]")
+                avertissement = validation.get(
+                    "avertissement",
+                    "L'action n'a pas pu être validée."
+                )
+
+                print(f"[Validation echouee : {avertissement}]")
+
                 if mission_id:
-                    self.mission_manager.mettre_a_jour_statut(mission_id, "bloquee")
+                    self.mission_manager.mettre_a_jour_statut(
+                        mission_id, "bloquee"
+                    )
+
+                reponse = (
+                    "Je n'ai pas pu confirmer la réussite de cette action. "
+                    f"Raison : {avertissement}"
+                )
+
             elif validation.get("avertissement"):
-                print(f"[Avertissement : {validation['avertissement']}]")
+                print(
+                    f"[Avertissement : {validation['avertissement']}]"
+                )
+
             self.coordination_manager.superviser_resultat(
                 reponse,
                 mission_id,

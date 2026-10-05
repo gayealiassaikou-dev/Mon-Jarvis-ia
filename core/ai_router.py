@@ -82,8 +82,9 @@ class AIRouter:
                 # automatiquement la même demande avec un autre fournisseur.
                 if getattr(self.ai_engine, "action_engagee", False):
                     return (
-                        "Erreur IA : une action a déjà été engagée "
-                        f"avec {fournisseur}. "
+                        "Erreur IA après exécution d'une action avec "
+                        f"{fournisseur} : "
+                        f"{type(e).__name__}: {e}. "
                         "Fallback automatique annulé pour éviter "
                         "une double exécution."
                     )

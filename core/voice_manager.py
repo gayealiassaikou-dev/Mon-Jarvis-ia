@@ -26,28 +26,17 @@ class VoiceManager:
         texte = re.sub(r"^\s*-\s+", "", texte, flags=re.MULTILINE)
         return texte.strip()
 
-    MAX_MOTS_VOCAL = 40
-
     def _limiter_longueur(self, texte):
+        """Prépare le texte complet pour la synthèse vocale."""
         import re
-        lignes = [l for l in texte.splitlines() if "|" not in l and "<br>" not in l]
-        texte = " ".join(lignes)
-        phrases = re.split(r"(?<=[.!?])\s+", texte.strip())
-        retenues = []
-        total = 0
-        for phrase in phrases:
-            nb = len(phrase.split())
-            if retenues and total + nb > self.MAX_MOTS_VOCAL:
-                break
-            retenues.append(phrase)
-            total += nb
-        court = " ".join(retenues)
-        mots = court.split()
-        if len(mots) > 60:
-            court = " ".join(mots[:60])
-        if len(retenues) < len(phrases):
-            court += " Le reste est affiché à l'écran."
-        return court
+
+        lignes = [
+            ligne
+            for ligne in texte.splitlines()
+            if "|" not in ligne and "<br>" not in ligne
+        ]
+
+        return " ".join(lignes).strip()
 
     def definir_vitesse(self, vitesse):
         vitesse = float(vitesse)
@@ -99,6 +88,28 @@ class VoiceManager:
             return True
         except Exception as e:
             print(f"[gTTS indisponible : {e}]")
+        finally:
+            if os.path.exists(fichier):
+                os.remove(fichier)
+
+        fichier = "voix_masculine.wav"
+        try:
+            subprocess.run(
+                [
+                    "espeak",
+                    "-v", "fr+m1",
+                    "-s", str(int(150 * self.vitesse_voix)),
+                    "-w", fichier,
+                    texte
+                ],
+                check=True
+            )
+            duree = self._duree_audio(fichier, texte)
+            print("[🔊 Voix masculine eSpeak NG de secours.]")
+            self._jouer_fichier(fichier, duree)
+            return True
+        except Exception as e:
+            print(f"[eSpeak NG indisponible : {e}]")
             return False
         finally:
             if os.path.exists(fichier):
@@ -106,7 +117,7 @@ class VoiceManager:
 
     def _parler_secours(self, texte):
         if self._parler_gtts(texte):
-            print("[🔊 Jarvis a terminé la commande vocale.]")
+            print("[🔊 Samba Sarr a terminé la commande vocale.]")
             time.sleep(1)
             return True
         fichier = "voix_secours.wav"
@@ -124,7 +135,7 @@ class VoiceManager:
                 duree = w.getnframes() / float(w.getframerate())
             self._jouer_fichier(fichier, duree)
             os.remove(fichier)
-            print("[🔊 Jarvis a terminé la commande vocale.]")
+            print("[🔊 Samba Sarr a terminé la commande vocale.]")
             time.sleep(1)
             return True
         except Exception as e:
@@ -132,6 +143,7 @@ class VoiceManager:
             return False
 
     def parler(self, texte):
+        """Synthétise la réponse avec gTTS puis la lit avec Termux Media Player."""
         try:
             texte_propre = self._nettoyer_texte(texte)
             texte_propre = self._limiter_longueur(texte_propre)
@@ -139,31 +151,23 @@ class VoiceManager:
             if not texte_propre:
                 return True
 
-            print("[🔊 Jarvis parle...]")
-            if not self._moteur_android_dispo():
-                return self._parler_secours(texte_propre)
+            print("[🔊 Samba Sarr parle...]")
 
-            # Google TTS
-            # termux-tts-speak doit terminer son traitement avant
-            # que cette fonction rende la main à Jarvis.
-            subprocess.run(
-                [
-                    "termux-tts-speak",
-                    "-l", "fr",
-                    "-r", str(self.vitesse_voix),
-                    "-s", "MUSIC",
-                    texte_propre
-                ],
-                check=False,
-                timeout=60
-            )
+            if self._parler_gtts(texte_propre):
+                print("[🔊 Samba Sarr a terminé la commande vocale.]")
+                time.sleep(1)
+                return True
 
-            print("[🔊 Jarvis a terminé la commande vocale.]")
-            time.sleep(1)
-            return True
+            print("[🔁 gTTS a échoué, passage au secours eSpeak NG.]")
+
+            if self._parler_secours(texte_propre):
+                return True
+
+            print("[⚠️ Aucun moteur vocal disponible.]")
+            return False
 
         except Exception as e:
-            print(f"Erreur synthese vocale : {e}")
+            print(f"Erreur synthèse vocale : {type(e).__name__}: {e}")
             return False
 
     VOLUME_MIN_VOIX = 300
@@ -359,6 +363,40 @@ class VoiceManager:
         raise TimeoutError(
             "AssemblyAI : délai de transcription dépassé"
         )
+
+    def _normaliser_transcription(self, texte):
+        """Normalise quelques erreurs STT connues sans réécrire la phrase."""
+        if not texte:
+            texte_normalise = self._normaliser_transcription(texte)
+
+            if texte_normalise != texte:
+                print(
+                    f"[VOICE] Normalisation STT : "
+                    f"{texte!r} -> {texte_normalise!r}"
+                )
+
+            return texte_normalise
+
+        import re
+
+        texte_normalise = texte.strip()
+
+        corrections = {
+            r"\bsamba\s+sar\b": "Samba Sarr",
+            r"\bsamba\s+ça\b": "Samba Sarr",
+            r"\bsamba\s+serre\b": "Samba Sarr",
+            r"\bsamba\s+sert\b": "Samba Sarr",
+        }
+
+        for motif, correction in corrections.items():
+            texte_normalise = re.sub(
+                motif,
+                correction,
+                texte_normalise,
+                flags=re.IGNORECASE
+            )
+
+        return texte_normalise
 
     def transcrire(self):
         if not os.path.exists(FICHIER_AUDIO_TEMP):

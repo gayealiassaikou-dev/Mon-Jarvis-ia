@@ -51,6 +51,72 @@ class CoordinationManager:
 
         return not erreur_detectee
 
+    def decider_suite_action(self, resultats_outils, validation=None, validation_manager=None):
+        """
+        Détermine la suite à donner après l'exécution des outils.
+
+        Décisions possibles :
+        - continuer : aucun échec bloquant détecté
+        - bloquer : une correction automatique n'est pas autorisée
+        - corriger : une correction automatique est explicitement autorisée
+
+        Cette méthode ne lance aucune action. Elle prépare uniquement
+        la décision pour la future boucle autonome.
+        """
+        resultats_outils = resultats_outils or []
+
+        if not resultats_outils:
+            return {
+                "decision": "continuer",
+                "raison": "Aucun résultat d'outil à corriger."
+            }
+
+        echecs = [
+            resultat for resultat in resultats_outils
+            if str(resultat.get("resultat", "")).strip().lower().startswith("erreur")
+            or (
+                isinstance(resultat.get("verification"), dict)
+                and resultat["verification"].get("verifie") is False
+            )
+        ]
+
+        if not echecs:
+            return {
+                "decision": "continuer",
+                "raison": "Les actions exécutées ne présentent aucun échec bloquant."
+            }
+
+        if validation_manager is None:
+            return {
+                "decision": "bloquer",
+                "raison": "Échec détecté mais aucun ValidationManager disponible pour décider d'une correction."
+            }
+
+        validation = validation or {"valide": False}
+
+        diagnostic = validation_manager.diagnostiquer_echec(
+            validation,
+            resultats_outils=resultats_outils
+        )
+
+        correction = validation_manager.autoriser_correction(
+            diagnostic,
+            resultats_outils=resultats_outils
+        )
+
+        if correction.get("autorisee", False):
+            return {
+                "decision": "corriger",
+                "diagnostic": diagnostic,
+                "correction": correction
+            }
+
+        return {
+            "decision": "bloquer",
+            "diagnostic": diagnostic,
+            "correction": correction
+        }
+
     def livrer(self, reponse, mission_id=None):
         if mission_id:
             self.logger.enregistrer(f"[Coordination] Livraison du resultat pour mission {mission_id}.")

@@ -221,6 +221,159 @@ def _interpreter_erreur_github(status_code, contexte=""):
         return f"Erreur : {contexte} introuvable sur GitHub."
     return f"Erreur GitHub : code {status_code}."
 
+
+def github_creer_repo(nom, description="", public=True):
+    """
+    Cree ou retrouve un depot GitHub via l'authentification locale de gh.
+
+    L'operation est idempotente : si le depot existe deja avec la bonne
+    visibilite, l'operation est consideree comme reussie.
+    """
+    import subprocess
+
+    if not isinstance(nom, str) or not nom.strip():
+        return "Erreur : le nom du depot est obligatoire."
+
+    nom = nom.strip()
+
+    if len(nom) > 100:
+        return "Erreur : le nom du depot est trop long."
+
+    if any(caractere in nom for caractere in (
+        "/", "\\", " ", "\t", "\n", "\r", '"', "'", "`", "$"
+    )):
+        return "Erreur : nom de depot invalide."
+
+    if not all(
+        caractere.isalnum() or caractere in "-_."
+        for caractere in nom
+    ):
+        return "Erreur : nom de depot invalide."
+
+    if not isinstance(description, str):
+        return "Erreur : la description doit etre une chaine."
+
+    if len(description) > 500:
+        return "Erreur : la description est trop longue."
+
+    if not isinstance(public, bool):
+        return "Erreur : public doit etre booleen."
+
+    # Etape 1 : verifier si le depot existe deja.
+    existant = subprocess.run(
+        [
+            "gh",
+            "repo",
+            "view",
+            nom,
+            "--json",
+            "nameWithOwner,url,isPrivate",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    if existant.returncode == 0:
+        donnees = existant.stdout.strip()
+
+        try:
+            import json
+            depot = json.loads(donnees)
+        except json.JSONDecodeError:
+            return (
+                "Erreur : GitHub a retourne une reponse invalide "
+                "lors de la verification du depot existant."
+            )
+
+        est_prive = depot.get("isPrivate")
+        visibilite_attendue = not public
+
+        if est_prive != visibilite_attendue:
+            visibilite = "prive" if est_prive else "public"
+            attendue = "prive" if not public else "public"
+            return (
+                f"Erreur : le depot {depot.get('nameWithOwner', nom)} "
+                f"existe deja mais il est {visibilite}. "
+                f"La demande exige un depot {attendue}."
+            )
+
+        return (
+            f"Depot GitHub deja existant et verifie : "
+            f"{donnees}"
+        )
+
+    # Le depot n'existe pas : on peut le creer.
+    visibilite = "public" if public else "private"
+
+    commande = [
+        "gh",
+        "repo",
+        "create",
+        nom,
+        f"--{visibilite}",
+        "--description",
+        description,
+    ]
+
+    try:
+        resultat = subprocess.run(
+            commande,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except FileNotFoundError:
+        return "Erreur : GitHub CLI 'gh' est introuvable."
+    except subprocess.TimeoutExpired:
+        return "Erreur : la creation du depot GitHub a expire."
+    except OSError as erreur:
+        return (
+            "Erreur systeme GitHub CLI : "
+            f"{type(erreur).__name__}: {erreur}"
+        )
+
+    sortie = (resultat.stdout or "").strip()
+    erreur = (resultat.stderr or "").strip()
+
+    if resultat.returncode != 0:
+        details = erreur or sortie or "aucun detail fourni par gh"
+        return f"Erreur creation depot GitHub : {details}"
+
+    # Verification reelle apres creation.
+    verification = subprocess.run(
+        [
+            "gh",
+            "repo",
+            "view",
+            nom,
+            "--json",
+            "nameWithOwner,url,isPrivate",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    if verification.returncode != 0:
+        details = (
+            verification.stderr.strip()
+            or verification.stdout.strip()
+            or "verification impossible"
+        )
+        return (
+            "Erreur : le depot semble avoir ete cree, "
+            f"mais sa verification a echoue : {details}"
+        )
+
+    return (
+        f"Depot GitHub cree et verifie avec succes : "
+        f"{verification.stdout.strip()}"
+    )
+
 def github_lister_repos():
     url = "https://api.github.com/user/repos"
     try:
@@ -239,47 +392,282 @@ def github_lister_repos():
         return f"Erreur GitHub inattendue : {e}"
 
 def github_lire_fichier(repo, chemin):
-    url = f"https://api.github.com/repos/{repo}/contents/{chemin}"
+    """
+    Lit un fichier GitHub via l'authentification locale de GitHub CLI.
+
+    Le depot peut etre fourni sous la forme :
+    - "Dande-Lenol"
+    - "utilisateur/Dande-Lenol"
+
+    Aucun GITHUB_TOKEN n'est utilise.
+    """
+    import base64
+    import json
+    import subprocess
+
+    if not isinstance(repo, str) or not repo.strip():
+        return "Erreur : le depot GitHub est obligatoire."
+
+    if not isinstance(chemin, str) or not chemin.strip():
+        return "Erreur : le chemin du fichier est obligatoire."
+
+    repo = repo.strip()
+    chemin = chemin.strip()
+
+    if "/" not in repo:
+        try:
+            proprietaire = subprocess.run(
+                ["gh", "api", "user", "--jq", ".login"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+                check=False,
+            )
+        except FileNotFoundError:
+            return "Erreur : GitHub CLI 'gh' est introuvable."
+        except subprocess.TimeoutExpired:
+            return "Erreur : recuperation du compte GitHub expiree."
+        except OSError as erreur:
+            return (
+                "Erreur systeme GitHub CLI : "
+                f"{type(erreur).__name__}: {erreur}"
+            )
+
+        if proprietaire.returncode != 0:
+            details = (
+                proprietaire.stderr.strip()
+                or proprietaire.stdout.strip()
+                or "authentification GitHub indisponible"
+            )
+            return (
+                "Erreur : impossible de recuperer le compte GitHub : "
+                f"{details}"
+            )
+
+        login = proprietaire.stdout.strip()
+
+        if not login:
+            return (
+                "Erreur : le compte GitHub authentifie "
+                "est introuvable."
+            )
+
+        repo = f"{login}/{repo}"
+
+    chemin_api = f"repos/{repo}/contents/{chemin}"
+
     try:
-        r = requests.get(url, headers=_headers_github(), timeout=15)
-        if r.status_code != 200:
-            return _interpreter_erreur_github(r.status_code, f"le fichier {chemin} dans {repo}")
-        data = r.json()
-        contenu_b64 = data.get("content", "")
-        contenu_decode = base64.b64decode(contenu_b64).decode("utf-8")
-        return contenu_decode
-    except requests.exceptions.Timeout:
-        return "Erreur : la connexion a GitHub a expire (timeout)."
-    except requests.exceptions.ConnectionError:
-        return "Erreur : impossible de se connecter a GitHub (verifie ta connexion internet)."
-    except Exception as e:
-        return f"Erreur GitHub inattendue : {e}"
+        lecture = subprocess.run(
+            [
+                "gh",
+                "api",
+                chemin_api,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except FileNotFoundError:
+        return "Erreur : GitHub CLI 'gh' est introuvable."
+    except subprocess.TimeoutExpired:
+        return "Erreur : lecture du fichier GitHub expiree."
+    except OSError as erreur:
+        return (
+            "Erreur systeme GitHub CLI : "
+            f"{type(erreur).__name__}: {erreur}"
+        )
 
-def github_ecrire_fichier(repo, chemin, contenu, message="Mise a jour via Jarvis"):
-    url = f"https://api.github.com/repos/{repo}/contents/{chemin}"
+    if lecture.returncode != 0:
+        details = (
+            lecture.stderr.strip()
+            or lecture.stdout.strip()
+            or "aucun detail fourni par gh"
+        )
+        return (
+            "Erreur lecture fichier GitHub : "
+            f"{details}"
+        )
+
     try:
-        sha = None
-        r_check = requests.get(url, headers=_headers_github(), timeout=15)
-        if r_check.status_code == 200:
-            sha = r_check.json().get("sha")
-        elif r_check.status_code not in (200, 404):
-            return _interpreter_erreur_github(r_check.status_code, f"le fichier {chemin} dans {repo}")
+        data = json.loads(lecture.stdout)
+    except json.JSONDecodeError as erreur:
+        return (
+            "Erreur : reponse GitHub invalide : "
+            f"{type(erreur).__name__}: {erreur}"
+        )
 
-        contenu_b64 = base64.b64encode(contenu.encode("utf-8")).decode("utf-8")
-        payload = {"message": message, "content": contenu_b64}
-        if sha:
-            payload["sha"] = sha
+    contenu_b64 = data.get("content")
 
-        r = requests.put(url, headers=_headers_github(), json=payload, timeout=15)
-        if r.status_code not in (200, 201):
-            return _interpreter_erreur_github(r.status_code, f"l'ecriture de {chemin} dans {repo}")
-        return f"Fichier {chemin} envoye avec succes sur {repo}."
-    except requests.exceptions.Timeout:
-        return "Erreur : la connexion a GitHub a expire (timeout)."
-    except requests.exceptions.ConnectionError:
-        return "Erreur : impossible de se connecter a GitHub (verifie ta connexion internet)."
-    except Exception as e:
-        return f"Erreur GitHub inattendue : {e}"
+    if not isinstance(contenu_b64, str) or not contenu_b64:
+        return (
+            "Erreur : GitHub n'a retourne aucun contenu "
+            "pour ce fichier."
+        )
+
+    try:
+        return base64.b64decode(contenu_b64).decode("utf-8")
+    except (ValueError, UnicodeDecodeError) as erreur:
+        return (
+            "Erreur : impossible de decoder le contenu GitHub : "
+            f"{type(erreur).__name__}: {erreur}"
+        )
+
+
+def github_ecrire_fichier(
+    repo,
+    chemin,
+    contenu,
+    message="Mise a jour via Jarvis",
+):
+    """
+    Cree ou met a jour un fichier GitHub via l'authentification locale gh.
+
+    Le depot peut etre fourni sous la forme :
+    - "Dande-Lenol"
+    - "utilisateur/Dande-Lenol"
+
+    Aucun GITHUB_TOKEN n'est utilise.
+    """
+    import json
+    import subprocess
+
+    if not isinstance(repo, str) or not repo.strip():
+        return "Erreur : le depot GitHub est obligatoire."
+
+    if not isinstance(chemin, str) or not chemin.strip():
+        return "Erreur : le chemin du fichier est obligatoire."
+
+    if not isinstance(contenu, str):
+        return "Erreur : le contenu du fichier doit etre une chaine."
+
+    if not isinstance(message, str) or not message.strip():
+        return "Erreur : le message du commit est obligatoire."
+
+    repo = repo.strip()
+    chemin = chemin.strip()
+    message = message.strip()
+
+    if "/" not in repo:
+        try:
+            proprietaire = subprocess.run(
+                ["gh", "api", "user", "--jq", ".login"],
+                capture_output=True,
+                text=True,
+                timeout=15,
+                check=False,
+            )
+        except FileNotFoundError:
+            return "Erreur : GitHub CLI 'gh' est introuvable."
+        except subprocess.TimeoutExpired:
+            return "Erreur : recuperation du compte GitHub expiree."
+        except OSError as erreur:
+            return (
+                "Erreur systeme GitHub CLI : "
+                f"{type(erreur).__name__}: {erreur}"
+            )
+
+        if proprietaire.returncode != 0:
+            details = (
+                proprietaire.stderr.strip()
+                or proprietaire.stdout.strip()
+                or "authentification GitHub indisponible"
+            )
+            return f"Erreur : impossible de recuperer le compte GitHub : {details}"
+
+        login = proprietaire.stdout.strip()
+
+        if not login:
+            return "Erreur : le compte GitHub authentifie est introuvable."
+
+        repo = f"{login}/{repo}"
+
+    contenu_b64 = base64.b64encode(
+        contenu.encode("utf-8")
+    ).decode("utf-8")
+
+    chemin_api = f"repos/{repo}/contents/{chemin}"
+
+    try:
+        lecture = subprocess.run(
+            [
+                "gh",
+                "api",
+                chemin_api,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=False,
+        )
+    except FileNotFoundError:
+        return "Erreur : GitHub CLI 'gh' est introuvable."
+    except subprocess.TimeoutExpired:
+        return "Erreur : lecture du fichier GitHub expiree."
+    except OSError as erreur:
+        return (
+            "Erreur systeme GitHub CLI : "
+            f"{type(erreur).__name__}: {erreur}"
+        )
+
+    sha = None
+
+    if lecture.returncode == 0:
+        try:
+            donnees = json.loads(lecture.stdout)
+            sha = donnees.get("sha")
+        except json.JSONDecodeError:
+            return "Erreur : reponse GitHub invalide lors de la lecture du fichier."
+    elif "HTTP 404" not in lecture.stderr:
+        details = (
+            lecture.stderr.strip()
+            or lecture.stdout.strip()
+            or "lecture GitHub impossible"
+        )
+        return f"Erreur GitHub : {details}"
+
+    commande = [
+        "gh",
+        "api",
+        chemin_api,
+        "--method",
+        "PUT",
+        "-f",
+        f"message={message}",
+        "-f",
+        f"content={contenu_b64}",
+    ]
+
+    if sha:
+        commande.extend(["-f", f"sha={sha}"])
+
+    try:
+        resultat = subprocess.run(
+            commande,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except FileNotFoundError:
+        return "Erreur : GitHub CLI 'gh' est introuvable."
+    except subprocess.TimeoutExpired:
+        return "Erreur : ecriture du fichier GitHub expiree."
+    except OSError as erreur:
+        return (
+            "Erreur systeme GitHub CLI : "
+            f"{type(erreur).__name__}: {erreur}"
+        )
+
+    if resultat.returncode != 0:
+        details = (
+            resultat.stderr.strip()
+            or resultat.stdout.strip()
+            or "ecriture GitHub impossible"
+        )
+        return f"Erreur GitHub : {details}"
+
+    return f"Fichier {chemin} envoye avec succes sur {repo}."
 
 def terminer_tache(nom):
     donnees = _charger_donnees()

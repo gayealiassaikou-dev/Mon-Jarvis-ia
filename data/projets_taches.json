@@ -19,6 +19,10 @@
         {
             "nom": "Voice Music",
             "statut": "en cours"
+        },
+        {
+            "nom": "Audit-Jarvis",
+            "statut": "termine"
         }
     ],
     "taches": [
@@ -56,6 +60,16 @@
             "nom": "Test diagnostic",
             "projet": "Mon-Jarvis-ia",
             "statut": "en attente"
+        },
+        {
+            "nom": "TEST JARVIS AUDIT",
+            "projet": "Mon-Jarvis-ia",
+            "statut": "en attente"
+        },
+        {
+            "nom": "Tester les outils de Jarvis",
+            "projet": "Audit-Jarvis",
+            "statut": "terminee"
         }
     ]
 }

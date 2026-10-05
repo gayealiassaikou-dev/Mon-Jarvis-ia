@@ -143,6 +143,666 @@
             "statut": "terminee",
             "date_creation": "2026-09-30T21:35:28",
             "date_maj": "2026-09-30T21:35:29"
+        },
+        {
+            "id": "8de332b2",
+            "nom": "Créer un dossier nommé \"naftoro ia\" pour les tests",
+            "objectif": "cree un dossiee test qui sappelle naftoro ia",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-02T21:50:11",
+            "date_maj": "2026-10-02T21:50:13"
+        },
+        {
+            "id": "4fc67635",
+            "nom": "Créer/écrire le fichier test.txt avec le texte \"Bonjour depuis Jarjar\"",
+            "objectif": "Écris dans un fichier test.txt le texte Bonjour depuis Jarvis",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-02T21:53:40",
+            "date_maj": "2026-10-02T21:53:43"
+        },
+        {
+            "id": "1240c4fe",
+            "nom": "Supprimer le fichier test.txt créé précédemment",
+            "objectif": "Supprime le fichier test.txt que nous avons créé pour le test",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-02T22:02:10",
+            "date_maj": "2026-10-02T22:02:12"
+        },
+        {
+            "id": "dc1f0b34",
+            "nom": "Supprimer le fichier test_fichier_qui_n_existe_pas.txt",
+            "objectif": "Supprime le fichier test_fichier_qui_n_existe_pas.txt",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-02T22:04:37",
+            "date_maj": "2026-10-02T22:04:39"
+        },
+        {
+            "id": "1041f4bd",
+            "nom": "Exécution d'un script Python fourni par l'utilisateur dans le répertoire ~/Mon-Jarvis-ia",
+            "objectif": "cd ~/Mon-Jarvis-ia && python3 - <<'PY'",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-10-02T22:05:23",
+            "date_maj": "2026-10-02T22:05:25"
+        },
+        {
+            "id": "e262957e",
+            "nom": "Supprimer le fichier .env du projet",
+            "objectif": "Supprime le fichier .env",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-02T22:06:21",
+            "date_maj": "2026-10-02T22:06:24"
+        },
+        {
+            "id": "9e6e3055",
+            "nom": "Exécuter le script principal de l'application Jarvis",
+            "objectif": "cd ~/Mon-Jarvis-ia && python3 core/main.py",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "en_cours",
+            "date_creation": "2026-10-02T22:07:14",
+            "date_maj": "2026-10-02T22:07:14"
+        },
+        {
+            "id": "9e5ccb72",
+            "nom": "Supprimer le dossier core du projet",
+            "objectif": "Supprime le dossier core",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-10-02T22:07:31",
+            "date_maj": "2026-10-02T22:07:35"
+        },
+        {
+            "id": "c47de5b6",
+            "nom": "Exécuter le script Python core/main.py dans le répertoire Mon-Jarvis-ia",
+            "objectif": "cd ~/Mon-Jarvis-ia && python3 core/main.py",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-10-02T22:09:56",
+            "date_maj": "2026-10-02T22:09:58"
+        },
+        {
+            "id": "10960b21",
+            "nom": "Supprimer le fichier .env du projet",
+            "objectif": "Supprime le fichier .env",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-10-02T22:10:30",
+            "date_maj": "2026-10-02T22:10:33"
+        },
+        {
+            "id": "fa777999",
+            "nom": "Créer le fichier test_audit_jarvis.txt avec le texte spécifié",
+            "objectif": "Crée le fichier test_audit_jarvis.txt avec le contenu \"Test outils Jarvis OK\".",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T13:53:14",
+            "date_maj": "2026-10-03T13:53:18"
+        },
+        {
+            "id": "b958845e",
+            "nom": "Créer le dossier test_audit_dossier",
+            "objectif": "Crée le dossier test_audit_dossier.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T13:56:00",
+            "date_maj": "2026-10-03T13:56:03"
+        },
+        {
+            "id": "01d08869",
+            "nom": "Supprimer le fichier test_audit_jarvis.txt",
+            "objectif": "Supprime le fichier test_audit_jarvis.txt.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T13:57:39",
+            "date_maj": "2026-10-03T13:57:41"
+        },
+        {
+            "id": "77f1c25a",
+            "nom": "Exécuter le script Python fourni dans le répertoire Mon-Jarvis-ia",
+            "objectif": "cd ~/Mon-Jarvis-ia && python3 - <<'PY'",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T14:02:09",
+            "date_maj": "2026-10-03T14:02:11"
+        },
+        {
+            "id": "6597fe1f",
+            "nom": "Créer un projet de test nommé Audit-Jarvis.",
+            "objectif": "Crée un projet de test appelé Audit-Jarvis.",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T14:06:55",
+            "date_maj": "2026-10-03T14:06:59"
+        },
+        {
+            "id": "018e986e",
+            "nom": "Marquer la tâche \"Tester les outils de Jarvis\" comme terminée dans le projet Audit-Jarvis.",
+            "objectif": "Marque la tâche \"Tester les outils de Jarvis\" comme terminée dans le projet Audit-Jarvis.",
+            "agents": [
+                "11_gestionnaire_outils_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T14:11:09",
+            "date_maj": "2026-10-03T14:11:11"
+        },
+        {
+            "id": "9b7f7c99",
+            "nom": "Supprimer la tâche TEST_SUPPRESSION_JARVIS du projet Audit-Jarvis",
+            "objectif": "Supprime la tâche \"TEST_SUPPRESSION_JARVIS\" du projet Audit-Jarvis.",
+            "agents": [
+                "11_gestionnaire_outils_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T14:22:11",
+            "date_maj": "2026-10-03T14:22:15"
+        },
+        {
+            "id": "3f56895b",
+            "nom": "Exécuter le script Python fourni dans le répertoire Mon-Jarvis-ia",
+            "objectif": "cd ~/Mon-Jarvis-ia && python3 - <<'PY'",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T14:23:12",
+            "date_maj": "2026-10-03T14:23:13"
+        },
+        {
+            "id": "79f23491",
+            "nom": "Créer un projet de test nommé TEST_SUPPRESSION_PROJET_JARVIS",
+            "objectif": "Crée un projet de test appelé TEST_SUPPRESSION_PROJET_JARVIS.",
+            "agents": [
+                "11_gestionnaire_outils_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T14:37:14",
+            "date_maj": "2026-10-03T14:37:17"
+        },
+        {
+            "id": "710f72ec",
+            "nom": "Supprimer le projet nommé TEST_SUPPRESSION_PROJET_JARVIS.",
+            "objectif": "Supprime le projet TEST_SUPPRESSION_PROJET_JARVIS.",
+            "agents": [
+                "11_gestionnaire_outils_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T14:37:49",
+            "date_maj": "2026-10-03T14:37:53"
+        },
+        {
+            "id": "3bdc6a72",
+            "nom": "Mettre le statut du projet Audit-Jarvis à terminé",
+            "objectif": "Modifie le statut du projet Audit-Jarvis en terminé.",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T14:39:08",
+            "date_maj": "2026-10-03T14:39:12"
+        },
+        {
+            "id": "d53b3488",
+            "nom": "Écrire le texte \"Test correction Phase 2\" dans le fichier TEST_PHASE2_CORRECTION_JARVIS.txt puis vérifier son contenu.",
+            "objectif": "Écris dans le fichier TEST_PHASE2_CORRECTION_JARVIS.txt le texte \"Test correction Phase 2\", puis vérifie que le fichier a bien été écrit.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T15:46:38",
+            "date_maj": "2026-10-03T15:46:42"
+        },
+        {
+            "id": "a2880028",
+            "nom": "Écrire le texte \"Test limite correction\" dans le fichier TEST_PHASE2_LIMITE_JARVIS.txt puis vérifier son contenu.",
+            "objectif": "Écris dans le fichier TEST_PHASE2_LIMITE_JARVIS.txt le texte \"Test limite correction\", puis vérifie que le fichier a bien été écrit.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T15:59:11",
+            "date_maj": "2026-10-03T15:59:16"
+        },
+        {
+            "id": "0bf5ab6b",
+            "nom": "Écrire le texte \"Test flux correction\" dans le fichier TEST_PHASE2_FLUX_REEL.txt",
+            "objectif": "Écris dans le fichier TEST_PHASE2_FLUX_REEL.txt le texte \"Test flux correction\".",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-03T16:07:11",
+            "date_maj": "2026-10-03T16:07:14"
+        },
+        {
+            "id": "9a62e0e9",
+            "nom": "Écrire le texte \"Correction réussie Phase 2\" dans le fichier TEST_PHASE2_CORRECTION_REUSSIE.txt",
+            "objectif": "Écris dans le fichier TEST_PHASE2_CORRECTION_REUSSIE.txt le texte \"Correction réussie Phase 2\".",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T16:07:53",
+            "date_maj": "2026-10-03T16:08:03"
+        },
+        {
+            "id": "0ce486a6",
+            "nom": "Écrire le texte \"Correction réussie Phase 2\" dans le fichier TEST_PHASE2_CORRECTION_REUSSIE.txt",
+            "objectif": "Écris dans le fichier TEST_PHASE2_CORRECTION_REUSSIE.txt le texte \"Correction réussie Phase 2\".",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-03T16:13:06",
+            "date_maj": "2026-10-03T16:13:10"
+        },
+        {
+            "id": "8138162c",
+            "nom": "Écrire le texte 'Test final Phase 2' dans le fichier TEST_PHASE2_FINAL.txt",
+            "objectif": "Écris dans le fichier TEST_PHASE2_FINAL.txt le texte \"Test final Phase 2\".",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T16:15:47",
+            "date_maj": "2026-10-03T16:15:57"
+        },
+        {
+            "id": "7e9e0a10",
+            "nom": "Créer un projet dans le dépôt Naftoro IA et y ajouter un fichier nommé 'tes'",
+            "objectif": "cree moi un projet dans mon depot naftoro ia cree unn ficher tes a linterieure du projet",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T19:38:13",
+            "date_maj": "2026-10-03T19:38:15"
+        },
+        {
+            "id": "bec8b6fd",
+            "nom": "Accéder au compte outil et utiliser le compte agent demandé",
+            "objectif": "Tiens, accède au compte bien d'outil et utilise le compte bien d'agent.",
+            "agents": [
+                "09_securite_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-10-03T19:55:40",
+            "date_maj": "2026-10-03T19:55:48"
+        },
+        {
+            "id": "d645967d",
+            "nom": "Créer le dépôt GitHub public Dande-Lenol sur le compte personnel de l'utilisateur.",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel.",
+            "agents": [
+                "07_automatisation_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T17:13:39",
+            "date_maj": "2026-10-04T17:13:40"
+        },
+        {
+            "id": "6813a0dc",
+            "nom": "Créer le dépôt GitHub public nommé Dande-Lenol sur le compte personnel de l'utilisateur",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T17:49:42",
+            "date_maj": "2026-10-04T17:49:45"
+        },
+        {
+            "id": "af67579a",
+            "nom": "Créer le dépôt GitHub public nommé Dande-Lenol sur le compte personnel de l'utilisateur",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T18:03:34",
+            "date_maj": "2026-10-04T18:03:36"
+        },
+        {
+            "id": "c6efa83a",
+            "nom": "Créer le projet Python Dandé Lenol localement, initialiser la structure et le README, puis créer le dépôt GitHub public associé et vérifier les deux.",
+            "objectif": "Crée le projet logiciel Dandé Lenol dans mon espace de travail. Initialise-le comme un projet Python avec une structure de base propre et un README.md. Crée également son dépôt GitHub associé sous mon compte personnel, en visibilité publique. Vérifie que le projet local et le dépôt GitHub ont bien été créés, puis donne-moi leurs emplacements et l’URL du dépôt.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T18:40:39",
+            "date_maj": "2026-10-04T18:40:41"
+        },
+        {
+            "id": "f5975989",
+            "nom": "Créer le projet Python Dandé Lenol localement avec structure de base et README, puis créer le dépôt GitHub public et vérifier les deux.",
+            "objectif": "Crée le projet logiciel Dandé Lenol dans mon espace de travail. Initialise-le comme un projet Python avec une structure de base propre et un README.md. Crée également son dépôt GitHub associé sous mon compte personnel, en visibilité publique. Vérifie que le projet local et le dépôt GitHub ont bien été créés, puis donne-moi leurs emplacements et l’URL du dépôt.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-04T18:50:49",
+            "date_maj": "2026-10-04T18:50:53"
+        },
+        {
+            "id": "d0a79ae0",
+            "nom": "Exécuter le script Python core/main.py",
+            "objectif": "python3 core/main.py",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T18:57:49",
+            "date_maj": "2026-10-04T18:58:10"
+        },
+        {
+            "id": "7057caeb",
+            "nom": "Créer un fichier README.md dans le dépôt GitHub Dande-Lenol avec une brève présentation du projet",
+            "objectif": "Ajoute un README.md au dépôt GitHub Dande-Lenol avec une présentation courte du projet.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T19:18:09",
+            "date_maj": "2026-10-04T19:18:10"
+        },
+        {
+            "id": "5dcb5bfb",
+            "nom": "Créer ou mettre à jour le fichier README.md du dépôt GitHub Dande-Lenol avec une courte présentation du projet.",
+            "objectif": "Ajoute un README.md au dépôt GitHub Dande-Lenol avec une présentation courte du projet.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T19:34:40",
+            "date_maj": "2026-10-04T19:34:41"
+        },
+        {
+            "id": "7dbc2103",
+            "nom": "Ajouter un fichier README.md avec une courte présentation au dépôt GitHub Dande-Lenol",
+            "objectif": "Ajoute un README.md au dépôt GitHub Dande-Lenol avec une présentation courte du projet.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-04T19:44:40",
+            "date_maj": "2026-10-04T19:44:48"
+        },
+        {
+            "id": "d82ed970",
+            "nom": "Ajouter un README.md au dépôt GitHub Dande-Lenol avec une brève présentation du projet.",
+            "objectif": "Ajoute un README.md au dépôt GitHub Dande-Lenol avec une présentation courte du projet.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T20:00:56",
+            "date_maj": "2026-10-04T20:00:58"
+        },
+        {
+            "id": "fa25fdfe",
+            "nom": "Ajouter un fichier README.md avec une courte présentation du projet au dépôt GitHub Dande-Lenol.",
+            "objectif": "Ajoute un README.md au dépôt GitHub Dande-Lenol avec une présentation courte du projet.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T21:06:21",
+            "date_maj": "2026-10-04T21:06:30"
+        },
+        {
+            "id": "b52b6881",
+            "nom": "Créer le fichier test_verification.txt dans le dépôt Dande-Lenol avec le contenu spécifié",
+            "objectif": "Écris dans le dépôt Dande-Lenol un fichier test_verification.txt avec le contenu : test de vérification réelle Samba Sarr.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T22:08:01",
+            "date_maj": "2026-10-04T22:08:03"
+        },
+        {
+            "id": "55bf4cb5",
+            "nom": "Créer le fichier test_verification.txt avec le contenu spécifié dans le dépôt Dande-Lenol",
+            "objectif": "Écris dans le dépôt Dande-Lenol un fichier test_verification.txt avec le contenu : test de vérification réelle Samba Sarr.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T22:27:05",
+            "date_maj": "2026-10-04T22:27:06"
+        },
+        {
+            "id": "dcda12b0",
+            "nom": "Ajouter la ligne TEST_SAMBA_SARR_VERIFICATION_GITHUB à la fin du README.md du dépôt GitHub Dande-Lenol",
+            "objectif": "Modifie le fichier README.md du dépôt GitHub Dande-Lenol en ajoutant exactement cette ligne à la fin : TEST_SAMBA_SARR_VERIFICATION_GITHUB",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T22:32:48",
+            "date_maj": "2026-10-04T22:32:49"
+        },
+        {
+            "id": "5b08dbe3",
+            "nom": "Ajouter la ligne TEST_SAMBA_SARR_VERIFICATION_GITHUB à la fin du README.md du dépôt GitHub Dande-Lenol",
+            "objectif": "Modifie le fichier README.md du dépôt GitHub Dande-Lenol en ajoutant exactement cette ligne à la fin : TEST_SAMBA_SARR_VERIFICATION_GITHUB",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-04T22:38:33",
+            "date_maj": "2026-10-04T22:38:35"
+        },
+        {
+            "id": "ab5868cd",
+            "nom": "Ajouter une ligne spécifique à la fin du README.md du dépôt GitHub Dande-Lenol",
+            "objectif": "Modifie le fichier README.md du dépôt GitHub Dande-Lenol en ajoutant exactement cette ligne à la fin : TEST_SAMBA_SARR_VERIFICATION_GITHUB",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-04T22:49:41",
+            "date_maj": "2026-10-04T22:49:56"
+        },
+        {
+            "id": "96070a9e",
+            "nom": "Créer le dépôt GitHub public nommé Dande-Lenol sur le compte personnel de l'utilisateur.",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel.",
+            "agents": [
+                "11_gestionnaire_outils_ia"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-04T23:31:45",
+            "date_maj": "2026-10-04T23:31:51"
+        },
+        {
+            "id": "cca53fc3",
+            "nom": "Créer le dépôt GitHub public nommé Dande-Lenol sur le compte personnel de l'utilisateur.",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel.",
+            "agents": [
+                "11_gestionnaire_outils_ia"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-04T23:32:50",
+            "date_maj": "2026-10-04T23:32:56"
+        },
+        {
+            "id": "2d8f0950",
+            "nom": "Créer le dépôt GitHub public Dande-Lenol sur le compte personnel.",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-05T07:21:56",
+            "date_maj": "2026-10-05T07:22:04"
+        },
+        {
+            "id": "55660d03",
+            "nom": "Créer le dépôt GitHub public nommé Dande-Lenol",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel.",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-05T07:31:23",
+            "date_maj": "2026-10-05T07:31:31"
+        },
+        {
+            "id": "8ef3bd40",
+            "nom": "Créer le dépôt GitHub public nommé Dande-Lenol sur le compte personnel de l'utilisateur",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-05T07:33:33",
+            "date_maj": "2026-10-05T07:33:41"
+        },
+        {
+            "id": "f96383cc",
+            "nom": "Créer le dépôt GitHub public nommé Dande-Lenol sur le compte personnel de l'utilisateur",
+            "objectif": "Crée le dépôt GitHub public Dande-Lenol sur mon compte GitHub personnel.",
+            "agents": [
+                "11_gestionnaire_outils_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-05T07:35:58",
+            "date_maj": "2026-10-05T07:36:08"
+        },
+        {
+            "id": "cee5ac89",
+            "nom": "Créer et peupler le dépôt GitHub du projet Python Dandé Lenol.",
+            "objectif": "Construis entièrement le projet Python Dandé Lenol.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "bloquee",
+            "date_creation": "2026-10-05T08:02:43",
+            "date_maj": "2026-10-05T08:02:50"
+        },
+        {
+            "id": "faafe0c9",
+            "nom": "Ajouter la configuration requise au projet",
+            "objectif": "6. Ajoute la configuration nécessaire.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-05T08:08:20",
+            "date_maj": "2026-10-05T08:08:41"
+        },
+        {
+            "id": "0ed79269",
+            "nom": "Créer ou mettre à jour la documentation professionnelle du projet.",
+            "objectif": "7. Ajoute une documentation professionnelle.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-05T08:08:43",
+            "date_maj": "2026-10-05T08:08:50"
+        },
+        {
+            "id": "274c3a1e",
+            "nom": "Ajouter des tests automatisés pertinents au projet existant",
+            "objectif": "8. Ajoute des tests automatisés pertinents.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-05T08:08:52",
+            "date_maj": "2026-10-05T08:09:02"
         }
     ]
 }

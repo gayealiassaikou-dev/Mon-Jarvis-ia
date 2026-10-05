@@ -3,7 +3,7 @@ import json
 import requests
 from dotenv import load_dotenv
 from ai_router import AIRouter
-from tools import lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier
+from tools import lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo
 
 load_dotenv()
 
@@ -82,6 +82,31 @@ OUTILS = [
     {
         "type": "function",
         "function": {
+            "name": "github_creer_repo",
+            "description": "Cree un depot GitHub avec l'authentification locale gh et verifie son existence",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nom": {
+                        "type": "string",
+                        "description": "Nom du nouveau depot GitHub"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description du depot"
+                    },
+                    "public": {
+                        "type": "boolean",
+                        "description": "True pour un depot public, False pour un depot prive"
+                    }
+                },
+                "required": ["nom"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "github_lister_repos",
             "description": "Liste les depots GitHub de l'utilisateur",
             "parameters": {"type": "object", "properties": {}}
@@ -110,7 +135,7 @@ OUTILS = [
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "repo": {"type": "string", "description": "Nom complet du depot, format utilisateur/repo"},
+                    "repo": {"type": "string", "description": "Nom du depot GitHub. Le nom simple du depot est suffisant, par exemple Dande-Lenol. Si seul le nom du depot est fourni, l outil determine automatiquement le compte GitHub authentifie. Le format utilisateur/repo est aussi accepte."},
                     "chemin": {"type": "string", "description": "Chemin du fichier dans le depot"},
                     "contenu": {"type": "string", "description": "Nouveau contenu du fichier"},
                     "message": {"type": "string", "description": "Message du commit"}
@@ -272,6 +297,7 @@ FONCTIONS_DISPONIBLES = {
     "supprimer_fichier": supprimer_fichier,
     "lister_fichiers": lister_fichiers,
     "creer_dossier": creer_dossier,
+    "github_creer_repo": github_creer_repo,
     "github_lister_repos": github_lister_repos,
     "github_lire_fichier": github_lire_fichier,
     "github_ecrire_fichier": github_ecrire_fichier,
@@ -310,6 +336,10 @@ class AIEngine:
         # Indique qu'une action d'outil a déjà été engagée
         # pendant la demande courante.
         self.action_engagee = False
+
+        # Mode action utilisé lorsque l'IA doit obligatoirement
+        # sélectionner un outil pour exécuter une action.
+        self.mode_action = False
 
         config_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
@@ -353,16 +383,41 @@ class AIEngine:
 
         self.router = AIRouter(self)
 
-    def demander(self, message, contexte="", historique=None, outils_autorises=None):
+    def demander(
+        self,
+        message,
+        contexte="",
+        historique=None,
+        outils_autorises=None,
+        mode_action=False,
+    ):
         # Nouvelle demande : aucune action n'est encore engagée.
         self.action_engagee = False
         self.derniers_resultats_outils = []
-        ancien_outils_autorises = getattr(self, "outils_autorises", None)
+
+        ancien_outils_autorises = getattr(
+            self,
+            "outils_autorises",
+            None,
+        )
+        ancien_mode_action = getattr(
+            self,
+            "mode_action",
+            False,
+        )
+
         self.outils_autorises = outils_autorises
+        self.mode_action = bool(mode_action)
+
         try:
-            return self.router.demander(message, contexte, historique)
+            return self.router.demander(
+                message,
+                contexte,
+                historique,
+            )
         finally:
             self.outils_autorises = ancien_outils_autorises
+            self.mode_action = ancien_mode_action
 
     def _obtenir_outils_autorises(self):
         outils_autorises = getattr(self, "outils_autorises", None)
@@ -415,10 +470,100 @@ class AIEngine:
         ]
         return True
 
-    def _executer_outil(self, nom_fonction, arguments):
-        outils_autorises = getattr(self, "outils_autorises", None)
+    def _valider_arguments_outil(self, nom_fonction, arguments):
+        schema = None
 
-        if outils_autorises is not None and nom_fonction not in outils_autorises:
+        for entree in OUTILS:
+            fonction = entree.get("function", {})
+            if fonction.get("name") == nom_fonction:
+                schema = fonction.get("parameters", {})
+                break
+
+        if schema is None:
+            return False, f"Erreur validation : schema introuvable pour loutil '{nom_fonction}'."
+
+        if not isinstance(arguments, dict):
+            return False, "Erreur validation : les arguments doivent etre un objet."
+
+        proprietes = schema.get("properties", {}) or {}
+        requis = schema.get("required", []) or []
+
+        manquants = [nom for nom in requis if nom not in arguments]
+        if manquants:
+            return False, (
+                "Erreur validation : argument(s) obligatoire(s) manquant(s) : "
+                + ", ".join(manquants)
+            )
+
+        inconnus = [nom for nom in arguments if nom not in proprietes]
+        if inconnus:
+            return False, (
+                f"Erreur validation : argument(s) non autorise(s) pour {nom_fonction} : "
+                + ", ".join(inconnus)
+            )
+
+        types = {
+            "string": str,
+            "object": dict,
+            "array": list,
+            "boolean": bool,
+            "number": (int, float),
+            "integer": int,
+        }
+
+        for nom, valeur in arguments.items():
+            type_attendu = proprietes[nom].get("type")
+
+            if type_attendu not in types:
+                continue
+
+            if type_attendu in ("number", "integer") and isinstance(valeur, bool):
+                return False, (
+                    f"Erreur validation : l'argument '{nom}' doit etre de type "
+                    f"{type_attendu}."
+                )
+
+            if not isinstance(valeur, types[type_attendu]):
+                return False, (
+                    f"Erreur validation : l'argument '{nom}' doit etre de type "
+                    f"{type_attendu}."
+                )
+
+        return True, None
+
+    def _executer_outil(self, nom_fonction, arguments):
+        # Etat 1 : l'outil est-il disponible ?
+        outil_disponible = (
+            nom_fonction in FONCTIONS_DISPONIBLES
+            or nom_fonction in {
+                "memoriser_info",
+                "rechercher_souvenir"
+            }
+        )
+
+        # Etat 2 : l'outil est-il autorise pour cette execution ?
+        outils_autorises = getattr(self, "outils_autorises", None)
+        outil_autorise = (
+            outils_autorises is None
+            or nom_fonction in outils_autorises
+        )
+
+        if not outil_disponible:
+            resultat = f"Erreur outil : outil inconnu : {nom_fonction}."
+            self.derniers_resultats_outils.append({
+                "outil": nom_fonction,
+                "arguments": arguments,
+                "statut": {
+                    "disponible": False,
+                    "autorise": False,
+                    "executable": False,
+                    "verifie": False
+                },
+                "resultat": str(resultat)
+            })
+            return resultat
+
+        if not outil_autorise:
             resultat = (
                 f"Erreur : loutil {nom_fonction} "
                 "nest pas autorise pour cette execution."
@@ -426,6 +571,12 @@ class AIEngine:
             self.derniers_resultats_outils.append({
                 "outil": nom_fonction,
                 "arguments": arguments,
+                "statut": {
+                    "disponible": True,
+                    "autorise": False,
+                    "executable": False,
+                    "verifie": False
+                },
                 "resultat": str(resultat)
             })
             return resultat
@@ -433,6 +584,30 @@ class AIEngine:
         # À partir de ce point, l'exécution d'un outil va réellement
         # pouvoir produire un effet. Une erreur ultérieure ne doit
         # donc pas provoquer automatiquement un fallback fournisseur.
+        arguments_valides, erreur_arguments = self._valider_arguments_outil(
+            nom_fonction,
+            arguments
+        )
+
+        if not arguments_valides:
+            resultat = erreur_arguments
+            self.derniers_resultats_outils.append({
+                "outil": nom_fonction,
+                "arguments": arguments,
+                "statut": {
+                    "disponible": True,
+                    "autorise": True,
+                    "executable": False,
+                    "verifie": False
+                },
+                "resultat": str(resultat),
+                "verification": {
+                    "verifie": False,
+                    "details": str(erreur_arguments)
+                }
+            })
+            return resultat
+
         self.action_engagee = True
 
         try:
@@ -470,11 +645,188 @@ class AIEngine:
         self.derniers_resultats_outils.append({
             "outil": nom_fonction,
             "arguments": arguments,
+            "statut": {
+                "disponible": True,
+                "autorise": True,
+                "executable": not str(resultat).startswith("Erreur"),
+                "verifie": verification.get("verifie", False)
+            },
             "resultat": str(resultat),
             "verification": verification
         })
 
         return resultat
+
+    def _verifier_github_ecrire_fichier(self, arguments, resultat):
+        # Relit le fichier sur GitHub et compare exactement au contenu demande.
+        import base64
+        import json
+        import subprocess
+        import time
+
+        if isinstance(resultat, str) and resultat.startswith("Erreur"):
+            return {"verifie": False, "details": f"L'ecriture GitHub a echoue : {resultat}"}
+
+        repo = arguments.get("repo")
+        chemin = arguments.get("chemin")
+        contenu = arguments.get("contenu")
+        if (not isinstance(repo, str) or not repo.strip()
+                or not isinstance(chemin, str) or not chemin.strip()
+                or not isinstance(contenu, str)):
+            return {"verifie": False, "details": "Verification impossible : repo, chemin ou contenu absent des arguments."}
+
+        repo = repo.strip()
+        chemin = chemin.strip()
+
+        try:
+            if "/" not in repo:
+                p = subprocess.run(["gh", "api", "user", "--jq", ".login"],
+                                   capture_output=True, text=True, timeout=15, check=False)
+                login = p.stdout.strip()
+                if p.returncode != 0 or not login:
+                    return {"verifie": False, "details": "Verification impossible : compte GitHub introuvable."}
+                repo = f"{login}/{repo}"
+
+            raison = ""
+            for tentative in range(2):
+                if tentative > 0:
+                    time.sleep(2)
+                lecture = subprocess.run(["gh", "api", f"repos/{repo}/contents/{chemin}"],
+                                         capture_output=True, text=True, timeout=15, check=False)
+                if lecture.returncode != 0:
+                    raison = "Lecture GitHub echouee : " + (lecture.stderr.strip() or lecture.stdout.strip() or "erreur inconnue")
+                    continue
+                donnees = json.loads(lecture.stdout)
+                if not isinstance(donnees, dict) or donnees.get("type") != "file":
+                    return {"verifie": False, "details": "Le chemin n'est pas un fichier sur GitHub."}
+                if donnees.get("encoding") != "base64":
+                    return {"verifie": False, "details": "Verification impossible : contenu non fourni en base64 (fichier trop gros ?)."}
+                distant = base64.b64decode(donnees.get("content", "")).decode("utf-8")
+                if distant == contenu:
+                    return {"verifie": True, "details": f"Le contenu de {repo}/{chemin} a ete relu sur GitHub et correspond exactement."}
+                raison = "Le contenu present sur GitHub differe du contenu demande."
+            return {"verifie": False, "details": raison}
+        except FileNotFoundError:
+            return {"verifie": False, "details": "Verification impossible : GitHub CLI 'gh' introuvable."}
+        except subprocess.TimeoutExpired:
+            return {"verifie": False, "details": "Verification impossible : lecture GitHub expiree."}
+        except ValueError as e:
+            return {"verifie": False, "details": f"Reponse GitHub illisible : {type(e).__name__}: {e}"}
+        except OSError as e:
+            return {"verifie": False, "details": f"Erreur systeme pendant la verification : {type(e).__name__}: {e}"}
+
+
+    def _verifier_github_creer_repo(self, arguments, resultat):
+        """
+        Verifie independamment qu'un depot GitHub existe
+        avec la visibilite demandee.
+        """
+        import json
+        import subprocess
+
+        if isinstance(resultat, str) and resultat.startswith("Erreur"):
+            return {
+                "verifie": False,
+                "details": f"La creation du depot a echoue : {resultat}"
+            }
+
+        nom = arguments.get("nom")
+        public = arguments.get("public", True)
+
+        if not isinstance(nom, str) or not nom.strip():
+            return {
+                "verifie": False,
+                "details": "Verification impossible : nom du depot absent."
+            }
+
+        if not isinstance(public, bool):
+            return {
+                "verifie": False,
+                "details": "Verification impossible : public doit etre booleen."
+            }
+
+        try:
+            verification = subprocess.run(
+                [
+                    "gh",
+                    "repo",
+                    "view",
+                    nom.strip(),
+                    "--json",
+                    "nameWithOwner,url,isPrivate",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+        except FileNotFoundError:
+            return {
+                "verifie": False,
+                "details": "Verification impossible : GitHub CLI 'gh' est introuvable."
+            }
+        except subprocess.TimeoutExpired:
+            return {
+                "verifie": False,
+                "details": "Verification GitHub expiree."
+            }
+        except OSError as erreur:
+            return {
+                "verifie": False,
+                "details": (
+                    "Erreur systeme pendant la verification GitHub : "
+                    f"{type(erreur).__name__}: {erreur}"
+                )
+            }
+
+        if verification.returncode != 0:
+            details = (
+                verification.stderr.strip()
+                or verification.stdout.strip()
+                or "aucun detail fourni"
+            )
+            return {
+                "verifie": False,
+                "details": (
+                    "Le depot GitHub n'a pas pu etre relu : "
+                    f"{details}"
+                )
+            }
+
+        try:
+            depot = json.loads(verification.stdout)
+        except json.JSONDecodeError as erreur:
+            return {
+                "verifie": False,
+                "details": (
+                    "Reponse GitHub invalide pendant la verification : "
+                    f"{erreur}"
+                )
+            }
+
+        est_prive = depot.get("isPrivate")
+        visibilite_attendue = not public
+
+        if est_prive != visibilite_attendue:
+            visibilite = "prive" if est_prive else "public"
+            attendue = "prive" if not public else "public"
+            return {
+                "verifie": False,
+                "details": (
+                    f"Le depot existe mais sa visibilite est {visibilite}; "
+                    f"la demande exige {attendue}."
+                )
+            }
+
+        return {
+            "verifie": True,
+            "details": (
+                "Le depot GitHub a ete relu independamment avec gh et "
+                "correspond a la visibilite demandee : "
+                f"{depot.get('nameWithOwner', nom)} "
+                f"({depot.get('url', 'URL inconnue')})."
+            )
+        }
 
     def _verifier_resultat_outil(self, nom_fonction, arguments, resultat):
         """
@@ -484,6 +836,12 @@ class AIEngine:
         verification specifique.
         Les autres outils restent inchanges jusqu'a leur audit individuel.
         """
+
+        if nom_fonction == "github_ecrire_fichier":
+            return self._verifier_github_ecrire_fichier(arguments, resultat)
+
+        if nom_fonction == "github_creer_repo":
+            return self._verifier_github_creer_repo(arguments, resultat)
 
         if nom_fonction == "creer_dossier":
             if isinstance(resultat, str) and resultat.startswith("Erreur"):
@@ -883,7 +1241,17 @@ class AIEngine:
             "details": "Le fichier a ete relu et son contenu correspond exactement a la demande."
         }
 
-    def _appeler_openai_compatible(self, url, headers, model, message, contexte="", historique=None, outils=None):
+    def _appeler_openai_compatible(
+    self,
+    url,
+    headers,
+    model,
+    message,
+    contexte="",
+    historique=None,
+    outils=None,
+    mode_action=False,
+):
         messages = []
         if contexte:
             messages.append({"role": "system", "content": contexte})
@@ -893,10 +1261,18 @@ class AIEngine:
                 messages.append({"role": "assistant", "content": echange["reponse"]})
         messages.append({"role": "user", "content": message})
 
-        for _ in range(5):
+        # Le mode action force uniquement la premiere selection
+        # d'un outil. Apres execution, le modele doit pouvoir
+        # produire librement sa reponse finale sans etre force
+        # a relancer un outil.
+        for iteration in range(5):
             payload = {"model": model, "messages": messages}
+
             if outils:
                 payload["tools"] = outils
+
+                if mode_action and iteration == 0:
+                    payload["tool_choice"] = "required"
             reponse = requests.post(url, headers=headers, json=payload, timeout=30)
             reponse.raise_for_status()
             data = reponse.json()
@@ -961,7 +1337,14 @@ class AIEngine:
             "Content-Type": "application/json"
         }
         return self._appeler_openai_compatible(
-            self.url, headers, self.model, message, contexte, historique, outils=self._obtenir_outils_autorises()
+            self.url,
+            headers,
+            self.model,
+            message,
+            contexte,
+            historique,
+            outils=self._obtenir_outils_autorises(),
+            mode_action=self.mode_action,
         )
     def _demander_openrouter(self, message, contexte="", historique=None):
         headers = {
@@ -969,7 +1352,14 @@ class AIEngine:
             "Content-Type": "application/json"
         }
         return self._appeler_openai_compatible(
-            self.openrouter_url, headers, self.openrouter_model, message, contexte, historique, outils=self._obtenir_outils_autorises()
+            self.openrouter_url,
+            headers,
+            self.openrouter_model,
+            message,
+            contexte,
+            historique,
+            outils=self._obtenir_outils_autorises(),
+            mode_action=self.mode_action,
         )
     def _demander_mistral(self, message, contexte="", historique=None):
         headers = {
@@ -977,7 +1367,14 @@ class AIEngine:
             "Content-Type": "application/json"
         }
         return self._appeler_openai_compatible(
-            self.mistral_url, headers, self.mistral_model, message, contexte, historique, outils=self._obtenir_outils_autorises()
+            self.mistral_url,
+            headers,
+            self.mistral_model,
+            message,
+            contexte,
+            historique,
+            outils=self._obtenir_outils_autorises(),
+            mode_action=self.mode_action,
         )
 
     def _demander_gemini(self, message, contexte="", historique=None):
