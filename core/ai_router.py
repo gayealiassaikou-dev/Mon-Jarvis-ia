@@ -1,4 +1,22 @@
+import re
 import time
+
+
+def masquer_secrets(texte):
+    """Remplace les cles API visibles dans un message d'erreur."""
+    texte = str(texte)
+    texte = re.sub(
+        r"(?i)([?&](?:key|api_key|apikey|token|access_token)=)"
+        r"[^&\s'\"]+",
+        r"\1***",
+        texte,
+    )
+    texte = re.sub(
+        r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]{8,}",
+        r"\1***",
+        texte,
+    )
+    return texte
 
 
 class AIRouter:
@@ -69,7 +87,7 @@ class AIRouter:
 
             except Exception as e:
                 erreurs.append(
-                    f"{fournisseur}: {str(e)}"
+                    f"{fournisseur}: {masquer_secrets(str(e))}"
                 )
 
                 if "429" in str(e) or "quota" in str(e).lower():
@@ -84,7 +102,7 @@ class AIRouter:
                     return (
                         "Erreur IA après exécution d'une action avec "
                         f"{fournisseur} : "
-                        f"{type(e).__name__}: {e}. "
+                        f"{type(e).__name__}: {masquer_secrets(str(e))}. "
                         "Fallback automatique annulé pour éviter "
                         "une double exécution."
                     )
