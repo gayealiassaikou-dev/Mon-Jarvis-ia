@@ -21,11 +21,44 @@ class ValidationManager:
         if not reponse or not reponse.strip():
             return self._rejeter("Reponse vide", mission_id)
 
+        # PATCH5_CONTRAT_OUTILS_V1
         if resultats_outils:
-            echecs = [r for r in resultats_outils if str(r.get("resultat", "")).strip().lower().startswith("erreur")]
+            echecs = [
+                r for r in resultats_outils
+                if (
+                    r.get("statut") in {
+                        "outil_inconnu",
+                        "non_autorise",
+                        "arguments_invalides",
+                        "echec_execution",
+                    }
+                    or r.get("execute") is False
+                )
+            ]
+
+            # Compatibilite prudente avec les anciens resultats.
+            if not echecs:
+                echecs = [
+                    r for r in resultats_outils
+                    if (
+                        str(r.get("resultat", ""))
+                        .strip()
+                        .lower()
+                        .startswith("erreur")
+                        and "statut" not in r
+                    )
+                ]
+
             if echecs:
-                details = "; ".join(f"{r['outil']}: {r['resultat']}" for r in echecs)
-                return self._rejeter(f"Action(s) en echec detectee(s) : {details}", mission_id)
+                details = "; ".join(
+                    f"{r.get('outil', 'outil inconnu')}: "
+                    f"{r.get('resultat', 'echec inconnu')}"
+                    for r in echecs
+                )
+                return self._rejeter(
+                    f"Action(s) en echec detectee(s) : {details}",
+                    mission_id,
+                )
 
         if resultats_outils:
             echecs_verification = [
@@ -91,8 +124,28 @@ class ValidationManager:
 
         echecs_action = [
             r for r in resultats_outils
-            if str(r.get("resultat", "")).strip().lower().startswith("erreur")
+            if (
+                r.get("statut") in {
+                    "outil_inconnu",
+                    "non_autorise",
+                    "arguments_invalides",
+                    "echec_execution",
+                }
+                or r.get("execute") is False
+            )
         ]
+
+        if not echecs_action:
+            echecs_action = [
+                r for r in resultats_outils
+                if (
+                    str(r.get("resultat", ""))
+                    .strip()
+                    .lower()
+                    .startswith("erreur")
+                    and "statut" not in r
+                )
+            ]
 
         if echecs_action:
             premier = echecs_action[0]
