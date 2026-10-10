@@ -367,15 +367,7 @@ class VoiceManager:
     def _normaliser_transcription(self, texte):
         """Normalise quelques erreurs STT connues sans réécrire la phrase."""
         if not texte:
-            texte_normalise = self._normaliser_transcription(texte)
-
-            if texte_normalise != texte:
-                print(
-                    f"[VOICE] Normalisation STT : "
-                    f"{texte!r} -> {texte_normalise!r}"
-                )
-
-            return texte_normalise
+            return texte
 
         import re
 
