@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from dotenv import load_dotenv
-from agent_permissions import filtrer_outils, TOUS_LES_OUTILS
+from core.agent_permissions import filtrer_outils, TOUS_LES_OUTILS
 
 load_dotenv()
 

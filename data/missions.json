@@ -803,6 +803,78 @@
             "statut": "bloquee",
             "date_creation": "2026-10-05T08:08:52",
             "date_maj": "2026-10-05T08:09:02"
+        },
+        {
+            "id": "f8b4d8a8",
+            "nom": "Initialiser et planifier le nouveau projet nommé Dandé Lenol.",
+            "objectif": "Tu vas maintenant travailler sur un projet appelé Dandé Lenol.",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-05T20:47:58",
+            "date_maj": "2026-10-05T20:48:09"
+        },
+        {
+            "id": "7436bd3d",
+            "nom": "Créer un fichier Python dans le projet",
+            "objectif": "2. Crée dedans un fichier Python.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-05T21:46:26",
+            "date_maj": "2026-10-05T21:46:29"
+        },
+        {
+            "id": "f0f09edf",
+            "nom": "Développer un programme exécutable",
+            "objectif": "- Le programme doit être exécutable.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-05T21:49:03",
+            "date_maj": "2026-10-05T21:49:12"
+        },
+        {
+            "id": "3f04ae9a",
+            "nom": "Créer du code réellement",
+            "objectif": "Ne décris pas seulement le code : crée-le réellement.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-10-05T21:49:33",
+            "date_maj": "2026-10-05T21:49:41"
+        },
+        {
+            "id": "da16e1f1",
+            "nom": "Créer un dossier dans le projet",
+            "objectif": "Est-ce que tu pourrais le marquer en dossier?",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-09T14:44:09",
+            "date_maj": "2026-10-09T14:44:50"
+        },
+        {
+            "id": "f2507cd1",
+            "nom": "Créer le dossier 'saikou' dans le projet 'dammde lenol'.",
+            "objectif": "cree un dossier saikou dans le projet dammde lenol",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-09T15:35:34",
+            "date_maj": "2026-10-09T15:35:38"
         }
     ]
 }

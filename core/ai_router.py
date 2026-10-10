@@ -28,10 +28,10 @@ class AIRouter:
     def __init__(self, ai_engine):
         self.ai_engine = ai_engine
         self.fournisseurs = [
-            "groq",
-            "gemini",
+            "mistral",
             "openrouter",
-            "mistral"
+            "groq",
+            "gemini"
         ]
 
         self.indisponibles = {}

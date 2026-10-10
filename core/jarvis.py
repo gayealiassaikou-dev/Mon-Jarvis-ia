@@ -1,26 +1,27 @@
 import json
 import os
-from agent_manager import AgentManager
-from command_manager import CommandManager
-from memory_manager import MemoryManager
-from skill_manager import SkillManager
-from brain_manager import BrainManager
-from logger import Logger
-from system_checker import SystemChecker
-from task_manager import TaskManager
-from project_manager import ProjectManager
-from data_manager import DataManager
-from event_manager import EventManager
-from context_manager import ContextManager
-from knowledge_manager import KnowledgeManager
-from decision_engine import DecisionEngine
-from mission_manager import MissionManager
-from coordination_manager import CoordinationManager
-from validation_manager import ValidationManager
-from voice_manager import VoiceManager
-from ai_engine import AIEngine
-from agent_permissions import obtenir_outils_autorises
-from contexte_ia import charger_contexte
+from core.agent_manager import AgentManager
+from core.command_manager import CommandManager
+from core.memory_manager import MemoryManager
+from core.skill_manager import SkillManager
+from core.brain_manager import BrainManager
+from core.logger import Logger
+from core.system_checker import SystemChecker
+from core.task_manager import TaskManager
+from core.project_manager import ProjectManager
+from core.data_manager import DataManager
+from core.event_manager import EventManager
+from core.context_manager import ContextManager
+from core.knowledge_manager import KnowledgeManager
+from core.decision_engine import DecisionEngine
+from core.mission_manager import MissionManager
+from core.coordination_manager import CoordinationManager
+from core.validation_manager import ValidationManager
+from core.voice_manager import VoiceManager
+from core.ai_engine import AIEngine
+from core.agent_permissions import obtenir_outils_autorises
+from core.contexte_ia import charger_contexte
+from core.paths import PROJECT_ROOT
 
 
 class Jarvis:
@@ -57,7 +58,7 @@ class Jarvis:
         self.version = self.config["version"]
 
     def charger_config(self):
-        chemin = os.path.join("config", "settings.json")
+        chemin = PROJECT_ROOT / "config" / "settings.json"
 
         with open(chemin, "r", encoding="utf-8") as fichier:
             return json.load(fichier)
@@ -101,6 +102,8 @@ class Jarvis:
             "repasse en texte"
         ]
 
+        derniere_reponse_texte = None
+
         while True:
             try:
                 commande = input("Vous : ").strip()
@@ -120,11 +123,65 @@ class Jarvis:
                 print("Samba Sarr arrêté.")
                 break
 
+            commandes_lecture = (
+                "lis tout le résultat à haute voix",
+                "lis tout le resultat a haute voix",
+                "lis la dernière réponse",
+                "lis la derniere reponse",
+                "lis ta réponse à haute voix",
+                "lis ta reponse a haute voix",
+                "lis le résultat à haute voix",
+                "lis le resultat a haute voix",
+                "lis à haute voix",
+                "lis a haute voix",
+                "réponds-moi à haute voix",
+                "reponds-moi a haute voix",
+                "réponds moi à haute voix",
+                "reponds moi a haute voix",
+                "répond moi à haute voix",
+                "repond moi a haute voix",
+                "réponds à haute voix",
+                "reponds a haute voix",
+            )
+
+            phrase_lecture = next(
+                (p for p in commandes_lecture if p in commande_lower),
+                None
+            )
+
+            if phrase_lecture:
+                debut_phrase = commande_lower.index(phrase_lecture)
+                question = (
+                    commande[:debut_phrase]
+                    + commande[debut_phrase + len(phrase_lecture):]
+                ).strip(" ,.!?;:-")
+
+                if question:
+                    reponse = self.traiter_commande(
+                        question,
+                        retourner_reponse=True
+                    )
+                    if isinstance(reponse, str) and reponse.strip():
+                        derniere_reponse_texte = reponse
+                        print("[Lecture de la réponse à haute voix...]")
+                        self.voice_manager.parler(reponse)
+                elif derniere_reponse_texte:
+                    print("[Lecture de la dernière réponse...]")
+                    self.voice_manager.parler(derniere_reponse_texte)
+                else:
+                    print("Aucune réponse précédente à lire.")
+                continue
+
             if any(mot in commande_lower for mot in mots_declencheurs_vocal):
                 self.mode_vocal(mots_retour_texte)
                 continue
 
-            self.traiter_commande(commande)
+            reponse_texte = self.traiter_commande(
+                commande,
+                retourner_reponse=True
+            )
+            if isinstance(reponse_texte, str) and reponse_texte.strip():
+                derniere_reponse_texte = reponse_texte
 
     def mode_vocal(self, mots_retour_texte):
         print()

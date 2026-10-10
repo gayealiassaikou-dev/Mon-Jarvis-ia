@@ -21,6 +21,37 @@ class ValidationManager:
         if not reponse or not reponse.strip():
             return self._rejeter("Reponse vide", mission_id)
 
+        # PATCH6_CONTRAT_RESULTATS_STRICT_V1
+        if resultats_outils:
+            champs_obligatoires = {
+                "outil", "statut", "disponible", "autorise",
+                "arguments_valides", "execute", "resultat",
+                "verification",
+            }
+            for index, resultat_outil in enumerate(resultats_outils):
+                if not isinstance(resultat_outil, dict):
+                    return self._rejeter(
+                        f"Resultat d'outil invalide a l'index {index} : "
+                        "un dictionnaire est attendu.",
+                        mission_id,
+                    )
+
+                champs_absents = champs_obligatoires - resultat_outil.keys()
+                if champs_absents:
+                    details = ", ".join(sorted(champs_absents))
+                    return self._rejeter(
+                        f"Contrat de resultat incomplet a l'index {index} : "
+                        f"champs absents : {details}.",
+                        mission_id,
+                    )
+
+                if not isinstance(resultat_outil.get("verification"), dict):
+                    return self._rejeter(
+                        f"Verification invalide pour l'outil "
+                        f"'{resultat_outil.get('outil', 'inconnu')}'.",
+                        mission_id,
+                    )
+
         # PATCH5_CONTRAT_OUTILS_V1
         if resultats_outils:
             echecs = [

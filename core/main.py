@@ -1,4 +1,4 @@
-from jarvis import Jarvis
+from core.jarvis import Jarvis
 
 
 def main():

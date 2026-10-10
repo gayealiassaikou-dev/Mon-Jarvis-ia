@@ -1,0 +1,21 @@
+{
+  "jarvis": {
+    "name": "Jarvis",
+    "version": "1.0.0",
+    "language": "fr",
+    "mode": "development"
+  },
+
+  "memory": {
+    "enabled": true,
+    "path": "memory/"
+  },
+
+  "brain": {
+    "path": "brain/"
+  },
+
+  "agents": {
+    "path": "agents/"
+  }
+}

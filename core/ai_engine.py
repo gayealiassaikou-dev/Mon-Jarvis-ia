@@ -2,8 +2,8 @@ import os
 import json
 import requests
 from dotenv import load_dotenv
-from ai_router import AIRouter
-from tools import lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
+from core.ai_router import AIRouter
+from core.tools import lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
 
 load_dotenv()
 
@@ -503,21 +503,20 @@ class AIEngine:
 
     def rejouer_outil_echoue(self, outil, outils_autorises=None):
         """
-        Rejoue UNE seule fois un outil dont la verification a echoue,
-        avec les memes arguments, puis remplace l'ancien resultat en
-        echec par le nouveau. Retourne True si le rejeu a eu lieu.
-        L'autorisation doit deja avoir ete donnee par
-        ValidationManager.autoriser_correction.
+        Rejoue un outil en echec une seule fois.
+        Ne confirme le succes que si le nouveau resultat est verifie.
+        Conserve les diagnostics en cas de nouvel echec.
         """
         entree = None
-        for r in self.derniers_resultats_outils:
-            verification = r.get("verification")
+
+        for resultat in reversed(self.derniers_resultats_outils):
+            verification = resultat.get("verification")
             if (
-                r.get("outil") == outil
+                resultat.get("outil") == outil
                 and isinstance(verification, dict)
                 and verification.get("verifie") is False
             ):
-                entree = r
+                entree = resultat
                 break
 
         if entree is None:
@@ -527,17 +526,43 @@ class AIEngine:
         if not isinstance(arguments, dict):
             return False
 
-        ancien_outils_autorises = getattr(self, "outils_autorises", None)
+        nombre_avant = len(self.derniers_resultats_outils)
+        anciennes_autorisations = getattr(self, "outils_autorises", None)
         self.outils_autorises = outils_autorises
+
         try:
             self._executer_outil(outil, dict(arguments))
         except Exception:
             return False
         finally:
-            self.outils_autorises = ancien_outils_autorises
+            self.outils_autorises = anciennes_autorisations
+
+        nouveaux_resultats = self.derniers_resultats_outils[nombre_avant:]
+        nouveau = next(
+            (
+                resultat
+                for resultat in reversed(nouveaux_resultats)
+                if resultat.get("outil") == outil
+                and resultat.get("arguments") == arguments
+            ),
+            None,
+        )
+
+        if not isinstance(nouveau, dict):
+            return False
+
+        verification = nouveau.get("verification")
+        if (
+            nouveau.get("statut") != "succes"
+            or not isinstance(verification, dict)
+            or verification.get("verifie") is not True
+        ):
+            return False
 
         self.derniers_resultats_outils[:] = [
-            r for r in self.derniers_resultats_outils if r is not entree
+            resultat
+            for resultat in self.derniers_resultats_outils
+            if resultat is not entree
         ]
         return True
 
@@ -599,6 +624,39 @@ class AIEngine:
                     f"Erreur validation : l'argument '{nom}' doit etre de type "
                     f"{type_attendu}."
                 )
+
+        for nom, valeur in arguments.items():
+            regles = proprietes[nom]
+
+            if "enum" in regles and valeur not in regles["enum"]:
+                return False, (
+                    f"Erreur validation : l'argument '{nom}' doit etre l'une "
+                    f"des valeurs {regles['enum']}."
+                )
+
+            if isinstance(valeur, str):
+                if "minLength" in regles and len(valeur) < regles["minLength"]:
+                    return False, (
+                        f"Erreur validation : l'argument '{nom}' doit contenir "
+                        f"au moins {regles['minLength']} caracteres."
+                    )
+                if "maxLength" in regles and len(valeur) > regles["maxLength"]:
+                    return False, (
+                        f"Erreur validation : l'argument '{nom}' doit contenir "
+                        f"au plus {regles['maxLength']} caracteres."
+                    )
+
+            if isinstance(valeur, (int, float)) and not isinstance(valeur, bool):
+                if "minimum" in regles and valeur < regles["minimum"]:
+                    return False, (
+                        f"Erreur validation : l'argument '{nom}' doit etre "
+                        f">= {regles['minimum']}."
+                    )
+                if "maximum" in regles and valeur > regles["maximum"]:
+                    return False, (
+                        f"Erreur validation : l'argument '{nom}' doit etre "
+                        f"<= {regles['maximum']}."
+                    )
 
         return True, None
 
@@ -1572,6 +1630,6 @@ class AIEngine:
                 payload["contents"] = contents
             else:
                 textes = [p.get("text", "") for p in candidat.get("parts", [])]
-                return "[Secours Gemini] " + "".join(textes)
+                return "".join(textes)
 
         raise Exception("Trop d'appels d'outils enchaines (Gemini).")

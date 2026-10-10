@@ -1,0 +1,429 @@
+diff --git a/core/ai_engine.py b/core/ai_engine.py
+index bdec125..a33ea93 100644
+--- a/core/ai_engine.py
++++ b/core/ai_engine.py
+@@ -419,17 +419,88 @@ class AIEngine:
+             self.outils_autorises = ancien_outils_autorises
+             self.mode_action = ancien_mode_action
+ 
++    # PATCH5_CONTRAT_OUTILS_V1
+     def _obtenir_outils_autorises(self):
++        """
++        Retourne uniquement les outils explicitement autorisés.
++
++        Contrat de sécurité :
++        - None -> aucun outil
++        - [] -> aucun outil
++        - liste explicite -> uniquement cette liste
++        """
+         outils_autorises = getattr(self, "outils_autorises", None)
+ 
+-        if outils_autorises is None:
+-            return OUTILS
++        if not outils_autorises:
++            return []
++
++        if not isinstance(outils_autorises, (list, tuple, set)):
++            return []
++
++        autorises = set(outils_autorises)
+ 
+         return [
+             outil for outil in OUTILS
+-            if outil.get("function", {}).get("name") in outils_autorises
++            if outil.get("function", {}).get("name") in autorises
+         ]
+ 
++    def _normaliser_resultat_outil(
++        self,
++        nom_fonction,
++        arguments,
++        resultat,
++        *,
++        disponible,
++        autorise,
++        arguments_valides,
++        execute,
++        verification=None,
++        statut=None,
++    ):
++        """
++        Construit le contrat uniforme d'un résultat d'outil.
++
++        Ce dictionnaire devient la source de vérité pour la validation.
++        Le texte de 'resultat' reste destiné à l'explication humaine.
++        """
++        verification = verification or {
++            "verifie": False,
++            "details": "Aucune verification effectuee."
++        }
++
++        if statut is None:
++            if not disponible:
++                statut = "outil_inconnu"
++            elif not autorise:
++                statut = "non_autorise"
++            elif not arguments_valides:
++                statut = "arguments_invalides"
++            elif not execute:
++                statut = "echec_execution"
++            elif verification.get("verifie") is False:
++                statut = "verification_echec"
++            else:
++                statut = "succes"
++
++        return {
++            "outil": nom_fonction,
++            "arguments": arguments,
++            "statut": statut,
++            "disponible": bool(disponible),
++            "autorise": bool(autorise),
++            "arguments_valides": bool(arguments_valides),
++            "execute": bool(execute),
++            "resultat": str(resultat),
++            "verification": verification,
++        }
++
++    def _enregistrer_resultat_outil(self, resultat):
++        """
++        Enregistre un résultat d'outil sous le contrat Patch 5.
++        """
++        self.derniers_resultats_outils.append(resultat)
++        return resultat
++
+     def rejouer_outil_echoue(self, outil, outils_autorises=None):
+         """
+         Rejoue UNE seule fois un outil dont la verification a echoue,
+@@ -532,94 +603,138 @@ class AIEngine:
+         return True, None
+ 
+     def _executer_outil(self, nom_fonction, arguments):
+-        # Etat 1 : l'outil est-il disponible ?
++        """
++        Exécute un outil après contrôle strict du contrat.
++
++        Séquence :
++        1. disponibilité ;
++        2. autorisation ;
++        3. validation des arguments ;
++        4. exécution réelle ;
++        5. vérification indépendante ;
++        6. enregistrement structuré.
++
++        'execute=True' signifie que la fonction de l'outil a réellement
++        été appelée. Cela ne signifie pas que l'action a réussi.
++        """
++
++        # -----------------------------------------------------
++        # Etat 1 : disponibilité
++        # -----------------------------------------------------
+         outil_disponible = (
+             nom_fonction in FONCTIONS_DISPONIBLES
+             or nom_fonction in {
+                 "memoriser_info",
+-                "rechercher_souvenir"
++                "rechercher_souvenir",
+             }
+         )
+ 
+-        # Etat 2 : l'outil est-il autorise pour cette execution ?
+-        outils_autorises = getattr(self, "outils_autorises", None)
+-        outil_autorise = (
+-            outils_autorises is None
+-            or nom_fonction in outils_autorises
+-        )
+-
+         if not outil_disponible:
+             resultat = f"Erreur outil : outil inconnu : {nom_fonction}."
+-            self.derniers_resultats_outils.append({
+-                "outil": nom_fonction,
+-                "arguments": arguments,
+-                "statut": {
+-                    "disponible": False,
+-                    "autorise": False,
+-                    "executable": False,
+-                    "verifie": False
++
++            entree = self._normaliser_resultat_outil(
++                nom_fonction,
++                arguments,
++                resultat,
++                disponible=False,
++                autorise=False,
++                arguments_valides=False,
++                execute=False,
++                verification={
++                    "verifie": False,
++                    "details": "Outil inconnu."
+                 },
+-                "resultat": str(resultat)
+-            })
++                statut="outil_inconnu",
++            )
++
++            self._enregistrer_resultat_outil(entree)
+             return resultat
+ 
++        # -----------------------------------------------------
++        # Etat 2 : autorisation
++        # -----------------------------------------------------
++        outils_autorises = getattr(self, "outils_autorises", None)
++
++        # Deny-by-default :
++        # None et [] signifient aucun outil autorisé.
++        outil_autorise = (
++            isinstance(outils_autorises, (list, tuple, set))
++            and nom_fonction in outils_autorises
++        )
++
+         if not outil_autorise:
+             resultat = (
+                 f"Erreur : loutil {nom_fonction} "
+                 "nest pas autorise pour cette execution."
+             )
+-            self.derniers_resultats_outils.append({
+-                "outil": nom_fonction,
+-                "arguments": arguments,
+-                "statut": {
+-                    "disponible": True,
+-                    "autorise": False,
+-                    "executable": False,
+-                    "verifie": False
++
++            entree = self._normaliser_resultat_outil(
++                nom_fonction,
++                arguments,
++                resultat,
++                disponible=True,
++                autorise=False,
++                arguments_valides=False,
++                execute=False,
++                verification={
++                    "verifie": False,
++                    "details": "Outil non autorise."
+                 },
+-                "resultat": str(resultat)
+-            })
++                statut="non_autorise",
++            )
++
++            self._enregistrer_resultat_outil(entree)
+             return resultat
+ 
+-        # À partir de ce point, l'exécution d'un outil va réellement
+-        # pouvoir produire un effet. Une erreur ultérieure ne doit
+-        # donc pas provoquer automatiquement un fallback fournisseur.
++        # -----------------------------------------------------
++        # Etat 3 : validation des arguments
++        # -----------------------------------------------------
+         arguments_valides, erreur_arguments = self._valider_arguments_outil(
+             nom_fonction,
+-            arguments
++            arguments,
+         )
+ 
+         if not arguments_valides:
+             resultat = erreur_arguments
+-            self.derniers_resultats_outils.append({
+-                "outil": nom_fonction,
+-                "arguments": arguments,
+-                "statut": {
+-                    "disponible": True,
+-                    "autorise": True,
+-                    "executable": False,
+-                    "verifie": False
+-                },
+-                "resultat": str(resultat),
+-                "verification": {
++
++            entree = self._normaliser_resultat_outil(
++                nom_fonction,
++                arguments,
++                resultat,
++                disponible=True,
++                autorise=True,
++                arguments_valides=False,
++                execute=False,
++                verification={
+                     "verifie": False,
+-                    "details": str(erreur_arguments)
+-                }
+-            })
++                    "details": str(erreur_arguments),
++                },
++                statut="arguments_invalides",
++            )
++
++            self._enregistrer_resultat_outil(entree)
+             return resultat
+ 
++        # A partir d'ici, un appel réel peut produire un effet.
+         self.action_engagee = True
+ 
++        # -----------------------------------------------------
++        # Etat 4 : exécution réelle
++        # -----------------------------------------------------
++        execute = False
++
+         try:
++            execute = True
++
+             if nom_fonction == "memoriser_info" and self.memory_manager:
+                 resultat = self.memory_manager.memoriser(
+                     arguments.get("categorie"),
+-                    arguments.get("contenu")
++                    arguments.get("contenu"),
+                 )
+ 
+             elif nom_fonction == "rechercher_souvenir" and self.memory_manager:
+                 resultat = self.memory_manager.rechercher_souvenir(
+-                    arguments.get("mot_cle")
++                    arguments.get("mot_cle"),
+                 )
+ 
+             else:
+@@ -630,30 +745,46 @@ class AIEngine:
+                 else:
+                     resultat = fonction(**arguments)
+ 
+-        except Exception as e:
++        except Exception as exc:
+             resultat = (
+                 "Erreur outil : exception pendant l'exécution : "
+-                f"{type(e).__name__}: {e}"
++                f"{type(exc).__name__}: {exc}"
+             )
+ 
++        # -----------------------------------------------------
++        # Etat 5 : vérification indépendante
++        # -----------------------------------------------------
+         verification = self._verifier_resultat_outil(
+             nom_fonction,
+             arguments,
+-            resultat
++            resultat,
+         )
+ 
+-        self.derniers_resultats_outils.append({
+-            "outil": nom_fonction,
+-            "arguments": arguments,
+-            "statut": {
+-                "disponible": True,
+-                "autorise": True,
+-                "executable": not str(resultat).startswith("Erreur"),
+-                "verifie": verification.get("verifie", False)
+-            },
+-            "resultat": str(resultat),
+-            "verification": verification
+-        })
++        # -----------------------------------------------------
++        # Etat 6 : contrat final
++        # -----------------------------------------------------
++        if not execute:
++            statut = "echec_execution"
++        elif isinstance(verification, dict) and verification.get("verifie") is False:
++            statut = "verification_echec"
++        elif str(resultat).startswith("Erreur"):
++            statut = "echec_execution"
++        else:
++            statut = "succes"
++
++        entree = self._normaliser_resultat_outil(
++            nom_fonction,
++            arguments,
++            resultat,
++            disponible=True,
++            autorise=True,
++            arguments_valides=True,
++            execute=execute,
++            verification=verification,
++            statut=statut,
++        )
++
++        self._enregistrer_resultat_outil(entree)
+ 
+         return resultat
+ 
+diff --git a/core/validation_manager.py b/core/validation_manager.py
+index 7e0803b..f869159 100644
+--- a/core/validation_manager.py
++++ b/core/validation_manager.py
+@@ -21,11 +21,44 @@ class ValidationManager:
+         if not reponse or not reponse.strip():
+             return self._rejeter("Reponse vide", mission_id)
+ 
++        # PATCH5_CONTRAT_OUTILS_V1
+         if resultats_outils:
+-            echecs = [r for r in resultats_outils if str(r.get("resultat", "")).strip().lower().startswith("erreur")]
++            echecs = [
++                r for r in resultats_outils
++                if (
++                    r.get("statut") in {
++                        "outil_inconnu",
++                        "non_autorise",
++                        "arguments_invalides",
++                        "echec_execution",
++                    }
++                    or r.get("execute") is False
++                )
++            ]
++
++            # Compatibilite prudente avec les anciens resultats.
++            if not echecs:
++                echecs = [
++                    r for r in resultats_outils
++                    if (
++                        str(r.get("resultat", ""))
++                        .strip()
++                        .lower()
++                        .startswith("erreur")
++                        and "statut" not in r
++                    )
++                ]
++
+             if echecs:
+-                details = "; ".join(f"{r['outil']}: {r['resultat']}" for r in echecs)
+-                return self._rejeter(f"Action(s) en echec detectee(s) : {details}", mission_id)
++                details = "; ".join(
++                    f"{r.get('outil', 'outil inconnu')}: "
++                    f"{r.get('resultat', 'echec inconnu')}"
++                    for r in echecs
++                )
++                return self._rejeter(
++                    f"Action(s) en echec detectee(s) : {details}",
++                    mission_id,
++                )
+ 
+         if resultats_outils:
+             echecs_verification = [
+@@ -91,9 +124,29 @@ class ValidationManager:
+ 
+         echecs_action = [
+             r for r in resultats_outils
+-            if str(r.get("resultat", "")).strip().lower().startswith("erreur")
++            if (
++                r.get("statut") in {
++                    "outil_inconnu",
++                    "non_autorise",
++                    "arguments_invalides",
++                    "echec_execution",
++                }
++                or r.get("execute") is False
++            )
+         ]
+ 
++        if not echecs_action:
++            echecs_action = [
++                r for r in resultats_outils
++                if (
++                    str(r.get("resultat", ""))
++                    .strip()
++                    .lower()
++                    .startswith("erreur")
++                    and "statut" not in r
++                )
++            ]
++
+         if echecs_action:
+             premier = echecs_action[0]
+             outil = premier.get("outil")

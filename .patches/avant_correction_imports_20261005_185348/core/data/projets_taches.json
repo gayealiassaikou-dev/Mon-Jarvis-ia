@@ -1,0 +1,35 @@
+{
+    "projets": [
+        {
+            "nom": "Halé Bou Rér",
+            "statut": "en cours"
+        }
+    ],
+    "taches": [
+        {
+            "nom": "Definir le MVP complet (fonctionnalites, ecrans)",
+            "projet": "Halé Bou Rér",
+            "statut": "terminee"
+        },
+        {
+            "nom": "Concevoir maquettes des ecrans principaux",
+            "projet": "Halé Bou Rér",
+            "statut": "terminee"
+        },
+        {
+            "nom": "Choisir architecture technique (Flask + stockage photos)",
+            "projet": "Halé Bou Rér",
+            "statut": "terminee"
+        },
+        {
+            "nom": "Definir regles de moderation et protection des donnees",
+            "projet": "Halé Bou Rér",
+            "statut": "terminee"
+        },
+        {
+            "nom": "Creer structure du projet (dossiers, app.py)",
+            "projet": "Halé Bou Rér",
+            "statut": "en attente"
+        }
+    ]
+}

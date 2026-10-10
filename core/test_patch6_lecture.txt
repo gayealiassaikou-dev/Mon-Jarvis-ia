@@ -1,0 +1,2 @@
+TEST PATCH 6
+lecture independante OK

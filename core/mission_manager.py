@@ -50,12 +50,32 @@ class MissionManager:
         return mission
 
     def mettre_a_jour_statut(self, mission_id, nouveau_statut):
+        transitions_autorisees = {
+            "nouvelle": {"en_cours", "annulee"},
+            "en_cours": {"terminee", "bloquee", "annulee"},
+            "bloquee": {"en_cours", "annulee"},
+            "terminee": set(),
+            "annulee": set(),
+        }
+
         if nouveau_statut not in STATUTS_VALIDES:
             return f"Statut invalide. Statuts possibles : {', '.join(STATUTS_VALIDES)}"
 
         donnees = self._charger()
         for mission in donnees["missions"]:
             if mission["id"] == mission_id:
+                statut_actuel = mission.get("statut")
+
+                if nouveau_statut == statut_actuel:
+                    return f"Mission {mission_id} deja au statut : {statut_actuel}"
+
+                autorises = transitions_autorisees.get(statut_actuel, set())
+                if nouveau_statut not in autorises:
+                    return (
+                        f"Transition refusee pour la mission {mission_id} : "
+                        f"{statut_actuel} -> {nouveau_statut}."
+                    )
+
                 mission["statut"] = nouveau_statut
                 mission["date_maj"] = datetime.now().isoformat(timespec="seconds")
                 self._sauvegarder(donnees)
