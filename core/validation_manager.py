@@ -17,9 +17,19 @@ class ValidationManager:
             "erreur ia"
         ]
 
-    def valider(self, reponse, mission_id=None, resultats_outils=None):
+    def valider(self, reponse, mission_id=None, resultats_outils=None,
+                outils_attendus=False):
         if not reponse or not reponse.strip():
             return self._rejeter("Reponse vide", mission_id)
+
+        # Une mission qui attendait des outils ne peut pas etre validee
+        # sans aucun resultat d'outil : le texte du modele n'est pas une preuve.
+        if outils_attendus and mission_id and not resultats_outils:
+            return self._rejeter(
+                "Aucun outil execute alors que la mission en attendait : "
+                "reussite non prouvee.",
+                mission_id,
+            )
 
         # PATCH6_CONTRAT_RESULTATS_STRICT_V1
         if resultats_outils:

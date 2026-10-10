@@ -383,7 +383,8 @@ class Jarvis:
                 mode_action=bool(outils_autorises),
             )
             validation = self.validation_manager.valider(
-                reponse, mission_id, self.ai_engine.derniers_resultats_outils
+                reponse, mission_id, self.ai_engine.derniers_resultats_outils,
+                outils_attendus=bool(outils_autorises),
             )
 
             # Le CoordinationManager décide de la suite à donner.
