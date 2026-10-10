@@ -16,6 +16,8 @@ depuis la reprise. Il faudra y ajouter les autres au fur et a mesure.
 | 3 | Mission declaree terminee sans action reelle (mission af67579a) | core/validation_manager.py, core/jarvis.py | valider() ne controlait rien quand la liste de resultats d'outils etait vide | Parametre outils_attendus : une mission qui attend des outils sans resultat est rejetee | tests/test_outils_attendus.py (5 tests) | d020638 | Corrige et teste |
 | 4 | Chemin complet du tool calling non teste | core/ai_engine.py | Tests uniquement par morceaux | Test avec faux fournisseur : succes prouve, fausse reussite, outil non autorise, outil qui ment | tests/test_bout_en_bout_outils.py (4 tests) | a2f2030 | Teste |
 | 5 | Double execution possible lors d'un fallback | core/ai_router.py | Risque identifie, protection deja presente mais sans test | Aucune modification du code | tests/test_routeur_double_execution.py (4 tests) | a3879d6 | Protection confirmee par test |
+| 6 | Politique de correction automatique non testee | core/validation_manager.py (autoriser_correction), core/coordination_manager.py | Regles correctes mais non verifiees par des tests | Aucune modification du code : seul ecrire_fichier est rejouable, une fois par demande, apres un echec de verification ; compteur remis a zero au debut de traiter_commande() | tests/test_politique_correction.py (7 tests) | 6644459 | Politique confirmee par test |
+| 7 | Recursion infinie sur texte vide | core/voice_manager.py (_normaliser_transcription) | La fonction s'appelait elle-meme quand le texte etait vide | Retourne le texte tel quel | tests/test_normalisation_stt.py (4 tests) | d3bad40 | Corrige et teste (non verifie a la voix) |
 
 ## Points connus, non traites
 
@@ -28,6 +30,10 @@ depuis la reprise. Il faudra y ajouter les autres au fur et a mesure.
   facturation a examiner cote fournisseur, pas forcement un bug Python.
 - signaux_echec_complet de validation_manager.py non relus : on ne sait pas si
   valider() rejette seul un message "Erreur IA apres execution".
+
+- Normalisation vocale : "Sambassar" (en un seul mot) et "quel air" ne sont pas geres.
+- Le dossier tests/ n'a pas de __init__.py : unittest discover echoue ;
+  lancer les tests par nom de module.
 
 ## Non confirme
 
