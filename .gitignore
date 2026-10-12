@@ -63,3 +63,4 @@ reparer_voice_manager.py
 test_assemblyai.py
 test_creation.py
 test_groq_audio.mp4
+.patches/
