@@ -1,3 +1,30 @@
+import unicodedata
+
+CATEGORIES_ERREUR = [
+    ("verification_echouee", ["verification echouee"]),
+    ("deja_existant", ["existe deja"]),
+    ("introuvable", ["n'existe pas", "introuvable"]),
+    ("acces_refuse", ["acces refuse", "protege", "refusee"]),
+    ("service_externe", ["timeout", "impossible de se connecter",
+                         "limite de requetes"]),
+    ("authentification", ["cle api", "token"]),
+    ("argument_invalide", ["invalide", "doit etre", "obligatoire",
+                           "trop long", "pas un fichier",
+                           "pas un dossier"]),
+]
+
+
+def classer_erreur(texte):
+    # Deduit une categorie de cause a partir du message (sans accents).
+    brut = unicodedata.normalize("NFKD", str(texte or ""))
+    brut = "".join(c for c in brut if not unicodedata.combining(c))
+    brut = brut.lower()
+    for categorie, mots in CATEGORIES_ERREUR:
+        if any(mot in brut for mot in mots):
+            return categorie
+    return "inconnue"
+
+
 class ValidationManager:
 
     def __init__(self, logger):
@@ -176,6 +203,19 @@ class ValidationManager:
         return {"valide": True, "avertissement": None}
 
     def diagnostiquer_echec(self, validation, resultats_outils=None):
+        # Ajoute la categorie de cause au diagnostic de base.
+        diagnostic = self._diagnostiquer_echec_base(
+            validation, resultats_outils
+        )
+        if diagnostic.get("echec"):
+            diagnostic["categorie"] = classer_erreur(
+                diagnostic.get("raison")
+            )
+        else:
+            diagnostic["categorie"] = None
+        return diagnostic
+
+    def _diagnostiquer_echec_base(self, validation, resultats_outils=None):
         """
         Transforme un echec de validation en diagnostic structure.
 
