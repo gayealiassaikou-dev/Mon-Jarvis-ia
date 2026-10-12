@@ -1,1 +1,0 @@
-# Code Python pour le test Dandé Lenol

@@ -875,6 +875,90 @@
             "statut": "bloquee",
             "date_creation": "2026-10-09T15:35:34",
             "date_maj": "2026-10-09T15:35:38"
+        },
+        {
+            "id": "f87ab3f0",
+            "nom": "Créer le dossier 'saikou' dans le projet 'dannde lenol' puis créer le fichier 'gaye' à l'intérieur.",
+            "objectif": "cree un doaaier saikou dans le projet dannde lenol puis cree in fiche gaye dans le dossier saikou",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-10T17:38:52",
+            "date_maj": "2026-10-10T17:38:56"
+        },
+        {
+            "id": "37fe966e",
+            "nom": "Créer un dossier 'saikou' dans le projet 'dannde lenol' puis créer un fichier 'gaye' à l'intérieur de ce dossier.",
+            "objectif": "cree un doaaier saikou dans le projet dannde lenol puis cree in fiche gaye dans le dossier saikou",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-10T17:39:24",
+            "date_maj": "2026-10-10T17:39:39"
+        },
+        {
+            "id": "71406a92",
+            "nom": "Supprimer le projet indiqué dans l'environnement local",
+            "objectif": "tu peut suprime le prohet dannde lenol",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-10T22:22:42",
+            "date_maj": "2026-10-10T22:22:44"
+        },
+        {
+            "id": "3ffdcf93",
+            "nom": "Supprimer le projet spécifié dans le système Jarvis.",
+            "objectif": "suplrime le projet dannde lenol",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-10T22:23:20",
+            "date_maj": "2026-10-10T22:23:22"
+        },
+        {
+            "id": "76c6269c",
+            "nom": "Supprimer le projet nommé « dande lenol »",
+            "objectif": "supprime le projet dande lenol",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-10-10T23:16:33",
+            "date_maj": "2026-10-10T23:16:42"
+        },
+        {
+            "id": "76195549",
+            "nom": "Supprimer le projet nommé \"dande lenol\".",
+            "objectif": "je te demabde de supprime le projet dande lenol",
+            "agents": [
+                "00_directeur_ia"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-10T23:26:32",
+            "date_maj": "2026-10-10T23:26:47"
+        },
+        {
+            "id": "3cf37f66",
+            "nom": "Ajouter une assignation de la variable espoir à True dans le code",
+            "objectif": "espoir = True",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-10-11T00:34:34",
+            "date_maj": "2026-10-11T00:34:40"
         }
     ]
 }
