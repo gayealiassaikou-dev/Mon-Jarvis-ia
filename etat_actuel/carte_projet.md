@@ -1,6 +1,6 @@
 # Carte du projet
 
-Generee le 2026-10-12 22:33
+Generee le 2026-10-12 22:48
 
 ## core/__init__.py (1 lignes)
 - Classes : aucune
@@ -105,7 +105,7 @@ Generee le 2026-10-12 22:33
 ## core/mission_manager.py (107 lignes)
 - Classes : MissionManager
 - Fonctions : aucune
-- Tests : AUCUN
+- Tests : test_mission_manager.py
 
 ## core/paths.py (9 lignes)
 - Classes : aucune
@@ -174,7 +174,6 @@ Generee le 2026-10-12 22:33
 - logger.py
 - main.py
 - memory_manager.py
-- mission_manager.py
 - paths.py
 - project_manager.py
 - skill_manager.py
