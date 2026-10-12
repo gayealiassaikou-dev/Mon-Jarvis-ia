@@ -35,11 +35,11 @@ class TestSuperviserResultat(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(self.mm.statuts, [("m1", "terminee")])
 
-    def test_sans_validation_comportement_actuel(self):
-        # Documente le trou : sans validation, un texte non vide
-        # suffit pour terminer la mission.
-        self.cm.superviser_resultat("C'est fait.", "m1", validation=None)
-        self.assertEqual(self.mm.statuts, [("m1", "terminee")])
+    def test_sans_validation_bloque_la_mission(self):
+        # Sans validation, pas de preuve : la mission est bloquee.
+        ok = self.cm.superviser_resultat("C'est fait.", "m1", validation=None)
+        self.assertFalse(ok)
+        self.assertEqual(self.mm.statuts, [("m1", "bloquee")])
 
     def test_sans_mission_id_aucun_statut_change(self):
         self.cm.superviser_resultat(

@@ -34,7 +34,7 @@ class CoordinationManager:
         elif reponse.startswith("Erreur IA"):
             erreur_detectee = True
 
-        if validation is not None and not validation.get("valide", False):
+        if validation is None or not validation.get("valide", False):
             erreur_detectee = True
 
         if mission_id:
