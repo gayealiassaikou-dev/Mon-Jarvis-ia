@@ -5,7 +5,7 @@ TOUS_LES_OUTILS = [
     "creer_projet", "ajouter_tache", "lister_projets", "lister_taches",
     "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet",
     "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
-    "memoriser_info", "rechercher_souvenir"
+    "memoriser_info", "rechercher_souvenir", "executer_tests_python"
 ]
 
 PERMISSIONS_AGENTS = {
@@ -47,7 +47,7 @@ PERMISSIONS_AGENTS = {
     ],
 
     "08_testeur_ia": [
-        "lire_fichier", "lister_fichiers"
+        "lire_fichier", "lister_fichiers", "executer_tests_python"
     ],
 
     "09_securite_ia": [

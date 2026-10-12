@@ -38,7 +38,7 @@ def _fichier_protege(chemin_complet):
     return False
 
 def lire_fichier(chemin):
-    chemin_complet = os.path.abspath(chemin)
+    chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
 
     if not _chemin_autorise(chemin_complet):
         return "Erreur : accès refusé en dehors du projet."
@@ -55,17 +55,42 @@ def lire_fichier(chemin):
         return f.read()
 
 def ecrire_fichier(chemin, contenu):
-    chemin_complet = os.path.abspath(chemin)
+    chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
+
     if not _chemin_autorise(chemin_complet):
         return "Erreur : accès refusé en dehors du projet."
-    if _fichier_protege(chemin_complet):
+
+    chemin_reel = os.path.realpath(chemin_complet)
+    if not _chemin_autorise(chemin_reel):
+        return "Erreur : accès refusé en dehors du projet."
+
+    if _fichier_protege(chemin_reel):
         return f"Erreur : {chemin} est un fichier protege, modification refusee."
-    with open(chemin_complet, "w", encoding="utf-8") as f:
-        f.write(contenu)
-    return f"Fichier {chemin} écrit avec succès."
+
+    dossier_parent = os.path.dirname(chemin_reel)
+    if not os.path.isdir(dossier_parent):
+        return f"Erreur : le dossier parent de {chemin} n'existe pas. Creez d'abord le dossier cible."
+
+    if os.path.isdir(chemin_reel):
+        return f"Erreur : {chemin} est un dossier, pas un fichier."
+
+    if not isinstance(contenu, str):
+        return "Erreur : le contenu du fichier doit être du texte."
+
+    try:
+        with open(chemin_reel, "w", encoding="utf-8") as f:
+            f.write(contenu)
+
+        with open(chemin_reel, "r", encoding="utf-8") as f:
+            if f.read() != contenu:
+                return f"Erreur : vérification échouée après écriture de {chemin}."
+
+        return f"Fichier {chemin} écrit et vérifié avec succès."
+    except (OSError, UnicodeError) as exc:
+        return f"Erreur : impossible d'écrire ou de vérifier {chemin} : {exc}"
 
 def supprimer_fichier(chemin):
-    chemin_complet = os.path.abspath(chemin)
+    chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
     if not _chemin_autorise(chemin_complet):
         return "Erreur : accès refusé en dehors du projet."
     if _fichier_protege(chemin_complet):
@@ -76,7 +101,7 @@ def supprimer_fichier(chemin):
     return f"Fichier {chemin} supprime avec succes."
 
 def lister_fichiers(dossier="."):
-    chemin_complet = os.path.abspath(dossier)
+    chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, dossier))
 
     if not _chemin_autorise(chemin_complet):
         return "Erreur : accès refusé en dehors du projet."
@@ -100,7 +125,7 @@ def lister_fichiers(dossier="."):
     return "\n".join(sorted(elements))
 
 def creer_dossier(chemin):
-    chemin_complet = os.path.abspath(chemin)
+    chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
 
     if not _chemin_autorise(chemin_complet):
         return "Erreur : accès refusé en dehors du projet."
@@ -693,13 +718,55 @@ def supprimer_tache(nom):
     return f"Tache '{nom}' supprimee avec succes."
 
 def supprimer_projet(nom):
+    import unicodedata
+    from difflib import SequenceMatcher
+
     donnees = _charger_donnees()
-    taille_avant = len(donnees["projets"])
-    donnees["projets"] = [p for p in donnees["projets"] if p["nom"] != nom]
-    if len(donnees["projets"]) == taille_avant:
+
+    def normaliser_nom(valeur):
+        texte = unicodedata.normalize("NFKD", str(valeur or "").strip().casefold())
+        texte = "".join(c for c in texte if not unicodedata.combining(c))
+        return " ".join(texte.split())
+
+    nom_recherche = normaliser_nom(nom)
+    projets_avant = donnees["projets"]
+
+    correspondances = [
+        p for p in projets_avant
+        if isinstance(p, dict)
+        and normaliser_nom(p.get("nom", "")) == nom_recherche
+    ]
+
+    if not correspondances:
+        ressemblances = [
+            str(p.get("nom", "")).strip()
+            for p in projets_avant
+            if isinstance(p, dict)
+            and isinstance(p.get("nom"), str)
+            and SequenceMatcher(
+                None, nom_recherche, normaliser_nom(p["nom"])
+            ).ratio() >= 0.70
+        ]
+        if ressemblances:
+            return (
+                f"Confirmation requise : le nom '{nom}' ne correspond pas exactement. "
+                f"Projet ressemblant trouvé : {', '.join(ressemblances)}. "
+                "Aucun projet n'a été supprimé. Confirme le nom exact."
+            )
         return f"Erreur : projet '{nom}' introuvable."
+
+    if len(correspondances) > 1:
+        return (
+            f"Erreur : plusieurs projets correspondent à '{nom}'. "
+            "Aucun projet n'a été supprimé."
+        )
+
+    projet_cible = correspondances[0]
+    donnees["projets"] = [
+        p for p in projets_avant if p is not projet_cible
+    ]
     _sauvegarder_donnees(donnees)
-    return f"Projet '{nom}' supprime avec succes."
+    return f"Projet '{projet_cible.get('nom', nom)}' supprime avec succes."
 
 def modifier_statut_projet(nom, nouveau_statut):
     statuts_valides = ["en cours", "en pause", "termine", "annule"]
@@ -712,3 +779,43 @@ def modifier_statut_projet(nom, nouveau_statut):
             _sauvegarder_donnees(donnees)
             return f"Projet '{nom}' passe au statut '{nouveau_statut}'."
     return f"Erreur : projet '{nom}' introuvable."
+
+
+def executer_tests_python():
+    """Execute uniquement la suite unittest du depot, avec un delai limite."""
+    import subprocess
+    import sys
+
+    dossier_tests = os.path.join(DOSSIER_AUTORISE, "tests")
+    if not os.path.isdir(dossier_tests):
+        return "Erreur : le dossier tests est introuvable."
+
+    commande = [
+        sys.executable, "-m", "unittest", "discover",
+        "-s", "tests", "-p", "test*.py"
+    ]
+
+    try:
+        resultat = subprocess.run(
+            commande,
+            cwd=DOSSIER_AUTORISE,
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False
+        )
+    except subprocess.TimeoutExpired:
+        return "Tests interrompus : délai maximal de 90 secondes dépassé."
+    except OSError as exc:
+        return f"Erreur lors du lancement des tests : {exc}"
+
+    sortie = (resultat.stdout or "") + "\n" + (resultat.stderr or "")
+    sortie = sortie.strip()[-12000:]
+
+    if resultat.returncode == 0:
+        return "SUCCÈS : tous les tests ont réussi.\n" + sortie
+
+    return (
+        f"ÉCHEC : les tests ont retourné le code {resultat.returncode}.\n"
+        + sortie
+    )

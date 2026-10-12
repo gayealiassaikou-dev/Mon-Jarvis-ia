@@ -3,7 +3,7 @@ import json
 import requests
 from dotenv import load_dotenv
 from core.ai_router import AIRouter
-from core.tools import lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
+from core.tools import executer_tests_python, lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
 
 load_dotenv()
 
@@ -26,11 +26,11 @@ OUTILS = [
         "type": "function",
         "function": {
             "name": "ecrire_fichier",
-            "description": "Ecrit ou remplace le contenu d'un fichier du projet",
+            "description": "Ecrit ou remplace un fichier en utilisant un chemin relatif a la racine du depot. Inclure le sous-dossier du projet cible.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "chemin": {"type": "string", "description": "Chemin relatif du fichier a ecrire"},
+                    "chemin": {"type": "string", "description": "Chemin relatif depuis la racine du depot, sous-dossier du projet inclus, par exemple Dandé Lenol/saikou/gaye.txt"},
                     "contenu": {"type": "string", "description": "Contenu a ecrire dans le fichier"}
                 },
                 "required": ["chemin", "contenu"]
@@ -69,11 +69,11 @@ OUTILS = [
         "type": "function",
         "function": {
             "name": "creer_dossier",
-            "description": "Cree un nouveau dossier dans le projet",
+            "description": "Cree un dossier avec un chemin relatif a la racine du depot. Inclure le sous-dossier du projet cible.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "chemin": {"type": "string", "description": "Chemin relatif du dossier a creer"}
+                    "chemin": {"type": "string", "description": "Chemin relatif depuis la racine du depot, sous-dossier du projet inclus si necessaire."}
                 },
                 "required": ["chemin"]
             }
@@ -288,6 +288,14 @@ OUTILS = [
                 "required": ["nom", "nouveau_statut"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "executer_tests_python",
+            "description": "Lance la suite complete des tests Python du depot et retourne les resultats reels, avec un delai maximal de 90 secondes.",
+            "parameters": {"type": "object", "properties": {}, "required": []}
+        }
     }
 ]
 
@@ -309,7 +317,8 @@ FONCTIONS_DISPONIBLES = {
     "terminer_tache": terminer_tache,
     "supprimer_tache": supprimer_tache,
     "supprimer_projet": supprimer_projet,
-    "modifier_statut_projet": modifier_statut_projet
+    "modifier_statut_projet": modifier_statut_projet,
+    "executer_tests_python": executer_tests_python
 }
 
 
@@ -1050,7 +1059,7 @@ class AIEngine:
                     "details": "Verification impossible : chemin absent des arguments."
                 }
 
-            chemin_reel = os.path.realpath(os.path.abspath(chemin))
+            chemin_reel = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), chemin)))
 
             if not os.path.exists(chemin_reel):
                 return {
@@ -1079,7 +1088,14 @@ class AIEngine:
                     "verifie": False,
                     "details": f"{nom_fonction} a retourne une erreur : {resultat}",
                 }
-
+            if not isinstance(resultat, str):
+                return {
+                    "verifie": False,
+                    "details": (
+                        f"{nom_fonction} a retourne un type invalide : "
+                        f"{type(resultat).__name__}."
+                    ),
+                }
             return {
                 "verifie": True,
                 "details": (
@@ -1170,16 +1186,47 @@ class AIEngine:
             etat = lire_etat_projets_taches()
             projets = etat.get("projets", [])
 
-            existe = any(
-                isinstance(p, dict)
-                and p.get("nom", "").strip().lower() == nom.strip().lower()
+            import unicodedata
+            from difflib import SequenceMatcher
+
+            def normaliser_nom(valeur):
+                texte = unicodedata.normalize("NFKD", str(valeur or "").strip().casefold())
+                texte = "".join(c for c in texte if not unicodedata.combining(c))
+                return " ".join(texte.split())
+
+            nom_normalise = normaliser_nom(nom)
+            noms_existants = [
+                p.get("nom", "").strip()
                 for p in projets
+                if isinstance(p, dict) and isinstance(p.get("nom"), str)
+            ]
+
+            existe = any(
+                normaliser_nom(nom_existant) == nom_normalise
+                for nom_existant in noms_existants
             )
 
             if existe:
                 return {
                     "verifie": False,
                     "details": "Le projet existe encore apres la suppression."
+                }
+
+            ressemblances = [
+                nom_existant for nom_existant in noms_existants
+                if SequenceMatcher(
+                    None, nom_normalise, normaliser_nom(nom_existant)
+                ).ratio() >= 0.70
+            ]
+
+            if ressemblances:
+                return {
+                    "verifie": False,
+                    "details": (
+                        "Suppression non confirmee : le nom recherche ne correspond "
+                        "pas exactement a un projet supprime. Projet(s) ressemblant(s) "
+                        "encore present(s) : " + ", ".join(ressemblances)
+                    )
                 }
 
             return {
@@ -1377,7 +1424,7 @@ class AIEngine:
                     "details": "Verification impossible : chemin absent des arguments."
                 }
 
-            chemin_reel = os.path.realpath(os.path.abspath(chemin))
+            chemin_reel = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), chemin)))
 
             if os.path.exists(chemin_reel):
                 return {

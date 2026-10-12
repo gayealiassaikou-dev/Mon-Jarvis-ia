@@ -27,12 +27,17 @@ class AIRouter:
 
     def __init__(self, ai_engine):
         self.ai_engine = ai_engine
-        self.fournisseurs = [
-            "mistral",
-            "openrouter",
-            "groq",
-            "gemini"
-        ]
+        ordre_defaut = ("mistral", "openrouter", "groq", "gemini")
+        configuration = getattr(ai_engine, "providers", {})
+        self.fournisseurs = sorted(
+            ordre_defaut,
+            key=lambda nom: (
+                configuration.get(nom, {}).get(
+                    "priorite", ordre_defaut.index(nom) + 1
+                ),
+                ordre_defaut.index(nom),
+            ),
+        )
 
         self.indisponibles = {}
 
