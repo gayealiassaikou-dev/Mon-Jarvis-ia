@@ -372,12 +372,30 @@ class ValidationManager:
                 )
             }
 
-        if diagnostic.get("type") != "verification":
+        type_echec = diagnostic.get("type")
+        erreur_parent_manquant = (
+            outil == "ecrire_fichier"
+            and type_echec == "action"
+            and diagnostic.get("categorie") == "introuvable"
+            and any(
+                isinstance(resultat, dict)
+                and resultat.get("outil") == "ecrire_fichier"
+                and "dossier parent de" in str(
+                    resultat.get("resultat", "")
+                ).lower()
+                and "n'existe pas" in str(
+                    resultat.get("resultat", "")
+                ).lower()
+                for resultat in resultats_outils
+            )
+        )
+
+        if type_echec != "verification" and not erreur_parent_manquant:
             return {
                 "autorisee": False,
                 "raison": (
-                    "La correction automatique est actuellement "
-                    "limitee aux echecs de verification."
+                    "La correction automatique est limitee aux echecs "
+                    "de verification ou a un dossier parent manquant."
                 )
             }
 

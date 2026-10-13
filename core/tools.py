@@ -37,6 +37,48 @@ def _fichier_protege(chemin_complet):
             continue
     return False
 
+def creer_parent_manquant_pour_ecriture(chemin):
+    """Cree un seul dossier parent manquant dans le projet autorise."""
+    if not isinstance(chemin, str) or not chemin:
+        return False
+
+    chemin_complet = os.path.abspath(
+        os.path.join(DOSSIER_AUTORISE, chemin)
+    )
+    if not _chemin_autorise(chemin_complet):
+        return False
+
+    chemin_reel = os.path.realpath(chemin_complet)
+    if not _chemin_autorise(chemin_reel):
+        return False
+    if _fichier_protege(chemin_reel):
+        return False
+    if os.path.exists(chemin_reel):
+        return False
+
+    parent = os.path.dirname(chemin_reel)
+    if os.path.isdir(parent) or not _chemin_autorise(parent):
+        return False
+
+    parent_reel = os.path.realpath(parent)
+    if not _chemin_autorise(parent_reel):
+        return False
+    if _fichier_protege(parent_reel):
+        return False
+
+    parent_du_parent = os.path.dirname(parent_reel)
+    if not os.path.isdir(parent_du_parent):
+        return False
+    if not _chemin_autorise(parent_du_parent):
+        return False
+
+    try:
+        os.mkdir(parent_reel)
+        return True
+    except OSError:
+        return False
+
+
 def lire_fichier(chemin):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
 

@@ -3,7 +3,7 @@ import json
 import requests
 from dotenv import load_dotenv
 from core.ai_router import AIRouter
-from core.tools import executer_tests_python, lire_fichier, ecrire_fichier, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
+from core.tools import executer_tests_python, lire_fichier, ecrire_fichier, creer_parent_manquant_pour_ecriture, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
 
 load_dotenv()
 
@@ -534,6 +534,27 @@ class AIEngine:
         arguments = entree.get("arguments")
         if not isinstance(arguments, dict):
             return False
+
+        resultat_echec = str(entree.get("resultat", "")).lower()
+        autorisations = (
+            outils_autorises
+            if isinstance(outils_autorises, (list, tuple, set))
+            else ()
+        )
+        parent_manquant = (
+            outil == "ecrire_fichier"
+            and outil in autorisations
+            and entree.get("statut") == "echec_execution"
+            and entree.get("autorise") is True
+            and entree.get("arguments_valides") is True
+            and entree.get("execute") is True
+            and "dossier parent de" in resultat_echec
+            and "n'existe pas" in resultat_echec
+            and isinstance(arguments.get("chemin"), str)
+        )
+
+        if parent_manquant:
+            creer_parent_manquant_pour_ecriture(arguments["chemin"])
 
         nombre_avant = len(self.derniers_resultats_outils)
         anciennes_autorisations = getattr(self, "outils_autorises", None)

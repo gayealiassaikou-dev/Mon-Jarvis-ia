@@ -98,5 +98,72 @@ class TestDiagnosticCategorie(unittest.TestCase):
         self.assertIsNone(d["outil"])
 
 
+
+class TestAutorisationCorrection(unittest.TestCase):
+    def setUp(self):
+        self.vm = ValidationManager(FauxLogger())
+
+    def diagnostic(self, categorie="introuvable", type_echec="action"):
+        return {
+            "echec": True,
+            "outil": "ecrire_fichier",
+            "type": type_echec,
+            "categorie": categorie,
+            "corrigeable": True,
+        }
+
+    def test_autorise_dossier_parent_manquant(self):
+        diagnostic = self.diagnostic()
+        resultats = [{
+            "outil": "ecrire_fichier",
+            "statut": "echec_execution",
+            "resultat": "Erreur : le dossier parent de a/b.txt n'existe pas.",
+        }]
+        decision = self.vm.autoriser_correction(diagnostic, resultats)
+        self.assertTrue(decision["autorisee"])
+
+    def test_refuse_fichier_introuvable_sans_parent_manquant(self):
+        diagnostic = self.diagnostic()
+        resultats = [{
+            "outil": "ecrire_fichier",
+            "statut": "echec_execution",
+            "resultat": "Erreur : le fichier a.txt n'existe pas.",
+        }]
+        decision = self.vm.autoriser_correction(diagnostic, resultats)
+        self.assertFalse(decision["autorisee"])
+
+    def test_conserve_correction_echec_verification(self):
+        diagnostic = self.diagnostic(
+            categorie="verification_echouee",
+            type_echec="verification",
+        )
+        resultats = [{
+            "outil": "ecrire_fichier",
+            "statut": "succes",
+            "resultat": "ok",
+            "verification": {
+                "verifie": False,
+                "details": "Erreur : vérification échouée après écriture.",
+            },
+        }]
+        decision = self.vm.autoriser_correction(diagnostic, resultats)
+        self.assertTrue(decision["autorisee"])
+
+    def test_refuse_deuxieme_correction(self):
+        diagnostic = self.diagnostic(
+            categorie="verification_echouee",
+            type_echec="verification",
+        )
+        resultats = [{
+            "outil": "ecrire_fichier",
+            "statut": "succes",
+            "resultat": "ok",
+            "verification": {"verifie": False, "details": "Échec"},
+        }]
+        premiere = self.vm.autoriser_correction(diagnostic, resultats)
+        deuxieme = self.vm.autoriser_correction(diagnostic, resultats)
+        self.assertTrue(premiere["autorisee"])
+        self.assertFalse(deuxieme["autorisee"])
+
 if __name__ == "__main__":
     unittest.main()
