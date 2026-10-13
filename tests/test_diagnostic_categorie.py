@@ -88,6 +88,32 @@ class TestDiagnosticCategorie(unittest.TestCase):
         self.assertEqual(d["categorie"], "verification_echouee")
         self.assertTrue(d["corrigeable"])
 
+    def test_conserve_plusieurs_echecs_dans_le_diagnostic(self):
+        resultats = [
+            {
+                "outil": "lire_fichier",
+                "statut": "echec_execution",
+                "execute": False,
+                "resultat": "Erreur : le fichier a.txt n'existe pas.",
+            },
+            {
+                "outil": "rechercher_web",
+                "statut": "echec_execution",
+                "execute": False,
+                "resultat": "Erreur : la recherche web a expire (timeout).",
+            },
+        ]
+
+        d = self.vm.diagnostiquer_echec(self.validation, resultats)
+
+        self.assertEqual(d["type"], "action")
+        self.assertEqual(d["outil"], "lire_fichier")
+        self.assertEqual(len(d["echecs"]), 2)
+        self.assertEqual(
+            [e["categorie"] for e in d["echecs"]],
+            ["introuvable", "service_externe"],
+        )
+
     def test_echec_reponse_sans_outil(self):
         d = self.vm.diagnostiquer_echec(
             {"valide": False, "avertissement": "Reponse vide"}, []

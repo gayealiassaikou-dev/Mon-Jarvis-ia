@@ -203,7 +203,7 @@ class ValidationManager:
         return {"valide": True, "avertissement": None}
 
     def diagnostiquer_echec(self, validation, resultats_outils=None):
-        # Ajoute la categorie de cause au diagnostic de base.
+        # Conserve le diagnostic principal et recense tous les echecs d'outils.
         diagnostic = self._diagnostiquer_echec_base(
             validation, resultats_outils
         )
@@ -213,6 +213,58 @@ class ValidationManager:
             )
         else:
             diagnostic["categorie"] = None
+
+        echecs = []
+        statuts_echec = {
+            "outil_inconnu",
+            "non_autorise",
+            "arguments_invalides",
+            "echec_execution",
+        }
+
+        for resultat in resultats_outils or []:
+            if not isinstance(resultat, dict):
+                continue
+
+            verification = resultat.get("verification")
+            verification_echouee = (
+                isinstance(verification, dict)
+                and verification.get("verifie") is False
+            )
+            statut = resultat.get("statut")
+            texte = resultat.get("resultat")
+
+            action_echouee = (
+                statut in statuts_echec
+                or resultat.get("execute") is False
+                or (
+                    not statut
+                    and isinstance(texte, str)
+                    and texte.strip().lower().startswith("erreur")
+                )
+            )
+
+            if action_echouee:
+                type_echec = "action"
+                raison = texte or statut or "Echec d'execution"
+            elif verification_echouee:
+                type_echec = "verification"
+                raison = (
+                    verification.get("details")
+                    or texte
+                    or "Echec de verification"
+                )
+            else:
+                continue
+
+            echecs.append({
+                "outil": resultat.get("outil"),
+                "type": type_echec,
+                "raison": raison,
+                "categorie": classer_erreur(raison),
+            })
+
+        diagnostic["echecs"] = echecs
         return diagnostic
 
     def _diagnostiquer_echec_base(self, validation, resultats_outils=None):
