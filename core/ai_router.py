@@ -66,22 +66,22 @@ class AIRouter:
                 print(f"[AI Router] Tentative : {fournisseur}")
 
                 if fournisseur == "groq":
-                    return self.ai_engine._demander_groq(
+                    reponse = self.ai_engine._demander_groq(
                         message, contexte, historique
                     )
 
                 elif fournisseur == "gemini":
-                    return self.ai_engine._demander_gemini(
+                    reponse = self.ai_engine._demander_gemini(
                         message, contexte, historique
                     )
 
                 elif fournisseur == "openrouter":
-                    return self.ai_engine._demander_openrouter(
+                    reponse = self.ai_engine._demander_openrouter(
                         message, contexte, historique
                     )
 
                 elif fournisseur == "mistral":
-                    return self.ai_engine._demander_mistral(
+                    reponse = self.ai_engine._demander_mistral(
                         message, contexte, historique
                     )
 
@@ -89,6 +89,24 @@ class AIRouter:
                     raise Exception(
                         f"{fournisseur} pas encore connecté"
                     )
+
+                if (
+                    isinstance(reponse, str)
+                    and reponse.strip().casefold() == "erreur ia"
+                ):
+                    if getattr(self.ai_engine, "action_engagee", False):
+                        return (
+                            "Erreur IA après exécution d'une action avec "
+                            f"{fournisseur}. Fallback automatique annulé "
+                            "pour éviter une double exécution."
+                        )
+
+                    erreurs.append(
+                        f"{fournisseur}: réponse d'échec « erreur ia »"
+                    )
+                    continue
+
+                return reponse
 
             except Exception as e:
                 erreurs.append(

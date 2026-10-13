@@ -382,6 +382,10 @@ class DecisionEngine:
             "ou de son nom.\n\n"
 
             "Règles importantes pour les outils :\n"
+            "- Pour localiser un fichier ou un dossier local, utilise lister_fichiers.\n"
+            "- Pour lire un fichier local, utilise lire_fichier avec son chemin exact.\n"
+            "- Si la demande consiste à trouver un dossier puis lire ses instructions, suggère les outils nécessaires pour localiser puis lire le fichier.\n"
+            "- Ne prétends jamais avoir lu un fichier sans résultat de lire_fichier.\n"
             "- Pour créer un dépôt GitHub, utilise github_creer_repo.\n"
             "- Pour lister des dépôts GitHub, utilise github_lister_repos.\n"
             "- Pour lire un fichier GitHub, utilise github_lire_fichier.\n"
@@ -470,6 +474,10 @@ class DecisionEngine:
             # Barrière de sécurité : les outils proposés par le LLM
             # sont toujours filtrés par les permissions de l'agent.
             outils = filtrer_outils(agent, outils)
+            demande_min = str(demande).casefold()
+            if agent == "03_recherche" and "instruction" in demande_min and any(x in demande_min for x in ("lis", "lire", "lecture")):
+                requis = filtrer_outils(agent, ["lister_fichiers", "lire_fichier"])
+                outils = list(dict.fromkeys(outils + requis))
 
             if not self._verifier_coherence_agent_outils(agent, outils):
                 return self._decision_securisee(

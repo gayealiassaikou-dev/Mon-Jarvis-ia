@@ -1,4 +1,7 @@
+import unicodedata
 import os
+import difflib
+import re
 import json
 import requests
 import base64
@@ -36,6 +39,82 @@ def _fichier_protege(chemin_complet):
         except ValueError:
             continue
     return False
+
+
+def _normaliser_nom_chemin(valeur):
+    texte = unicodedata.normalize("NFKD", str(valeur))
+    texte = texte.encode("ascii", "ignore").decode("ascii").lower()
+    texte = texte.replace("\\", "/")
+    mots = []
+    for partie in texte.split("/"):
+        partie = re.sub(r"^\d+[\s._-]*", "", partie)
+        partie = re.sub(r"[_\-.]+", " ", partie)
+        mots.extend(re.findall(r"[a-z0-9]+", partie))
+    stop = {"de", "du", "des", "la", "le", "les", "un", "une", "d", "l", "a", "au", "aux", "et"}
+    return " ".join(m for m in mots if m not in stop)
+
+
+def _chercher_dossiers_similaires(dossier, limite=5):
+    """Recherche des chemins proches, fichiers compris, dans le projet autorisé."""
+    cible = _normaliser_nom_chemin(dossier)
+    if not cible:
+        return []
+
+    exclusions = {
+        ".git", ".patches", ".venv", "venv", "env", "node_modules",
+        "__pycache__", ".pytest_cache"
+    }
+    resultats = []
+
+    for racine, sous_dossiers, fichiers in os.walk(
+        DOSSIER_AUTORISE, topdown=True, followlinks=False
+    ):
+        sous_dossiers[:] = [
+            nom for nom in sous_dossiers
+            if nom not in exclusions
+            and _chemin_autorise(os.path.realpath(os.path.join(racine, nom)))
+            and not _fichier_protege(os.path.realpath(os.path.join(racine, nom)))
+        ]
+
+        for nom in sous_dossiers + fichiers:
+            chemin = os.path.join(racine, nom)
+            reel = os.path.realpath(chemin)
+            if not _chemin_autorise(reel) or _fichier_protege(reel):
+                continue
+
+            relatif = os.path.relpath(chemin, DOSSIER_AUTORISE)
+            base = os.path.splitext(nom)[0] if os.path.isfile(chemin) else nom
+            nom_normalise = _normaliser_nom_chemin(base)
+            chemin_normalise = _normaliser_nom_chemin(
+                os.path.splitext(relatif)[0] if os.path.isfile(chemin) else relatif
+            )
+
+            candidats = [x for x in (nom_normalise, chemin_normalise) if x]
+            if not candidats:
+                continue
+
+            score = max(
+                difflib.SequenceMatcher(None, cible, candidat).ratio()
+                for candidat in candidats
+            )
+
+            mots_cible = cible.split()
+            mots_nom = nom_normalise.split()
+            if mots_cible and mots_nom:
+                correspondance = sum(
+                    1.0 if mot in mots_nom else max(
+                        difflib.SequenceMatcher(None, mot, autre).ratio()
+                        for autre in mots_nom
+                    )
+                    for mot in mots_cible
+                ) / len(mots_cible)
+                score = max(score, correspondance)
+
+            if score >= 0.50:
+                resultats.append((score, relatif))
+
+    resultats.sort(key=lambda item: (-item[0], item[1].lower()))
+    return [chemin for _, chemin in resultats[:limite]]
 
 def creer_parent_manquant_pour_ecriture(chemin):
     """Cree un seul dossier parent manquant dans le projet autorise."""
@@ -154,7 +233,16 @@ def lister_fichiers(dossier="."):
         return "Erreur : accès refusé, dossier protégé."
 
     if not os.path.exists(chemin_reel):
-        return f"Erreur : le dossier {dossier} n'existe pas."
+        suggestions = _chercher_dossiers_similaires(dossier)
+        if suggestions:
+            liste = "\n".join(f"- {x}" for x in suggestions)
+            return (
+                f"Aucun dossier exact nommé '{dossier}' n'existe. "
+                f"Chemins proches trouvés (fichiers et dossiers) :\n{liste}\n"
+                "Vérifie le chemin proposé avant de réessayer. "
+                "Aucun fichier ni dossier n'a été ouvert automatiquement."
+            )
+        return f"Erreur : le dossier {dossier} n'existe pas et aucun dossier proche n'a été trouvé."
 
     if not os.path.isdir(chemin_reel):
         return f"Erreur : {dossier} n'est pas un dossier."

@@ -183,6 +183,10 @@ class ValidationManager:
 
         for signal in self.signaux_echec_complet:
             if signal in reponse_min:
+                self.logger.enregistrer(
+                    "[Validation] Extrait de la reponse rejetee : "
+                    + str(reponse)[:300].replace("\n", " ")
+                )
                 return self._rejeter(f"Echec complet detecte : {signal}", mission_id)
 
         for signal in self.signaux_incertitude:

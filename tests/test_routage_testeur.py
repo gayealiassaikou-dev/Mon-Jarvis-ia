@@ -41,6 +41,36 @@ class TestRoutageTesteur(unittest.TestCase):
         )
         moteur.ai_engine.demander.assert_called_once()
 
+    def test_recherche_instructions_propose_localisation_et_lecture(self):
+        moteur = object.__new__(DecisionEngine)
+        moteur.agent_manager = Mock()
+        moteur.agent_manager.agents = {
+            "00_directeur_ia": "Directeur",
+            "03_recherche": "Chercheur",
+        }
+        moteur.ai_engine = Mock()
+        moteur.ai_engine.demander.return_value = json.dumps({
+            "agent": "03_recherche",
+            "difficulte": "faible",
+            "risques": "faible",
+            "validation_requise": False,
+            "resume": "Lire les instructions de l agent de recherche",
+            "outils_suggeres": [],
+        })
+        moteur.outils_disponibles = [
+            "lister_fichiers",
+            "lire_fichier",
+            "rechercher_web",
+        ]
+
+        resultat = moteur.decider(
+            "Ouvre le dossier agent de recherche et lis-moi ses instructions."
+        )
+
+        self.assertEqual(resultat["agent"], "03_recherche")
+        self.assertIn("lister_fichiers", resultat["outils_suggeres"])
+        self.assertIn("lire_fichier", resultat["outils_suggeres"])
+
     @patch("subprocess.run")
     def test_resultat_echec_tests_est_signale(self, lancer):
         from core.tools import executer_tests_python

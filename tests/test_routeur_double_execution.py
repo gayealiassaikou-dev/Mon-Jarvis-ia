@@ -68,6 +68,17 @@ class TestRouteurDoubleExecution(unittest.TestCase):
         self.assertEqual(self.appels_fournisseurs, [premier])
         self.assertEqual(self.appels_outil, [self.chemin])
         self.assertTrue(reponse.startswith("Erreur IA"))
+    def test_fallback_si_reponse_est_erreur_ia(self):
+        ordre = self.moteur.router.fournisseurs
+        premier, second = ordre[:2]
+        self.installer({
+            premier: self.repond(premier, "erreur ia"),
+            second: self.repond(second, "reponse de secours"),
+        })
+        reponse = self.lancer()
+        self.assertEqual(self.appels_fournisseurs, [premier, second])
+        self.assertEqual(reponse, "reponse de secours")
+
     def test_fallback_si_echec_avant_action(self):
         ordre = self.moteur.router.fournisseurs
         premier, second = ordre[:2]

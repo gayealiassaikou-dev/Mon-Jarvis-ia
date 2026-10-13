@@ -55,7 +55,7 @@ OUTILS = [
         "type": "function",
         "function": {
             "name": "lister_fichiers",
-            "description": "Liste les fichiers et dossiers presents dans un dossier du projet",
+            "description": "Recherche et liste les fichiers et dossiers du projet. Si le chemin exact est introuvable, examine les chemins proches proposés dans le résultat. Si la cible est un fichier, appelle lire_fichier avec son chemin exact pour lire son contenu. Si la cible est un dossier, appelle lister_fichiers avec le chemin exact pour explorer son contenu. Enchaîne les appels nécessaires au lieu de t’arrêter à une simple suggestion. Ne prétends jamais avoir lu un fichier sans résultat de lecture.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -298,6 +298,14 @@ OUTILS = [
         }
     }
 ]
+
+# Outils sans effet de bord : ils n'engagent pas d'action, donc le
+# routeur peut essayer un autre fournisseur sans risque de double execution.
+OUTILS_LECTURE_SEULE = frozenset({
+    "lire_fichier", "lister_fichiers", "lister_projets", "lister_taches",
+    "rechercher_web", "rechercher_souvenir",
+    "github_lister_repos", "github_lire_fichier",
+})
 
 FONCTIONS_DISPONIBLES = {
     "lire_fichier": lire_fichier,
@@ -804,7 +812,9 @@ class AIEngine:
             return resultat
 
         # A partir d'ici, un appel réel peut produire un effet.
-        self.action_engagee = True
+        # Les outils en lecture seule n'engagent aucune action.
+        if nom_fonction not in OUTILS_LECTURE_SEULE:
+            self.action_engagee = True
 
         # -----------------------------------------------------
         # Etat 4 : exécution réelle
