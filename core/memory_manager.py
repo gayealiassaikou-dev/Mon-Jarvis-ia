@@ -4,15 +4,19 @@ import os
 
 class MemoryManager:
     def __init__(self):
-        self.chemin = os.path.join("memory", "memory.json")
+        self.chemin = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "memory", "memory.json"))
         self.memoire = self.charger()
         self._assurer_categories()
 
     def charger(self):
-        with open(self.chemin, "r", encoding="utf-8") as fichier:
-            return json.load(fichier)
+        try:
+            with open(self.chemin, "r", encoding="utf-8") as fichier:
+                return json.load(fichier)
+        except FileNotFoundError:
+            return {}
 
     def sauvegarder(self):
+        os.makedirs(os.path.dirname(self.chemin), exist_ok=True)
         with open(self.chemin, "w", encoding="utf-8") as fichier:
             json.dump(self.memoire, fichier, indent=4, ensure_ascii=False)
 

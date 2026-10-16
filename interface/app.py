@@ -3,7 +3,7 @@ import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "core"))
 
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from jarvis import Jarvis
 from voice_manager import VoiceManager
 
@@ -15,6 +15,23 @@ voice = VoiceManager()
 @app.route("/")
 def accueil():
     return render_template("index.html")
+
+@app.route("/health")
+def health():
+    return "ok", 200
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    if not message:
+        return jsonify({"reponse": "Message vide."}), 400
+    try:
+        reponse = jarvis.traiter_commande(message, retourner_reponse=True)
+    except Exception:
+        app.logger.exception("Erreur dans /chat")
+        reponse = "Une erreur interne est survenue. Réessaie."
+    return jsonify({"reponse": str(reponse)})
 
 @app.route("/envoyer", methods=["POST"])
 def envoyer():

@@ -7,7 +7,7 @@ class BrainManager:
         self.charger_brain()
 
     def charger_brain(self):
-        dossier = "brain"
+        dossier = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "brain")
 
         for fichier in os.listdir(dossier):
             if fichier.endswith(".md"):

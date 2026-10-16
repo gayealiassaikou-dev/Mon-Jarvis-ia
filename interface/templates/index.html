@@ -2,42 +2,201 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Jarvis</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="dark light">
+    <title>Samba Sarr</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
 
-<div class="container">
+<header class="barre">Samba Sarr</header>
 
-    <h1>🤖 Jarvis</h1>
-    <p>Assistant IA opérationnel</p>
-
-    <form action="/envoyer" method="post">
-        <input
-            type="text"
-            name="message"
-            placeholder="Écris ta demande..."
-            required
-        >
-
-        <button type="submit">Envoyer</button>
-<button type="button" onclick="window.location.href='/vocal'">🎤</button>
-    {% if message %}
-    <div class="message">
-        <h3>Vous :</h3>
-        <p>{{ message }}</p>
+<main id="fil" class="fil">
+    {% if not message and not reponse %}
+    <div id="accueil" class="accueil">
+        <div class="logo-grand">S</div>
+        <h1>Comment puis-je t'aider ?</h1>
     </div>
+    {% endif %}
+
+    {% if message %}
+    <div class="ligne utilisateur"><div class="bulle">{{ message }}</div></div>
     {% endif %}
 
     {% if reponse %}
-    <div class="reponse">
-        <h3>Jarvis :</h3>
-        <p>{{ reponse }}</p>
+    <div class="ligne assistant">
+        <div class="avatar">S</div>
+        <div class="texte" data-brut="{{ reponse }}"></div>
     </div>
     {% endif %}
+</main>
 
-</div>
+<form id="formulaire" class="saisie">
+    <div class="boite">
+        <textarea id="champ" rows="1" placeholder="Pose ta question à Samba Sarr" autocomplete="off"></textarea>
+        <button type="submit" id="envoi" aria-label="Envoyer">&#8593;</button>
+    </div>
+    <p class="note">Samba Sarr peut faire des erreurs. Vérifie les informations importantes.</p>
+</form>
+
+<script>
+const fil = document.getElementById('fil');
+const champ = document.getElementById('champ');
+const formulaire = document.getElementById('formulaire');
+const envoi = document.getElementById('envoi');
+const accueil = document.getElementById('accueil');
+const FENCE = String.fromCharCode(96).repeat(3);
+let occupe = false;
+
+function echapper(t) {
+    return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function enLigne(t) {
+    t = echapper(t);
+    t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    return t;
+}
+
+function markdown(src) {
+    const lignes = src.replace(/\r/g, '').split('\n');
+    let html = '';
+    let liste = null;
+    let code = false;
+    let bloc = [];
+    const fermer = function () {
+        if (liste) { html += '</' + liste + '>'; liste = null; }
+    };
+    for (const l of lignes) {
+        if (l.trim().indexOf(FENCE) === 0) {
+            if (code) {
+                html += '<pre><code>' + echapper(bloc.join('\n')) + '</code></pre>';
+                bloc = [];
+                code = false;
+            } else {
+                fermer();
+                code = true;
+            }
+            continue;
+        }
+        if (code) { bloc.push(l); continue; }
+        let m;
+        if ((m = l.match(/^#{1,4}\s+(.*)$/))) {
+            fermer();
+            html += '<h3>' + enLigne(m[1]) + '</h3>';
+        } else if ((m = l.match(/^\s*[-*•]\s+(.*)$/))) {
+            if (liste !== 'ul') { fermer(); html += '<ul>'; liste = 'ul'; }
+            html += '<li>' + enLigne(m[1]) + '</li>';
+        } else if ((m = l.match(/^\s*\d+[.)]\s+(.*)$/))) {
+            if (liste !== 'ol') { fermer(); html += '<ol>'; liste = 'ol'; }
+            html += '<li>' + enLigne(m[1]) + '</li>';
+        } else if (l.trim() === '') {
+            fermer();
+        } else {
+            fermer();
+            html += '<p>' + enLigne(l) + '</p>';
+        }
+    }
+    fermer();
+    if (code) { html += '<pre><code>' + echapper(bloc.join('\n')) + '</code></pre>'; }
+    return html;
+}
+
+function defiler() {
+    fil.scrollTo({ top: fil.scrollHeight, behavior: 'smooth' });
+}
+
+function ajouterUtilisateur(t) {
+    const l = document.createElement('div');
+    l.className = 'ligne utilisateur';
+    const b = document.createElement('div');
+    b.className = 'bulle';
+    b.textContent = t;
+    l.appendChild(b);
+    fil.appendChild(l);
+    defiler();
+}
+
+function ajouterAssistant() {
+    const l = document.createElement('div');
+    l.className = 'ligne assistant';
+    l.innerHTML = '<div class="avatar">S</div><div class="texte"></div>';
+    fil.appendChild(l);
+    defiler();
+    return l.querySelector('.texte');
+}
+
+function reflechir(zone) {
+    zone.innerHTML = '<span class="points"><i></i><i></i><i></i></span>';
+}
+
+function ecrire(zone, texte) {
+    return new Promise(function (fin) {
+        const pas = Math.max(2, Math.ceil(texte.length / 150));
+        let n = 0;
+        const t = setInterval(function () {
+            n = Math.min(texte.length, n + pas);
+            zone.innerHTML = markdown(texte.slice(0, n));
+            defiler();
+            if (n >= texte.length) { clearInterval(t); fin(); }
+        }, 20);
+    });
+}
+
+async function envoyer(texte) {
+    if (occupe) { return; }
+    occupe = true;
+    envoi.disabled = true;
+    if (accueil) { accueil.remove(); }
+    ajouterUtilisateur(texte);
+    const zone = ajouterAssistant();
+    reflechir(zone);
+    try {
+        const r = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: texte })
+        });
+        const d = await r.json();
+        await ecrire(zone, d.reponse || 'Réponse vide.');
+    } catch (e) {
+        zone.textContent = 'Erreur de connexion. Réessaie.';
+    }
+    occupe = false;
+    envoi.disabled = false;
+    champ.focus();
+}
+
+function ajuster() {
+    champ.style.height = 'auto';
+    champ.style.height = Math.min(champ.scrollHeight, 160) + 'px';
+}
+
+formulaire.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const t = champ.value.trim();
+    if (!t) { return; }
+    champ.value = '';
+    ajuster();
+    envoyer(t);
+});
+
+champ.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey && window.matchMedia('(min-width: 768px)').matches) {
+        e.preventDefault();
+        formulaire.requestSubmit();
+    }
+});
+
+champ.addEventListener('input', ajuster);
+
+document.querySelectorAll('.texte[data-brut]').forEach(function (z) {
+    z.innerHTML = markdown(z.dataset.brut);
+});
+fil.scrollTop = fil.scrollHeight;
+</script>
 
 </body>
 </html>

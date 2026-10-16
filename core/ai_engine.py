@@ -1550,7 +1550,19 @@ class AIEngine:
                 if mode_action and iteration == 0:
                     payload["tool_choice"] = "required"
             reponse = requests.post(url, headers=headers, json=payload, timeout=30)
-            reponse.raise_for_status()
+            try:
+                reponse.raise_for_status()
+            except requests.HTTPError as erreur_http:
+                statut = getattr(reponse, "status_code", "inconnu")
+                try:
+                    details = json.dumps(reponse.json(), ensure_ascii=False)
+                except Exception:
+                    details = getattr(reponse, "text", "") or str(erreur_http)
+                details = str(details)[:1000]
+                raise requests.HTTPError(
+                    f"HTTP {statut}: {details}",
+                    response=reponse,
+                ) from erreur_http
             data = reponse.json()
             choix = data["choices"][0]["message"]
 

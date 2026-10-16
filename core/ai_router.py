@@ -3,19 +3,21 @@ import time
 
 
 def masquer_secrets(texte):
-    """Remplace les cles API visibles dans un message d'erreur."""
+    """Masque les clés API, jetons et mots de passe dans les erreurs."""
     texte = str(texte)
+
     texte = re.sub(
-        r"(?i)([?&](?:key|api_key|apikey|token|access_token)=)"
-        r"[^&\s'\"]+",
+        r"""(?i)(["']?(?:api[_-]?key|apikey|access[_-]?token|refresh[_-]?token|client[_-]?secret|key|token|secret|password)["']?\s*[:=]\s*["']?)([^"'\s&,}]+)""",
         r"\1***",
         texte,
     )
+
     texte = re.sub(
         r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]{8,}",
         r"\1***",
         texte,
     )
+
     return texte
 
 
@@ -27,15 +29,12 @@ class AIRouter:
 
     def __init__(self, ai_engine):
         self.ai_engine = ai_engine
-        ordre_defaut = ("mistral", "openrouter", "groq", "gemini")
         configuration = getattr(ai_engine, "providers", {})
         self.fournisseurs = sorted(
-            ordre_defaut,
+            configuration,
             key=lambda nom: (
-                configuration.get(nom, {}).get(
-                    "priorite", ordre_defaut.index(nom) + 1
-                ),
-                ordre_defaut.index(nom),
+                configuration.get(nom, {}).get("priorite", 999),
+                nom,
             ),
         )
 
@@ -113,10 +112,12 @@ class AIRouter:
                     f"{fournisseur}: {masquer_secrets(str(e))}"
                 )
 
-                if "429" in str(e) or "quota" in str(e).lower():
-                    self.bloquer_temporairement(
-                        fournisseur
-                    )
+                erreur = str(e).lower()
+                if (
+                    any(code in erreur for code in ("402", "429", "503"))
+                    or "quota" in erreur
+                ):
+                    self.bloquer_temporairement(fournisseur)
 
                 # Si un outil a déjà été engagé, l'erreur peut être
                 # survenue après une action réelle. Ne pas relancer

@@ -7,7 +7,7 @@ class SkillManager:
         self.charger_skills()
 
     def charger_skills(self):
-        dossier = "skills"
+        dossier = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "skills"))
 
         for fichier in os.listdir(dossier):
             if fichier.endswith(".md"):

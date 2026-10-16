@@ -7,7 +7,7 @@ class AgentManager:
         self.charger_agents()
 
     def charger_agents(self):
-        dossier = "agents"
+        dossier = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "agents"))
 
         for fichier in os.listdir(dossier):
             if fichier.endswith(".md"):

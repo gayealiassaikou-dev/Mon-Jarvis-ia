@@ -221,7 +221,7 @@ def supprimer_fichier(chemin):
     os.remove(chemin_complet)
     return f"Fichier {chemin} supprime avec succes."
 
-def lister_fichiers(dossier="."):
+def lister_fichiers_original_en_ligne(dossier="."):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, dossier))
 
     if not _chemin_autorise(chemin_complet):
@@ -253,6 +253,15 @@ def lister_fichiers(dossier="."):
         return f"Le dossier {dossier} est vide."
 
     return "\n".join(sorted(elements))
+
+
+import functools as _ft
+@_ft.wraps(lister_fichiers_original_en_ligne)
+def lister_fichiers(*args, **kwargs):
+    r = lister_fichiers_original_en_ligne(*args, **kwargs)
+    if isinstance(r, str):
+        return '[Contenu des fichiers du serveur de Samba Sarr, PAS du depot GitHub]\n' + r
+    return r
 
 def creer_dossier(chemin):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
@@ -305,7 +314,7 @@ def rechercher_web(requete):
     except Exception as e:
         return f"Erreur recherche web inattendue : {e}"
 
-CHEMIN_DONNEES = os.path.join("data", "projets_taches.json")
+CHEMIN_DONNEES = os.path.join(DOSSIER_AUTORISE, "data", "projets_taches.json")
 
 def _charger_donnees():
     if not os.path.exists(CHEMIN_DONNEES):
@@ -382,7 +391,7 @@ def _interpreter_erreur_github(status_code, contexte=""):
     return f"Erreur GitHub : code {status_code}."
 
 
-def github_creer_repo(nom, description="", public=True):
+def github_creer_repo_original_en_ligne(nom, description="", public=True):
     """
     Cree ou retrouve un depot GitHub via l'authentification locale de gh.
 
@@ -534,7 +543,16 @@ def github_creer_repo(nom, description="", public=True):
         f"{verification.stdout.strip()}"
     )
 
-def github_lister_repos():
+
+import functools as _ft
+@_ft.wraps(github_creer_repo_original_en_ligne)
+def github_creer_repo(*args, **kwargs):
+    import shutil as _sh
+    if not _sh.which('gh'):
+        return "Erreur : cet outil GitHub n'est pas disponible en ligne (la commande gh n'est installee que sur le telephone). Aucune action effectuee."
+    return github_creer_repo_original_en_ligne(*args, **kwargs)
+
+def github_lister_repos_original_en_ligne():
     url = "https://api.github.com/user/repos"
     try:
         r = requests.get(url, headers=_headers_github(), timeout=15)
@@ -551,7 +569,16 @@ def github_lister_repos():
     except Exception as e:
         return f"Erreur GitHub inattendue : {e}"
 
-def github_lire_fichier(repo, chemin):
+
+import functools as _ft
+@_ft.wraps(github_lister_repos_original_en_ligne)
+def github_lister_repos(*args, **kwargs):
+    import os as _os
+    if not _os.getenv('GITHUB_TOKEN'):
+        return 'Erreur : GITHUB_TOKEN est absent, impossible de lister les depots GitHub depuis ce serveur. Aucune action effectuee.'
+    return github_lister_repos_original_en_ligne(*args, **kwargs)
+
+def github_lire_fichier_original_en_ligne(repo, chemin):
     """
     Lit un fichier GitHub via l'authentification locale de GitHub CLI.
 
@@ -674,7 +701,16 @@ def github_lire_fichier(repo, chemin):
         )
 
 
-def github_ecrire_fichier(
+import functools as _ft
+@_ft.wraps(github_lire_fichier_original_en_ligne)
+def github_lire_fichier(*args, **kwargs):
+    import shutil as _sh
+    if not _sh.which('gh'):
+        return "Erreur : cet outil GitHub n'est pas disponible en ligne (la commande gh n'est installee que sur le telephone). Aucune action effectuee."
+    return github_lire_fichier_original_en_ligne(*args, **kwargs)
+
+
+def github_ecrire_fichier_original_en_ligne(
     repo,
     chemin,
     contenu,
@@ -828,6 +864,15 @@ def github_ecrire_fichier(
         return f"Erreur GitHub : {details}"
 
     return f"Fichier {chemin} envoye avec succes sur {repo}."
+
+
+import functools as _ft
+@_ft.wraps(github_ecrire_fichier_original_en_ligne)
+def github_ecrire_fichier(*args, **kwargs):
+    import shutil as _sh
+    if not _sh.which('gh'):
+        return "Erreur : cet outil GitHub n'est pas disponible en ligne (la commande gh n'est installee que sur le telephone). Aucune action effectuee."
+    return github_ecrire_fichier_original_en_ligne(*args, **kwargs)
 
 def terminer_tache(nom):
     donnees = _charger_donnees()
