@@ -117,7 +117,7 @@ class VoiceManager:
 
     def _parler_secours(self, texte):
         if self._parler_gtts(texte):
-            print("[🔊 Samba Sarr a terminé la commande vocale.]")
+            print("[🔊 Sam Sarr a terminé la commande vocale.]")
             time.sleep(1)
             return True
         fichier = "voix_secours.wav"
@@ -135,7 +135,7 @@ class VoiceManager:
                 duree = w.getnframes() / float(w.getframerate())
             self._jouer_fichier(fichier, duree)
             os.remove(fichier)
-            print("[🔊 Samba Sarr a terminé la commande vocale.]")
+            print("[🔊 Sam Sarr a terminé la commande vocale.]")
             time.sleep(1)
             return True
         except Exception as e:
@@ -151,10 +151,10 @@ class VoiceManager:
             if not texte_propre:
                 return True
 
-            print("[🔊 Samba Sarr parle...]")
+            print("[🔊 Sam Sarr parle...]")
 
             if self._parler_gtts(texte_propre):
-                print("[🔊 Samba Sarr a terminé la commande vocale.]")
+                print("[🔊 Sam Sarr a terminé la commande vocale.]")
                 time.sleep(1)
                 return True
 
@@ -374,10 +374,10 @@ class VoiceManager:
         texte_normalise = texte.strip()
 
         corrections = {
-            r"\bsamba\s+sar\b": "Samba Sarr",
-            r"\bsamba\s+ça\b": "Samba Sarr",
-            r"\bsamba\s+serre\b": "Samba Sarr",
-            r"\bsamba\s+sert\b": "Samba Sarr",
+            r"\bsamba\s+sar\b": "Sam Sarr",
+            r"\bsamba\s+ça\b": "Sam Sarr",
+            r"\bsamba\s+serre\b": "Sam Sarr",
+            r"\bsamba\s+sert\b": "Sam Sarr",
         }
 
         for motif, correction in corrections.items():

@@ -64,3 +64,6 @@ test_assemblyai.py
 test_creation.py
 test_groq_audio.mp4
 .patches/
+
+# Base de données privée des conversations de Sam Sarr
+/interface/data/conversations.db*

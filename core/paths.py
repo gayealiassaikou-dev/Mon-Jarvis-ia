@@ -1,4 +1,4 @@
-"""Chemins centraux du projet Samba Sarr."""
+"""Chemins centraux du projet Sam Sarr."""
 
 from pathlib import Path
 

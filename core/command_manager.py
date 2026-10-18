@@ -11,19 +11,19 @@ class CommandManager:
         commande = re.sub(r"\s+", " ", commande).strip()
 
         if commande in ["bonjour", "salut", "hello"]:
-            return "Bonjour, je suis Samba Sarr. Systeme operationnel."
+            return "Bonjour, je suis Sam Sarr. Systeme operationnel."
 
         elif commande in ["qui es tu", "qui es-tu", "présente toi"]:
-            return "Je suis Samba Sarr, ton assistant IA personnel."
+            return "Je suis Sam Sarr, ton assistant IA personnel."
 
         elif commande == "agents":
             return "Agents disponibles : Directeur IA, Developpeur, Designer, Recherche, Business."
 
         elif commande == "memoire":
-            return "La memoire de Samba Sarr est active."
+            return "La memoire de Sam Sarr est active."
 
         elif commande == "version":
-            return "Samba Sarr version 0.1."
+            return "Sam Sarr version 0.1."
 
         elif commande == "heure":
             return f"Il est {datetime.now().strftime('%H:%M')}."

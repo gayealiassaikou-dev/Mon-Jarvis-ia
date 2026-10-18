@@ -1,5 +1,5 @@
 TOUS_LES_OUTILS = [
-    "lire_fichier", "ecrire_fichier", "supprimer_fichier",
+    "lire_fichier", "ecrire_fichier", "supprimer_fichier", "supprimer_dossier",
     "lister_fichiers", "creer_dossier",
     "rechercher_web",
     "creer_projet", "ajouter_tache", "lister_projets", "lister_taches",
@@ -12,9 +12,10 @@ PERMISSIONS_AGENTS = {
     "00_directeur_ia": TOUS_LES_OUTILS,
 
     "01_developpeur": [
-        "lire_fichier", "ecrire_fichier", "supprimer_fichier",
+        "lire_fichier", "ecrire_fichier", "supprimer_fichier", "supprimer_dossier",
         "lister_fichiers", "creer_dossier",
-        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo"
+        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
+        "executer_tests_python"
     ],
 
     "02_designer": [

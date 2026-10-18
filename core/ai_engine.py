@@ -1,9 +1,11 @@
 import os
 import json
+import re
+import unicodedata
 import requests
 from dotenv import load_dotenv
 from core.ai_router import AIRouter
-from core.tools import executer_tests_python, lire_fichier, ecrire_fichier, creer_parent_manquant_pour_ecriture, supprimer_fichier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
+from core.tools import executer_tests_python, lire_fichier, ecrire_fichier, creer_parent_manquant_pour_ecriture, supprimer_fichier, supprimer_dossier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
 
 load_dotenv()
 
@@ -46,6 +48,20 @@ OUTILS = [
                 "type": "object",
                 "properties": {
                     "chemin": {"type": "string", "description": "Chemin relatif du fichier a supprimer"}
+                },
+                "required": ["chemin"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "supprimer_dossier",
+            "description": "Supprime definitivement un dossier et tout son contenu. Utiliser uniquement sur demande explicite de l'utilisateur, avec le chemin exact. Ne jamais supprimer la racine du projet ni un chemin protege.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "chemin": {"type": "string", "description": "Chemin relatif exact du dossier a supprimer depuis la racine du projet"}
                 },
                 "required": ["chemin"]
             }
@@ -311,6 +327,7 @@ FONCTIONS_DISPONIBLES = {
     "lire_fichier": lire_fichier,
     "ecrire_fichier": ecrire_fichier,
     "supprimer_fichier": supprimer_fichier,
+    "supprimer_dossier": supprimer_dossier,
     "lister_fichiers": lister_fichiers,
     "creer_dossier": creer_dossier,
     "github_creer_repo": github_creer_repo,
@@ -425,6 +442,8 @@ class AIEngine:
 
         self.outils_autorises = outils_autorises
         self.mode_action = bool(mode_action)
+        ancien_message = getattr(self, "_message_utilisateur_courant", "")
+        self._message_utilisateur_courant = str(message or "")
 
         try:
             return self.router.demander(
@@ -435,6 +454,7 @@ class AIEngine:
         finally:
             self.outils_autorises = ancien_outils_autorises
             self.mode_action = ancien_mode_action
+            self._message_utilisateur_courant = ancien_message
 
     # PATCH5_CONTRAT_OUTILS_V1
     def _obtenir_outils_autorises(self):
@@ -698,6 +718,56 @@ class AIEngine:
 
         return True, None
 
+    def _autorisation_suppression_explicite(self, nom_fonction, arguments):
+        """Vérifie que la commande utilisateur nomme l'action et sa cible."""
+        message = str(getattr(self, "_message_utilisateur_courant", "") or "")
+        message = unicodedata.normalize("NFKD", message.casefold())
+        message = "".join(c for c in message if not unicodedata.combining(c))
+        message = " ".join(message.split())
+
+        verbe = r"(?:supprime\w*|efface\w*|detru\w*|delete|remove)"
+        if not re.search(r"\b" + verbe + r"\b", message):
+            return False
+
+        motifs_negation = (
+            r"\bne\b.{0,100}\b" + verbe + r"\b",
+            r"\bn['’]\s*" + verbe + r"\b",
+            r"\b(?:do not|don't|never)\s+" + verbe + r"\b",
+            r"\b(?:pas|jamais|plus)\s+" + verbe + r"\b",
+        )
+        if any(re.search(motif, message) for motif in motifs_negation):
+            return False
+
+        if not isinstance(arguments, dict):
+            return False
+
+        cle = "chemin" if nom_fonction in {"supprimer_fichier", "supprimer_dossier"} else "nom"
+        cible = arguments.get(cle)
+        if not isinstance(cible, str) or not cible.strip():
+            return False
+
+        cible = cible.strip().replace("\\", "/")
+        candidats = [cible]
+        if nom_fonction in {"supprimer_fichier", "supprimer_dossier"}:
+            candidats.append(os.path.basename(cible))
+
+        generiques = {
+            "fichier", "le fichier", "ce fichier", "dossier", "le dossier",
+            "ce dossier", "projet", "le projet", "ce projet", "tache",
+            "la tache", "cette tache",
+        }
+        for candidat in candidats:
+            candidat = unicodedata.normalize("NFKD", candidat.casefold())
+            candidat = "".join(
+                c for c in candidat if not unicodedata.combining(c)
+            )
+            candidat = " ".join(candidat.split())
+            if candidat and candidat not in generiques and re.search(
+                r"(?<!\w)" + re.escape(candidat) + r"(?!\w)", message
+            ):
+                return True
+        return False
+
     def _executer_outil(self, nom_fonction, arguments):
         """
         Exécute un outil après contrôle strict du contrat.
@@ -783,6 +853,37 @@ class AIEngine:
             return resultat
 
         # -----------------------------------------------------
+        # Protection supplémentaire : aucune suppression sans demande explicite.
+        outils_destructifs = {
+            "supprimer_fichier", "supprimer_dossier", "supprimer_tache", "supprimer_projet"
+        }
+        if (
+            nom_fonction in outils_destructifs
+            and not self._autorisation_suppression_explicite(
+                nom_fonction, arguments
+            )
+        ):
+            resultat = (
+                "Suppression bloquee : la commande doit demander explicitement "
+                "la suppression et nommer la cible."
+            )
+            entree = self._normaliser_resultat_outil(
+                nom_fonction,
+                arguments,
+                resultat,
+                disponible=True,
+                autorise=False,
+                arguments_valides=False,
+                execute=False,
+                verification={
+                    "verifie": False,
+                    "details": "Aucune suppression executee : autorisation absente.",
+                },
+                statut="suppression_non_autorisee",
+            )
+            self._enregistrer_resultat_outil(entree)
+            return resultat
+
         # Etat 3 : validation des arguments
         # -----------------------------------------------------
         arguments_valides, erreur_arguments = self._valider_arguments_outil(
@@ -1468,6 +1569,34 @@ class AIEngine:
                 "details": "Le fichier a ete verifie physiquement et n'existe plus."
             }
 
+
+        if nom_fonction == "supprimer_dossier":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"La suppression du dossier a echoue : {resultat}"
+                }
+
+            chemin = arguments.get("chemin")
+            if not isinstance(chemin, str) or not chemin.strip():
+                return {
+                    "verifie": False,
+                    "details": "Verification impossible : chemin du dossier absent."
+                }
+
+            racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            chemin_reel = os.path.realpath(os.path.abspath(os.path.join(racine, chemin)))
+
+            if os.path.exists(chemin_reel):
+                return {
+                    "verifie": False,
+                    "details": "Le dossier existe encore apres la suppression."
+                }
+
+            return {
+                "verifie": True,
+                "details": "La disparition du dossier a ete verifiee physiquement."
+            }
 
         if nom_fonction != "ecrire_fichier":
             return {

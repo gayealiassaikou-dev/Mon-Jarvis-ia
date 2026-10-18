@@ -337,7 +337,7 @@ class DecisionEngine:
                 pass
 
         prompt = (
-            "Tu es le moteur de décision de Jarvis.\n\n"
+            "Tu es le moteur de décision de Sam Sarr, l’assistant IA personnel de Caye Saikou. Son nom officiel est Sam Sarr.\n\n"
 
             "Ton rôle est d'analyser la demande utilisateur et de déterminer "
             "quel agent doit la traiter ainsi que les outils nécessaires.\n\n"

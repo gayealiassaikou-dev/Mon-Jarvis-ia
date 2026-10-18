@@ -4,12 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="dark light">
-    <title>Samba Sarr</title>
+    <title>Sam Sarr</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<header class="barre">Samba Sarr</header>
+<aside id="barre-laterale" class="barre-laterale">
+    <div class="barre-laterale-entete">
+        <div class="barre-titre">Sam Sarr</div>
+        <button type="button" id="nouvelle-discussion">+ Nouvelle discussion</button>
+    </div>
+    <section id="historique" class="historique">
+        <h2>Mes conversations</h2>
+        <div id="liste-conversations"></div>
+    </section>
+</aside>
+
+<div class="espace-travail">
+<header class="barre">
+    <button type="button" id="bouton-historique"
+            aria-label="Ouvrir ou fermer le menu des conversations"
+            aria-expanded="false">☰</button>
+    <div class="barre-titre">Sam Sarr</div>
+</header>
 
 <main id="fil" class="fil">
     {% if not message and not reponse %}
@@ -33,11 +50,12 @@
 
 <form id="formulaire" class="saisie">
     <div class="boite">
-        <textarea id="champ" rows="1" placeholder="Pose ta question à Samba Sarr" autocomplete="off"></textarea>
+        <textarea id="champ" rows="1" placeholder="Pose ta question à Sam Sarr" autocomplete="off"></textarea>
         <button type="submit" id="envoi" aria-label="Envoyer">&#8593;</button>
     </div>
-    <p class="note">Samba Sarr peut faire des erreurs. Vérifie les informations importantes.</p>
+    <p class="note">Sam Sarr peut faire des erreurs. Vérifie les informations importantes.</p>
 </form>
+</div>
 
 <script>
 const fil = document.getElementById('fil');
@@ -145,28 +163,317 @@ function ecrire(zone, texte) {
     });
 }
 
+function creerPanneauActivite(zoneAssistant) {
+    const panneau = document.createElement('section');
+    panneau.className = 'activite ouverte';
+
+    const bouton = document.createElement('button');
+    bouton.type = 'button';
+    bouton.className = 'activite-bouton';
+    bouton.setAttribute('aria-expanded', 'true');
+
+    const point = document.createElement('span');
+    point.className = 'activite-point';
+
+    const titre = document.createElement('span');
+    titre.className = 'activite-titre';
+    titre.textContent = 'Sam Sarr travaille…';
+
+    const fleche = document.createElement('span');
+    fleche.className = 'activite-fleche';
+    fleche.textContent = '⌄';
+
+    bouton.append(point, titre, fleche);
+
+    const details = document.createElement('div');
+    details.className = 'activite-details';
+
+    bouton.addEventListener('click', function () {
+        const ouverte = panneau.classList.toggle('ouverte');
+        bouton.setAttribute('aria-expanded', String(ouverte));
+    });
+
+    panneau.append(bouton, details);
+    const ligneAssistant = zoneAssistant.closest('.ligne.assistant');
+    if (ligneAssistant && ligneAssistant.parentNode === fil) {
+        fil.insertBefore(panneau, ligneAssistant);
+    } else {
+        fil.appendChild(panneau);
+    }
+    defiler();
+
+    return { panneau, bouton, titre, details };
+}
+
+function actualiserActivite(interfaceActivite, activite) {
+    const { panneau, bouton, titre, details } = interfaceActivite;
+
+    if (activite.etat === 'terminee') {
+        panneau.classList.add('terminee');
+        panneau.classList.remove('echec');
+        titre.textContent = 'Sam Sarr a terminé';
+    } else if (activite.etat === 'echec') {
+        panneau.classList.add('echec');
+        panneau.classList.remove('terminee');
+        titre.textContent = 'Sam Sarr a rencontré un problème';
+    } else {
+        titre.textContent = 'Sam Sarr travaille…';
+    }
+
+    details.replaceChildren();
+
+    for (const etape of (activite.etapes || [])) {
+        const ligne = document.createElement('div');
+        ligne.className = 'activite-etape';
+
+        if (['en_cours', 'succes', 'echec'].includes(etape.statut)) {
+            ligne.classList.add(etape.statut);
+        }
+
+        const marque = document.createElement('span');
+        marque.className = 'activite-etape-marque';
+        marque.textContent = etape.statut === 'succes' ? '✓'
+            : etape.statut === 'echec' ? '!'
+            : etape.statut === 'en_cours' ? '●' : '·';
+
+        const texte = document.createElement('span');
+        texte.textContent = etape.message || 'Activité en cours';
+
+        ligne.append(marque, texte);
+        details.appendChild(ligne);
+    }
+
+    bouton.setAttribute('aria-label', titre.textContent);
+    defiler();
+}
+
+async function surveillerActivite(id, interfaceActivite) {
+    for (let tentative = 0; tentative < 180; tentative++) {
+        try {
+            const r = await fetch('/activite/' + encodeURIComponent(id));
+            if (r.ok) {
+                const activite = await r.json();
+                actualiserActivite(interfaceActivite, activite);
+
+                if (activite.etat !== 'en_cours') {
+                    return activite;
+                }
+            }
+        } catch (e) {
+            // Une erreur passagère de lecture ne bloque pas la réponse.
+        }
+
+        await new Promise(function (fin) {
+            setTimeout(fin, 800);
+        });
+    }
+
+    return null;
+}
+
+
+let conversationActive = null;
+
+async function chargerListeConversations() {
+    const liste = document.getElementById('liste-conversations');
+    liste.replaceChildren();
+
+    try {
+        const r = await fetch('/conversations', { cache: 'no-store' });
+        if (!r.ok) throw new Error('Historique indisponible');
+
+        const conversations = await r.json();
+
+        if (!conversations.length) {
+            const vide = document.createElement('p');
+            vide.className = 'conversation-vide';
+            vide.textContent = 'Aucune conversation enregistrée pour le moment.';
+            liste.appendChild(vide);
+            return;
+        }
+
+        for (const conversation of conversations) {
+            const bouton = document.createElement('button');
+            bouton.type = 'button';
+            bouton.className = 'conversation-element';
+            bouton.textContent = conversation.titre || 'Nouvelle discussion';
+
+            if (conversation.id === conversationActive) {
+                bouton.classList.add('active');
+            }
+
+            bouton.addEventListener('click', function () {
+                chargerConversation(conversation.id);
+            });
+
+            liste.appendChild(bouton);
+        }
+    } catch (e) {
+        const erreur = document.createElement('p');
+        erreur.className = 'conversation-vide';
+        erreur.textContent = 'Impossible de charger l’historique.';
+        liste.appendChild(erreur);
+    }
+}
+
+async function chargerConversation(identifiant) {
+    try {
+        const r = await fetch(
+            '/conversations/' + encodeURIComponent(identifiant),
+            { cache: 'no-store' }
+        );
+
+        if (!r.ok) throw new Error('Conversation indisponible');
+
+        const donnees = await r.json();
+
+        conversationActive = donnees.conversation.id;
+        try {
+            localStorage.setItem('sam_sarr_conversation_id', conversationActive);
+        } catch (e) {}
+
+        fil.replaceChildren();
+
+        for (const message of donnees.messages) {
+            if (message.role === 'user') {
+                ajouterUtilisateur(message.content);
+            } else if (message.role === 'assistant') {
+                const zone = ajouterAssistant();
+                zone.innerHTML = markdown(message.content);
+            }
+        }
+
+        fermerMenuMobile();
+        document.getElementById('bouton-historique').setAttribute('aria-expanded', 'false');
+        await chargerListeConversations();
+        defiler();
+    } catch (e) {
+        alert('Impossible de charger cette conversation. Réessaie.');
+    }
+}
+
+function demarrerNouvelleDiscussion() {
+    conversationActive = null;
+    try {
+        localStorage.removeItem('sam_sarr_conversation_id');
+    } catch (e) {}
+
+    fil.replaceChildren();
+
+    const accueilNouveau = document.createElement('div');
+    accueilNouveau.className = 'accueil';
+
+    const logo = document.createElement('div');
+    logo.className = 'logo-grand';
+    logo.textContent = 'S';
+
+    const titre = document.createElement('h1');
+    titre.textContent = 'Comment puis-je t’aider ?';
+
+    accueilNouveau.append(logo, titre);
+    fil.appendChild(accueilNouveau);
+
+    fermerMenuMobile();
+    document.getElementById('bouton-historique').setAttribute('aria-expanded', 'false');
+    champ.focus();
+    chargerListeConversations();
+}
+
+document.getElementById('nouvelle-discussion').addEventListener(
+    'click', demarrerNouvelleDiscussion
+);
+
+function fermerMenuMobile() {
+    document.body.classList.remove('menu-ouvert');
+    document.getElementById('bouton-historique').setAttribute('aria-expanded', 'false');
+}
+
+document.getElementById('bouton-historique').addEventListener('click', function () {
+    const ouvert = document.body.classList.toggle('menu-ouvert');
+    this.setAttribute('aria-expanded', String(ouvert));
+    if (ouvert) {
+        chargerListeConversations();
+    }
+});
+
 async function envoyer(texte) {
     if (occupe) { return; }
+
     occupe = true;
     envoi.disabled = true;
+
     if (accueil) { accueil.remove(); }
+
     ajouterUtilisateur(texte);
+
     const zone = ajouterAssistant();
     reflechir(zone);
+
+    let id = null;
+    let surveillance = null;
+
+    try {
+        const depart = await fetch('/activite/demarrer', {
+            method: 'POST'
+        });
+
+        if (depart.ok) {
+            const donneesDepart = await depart.json();
+            id = donneesDepart.demande_id;
+
+            if (typeof id === 'string' && id.length > 0) {
+                const interfaceActivite = creerPanneauActivite(zone);
+                surveillance = surveillerActivite(id, interfaceActivite);
+            } else {
+                id = null;
+            }
+        }
+    } catch (e) {
+        // Le chat reste utilisable même si le suivi est indisponible.
+    }
+
     try {
         const r = await fetch('/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: texte })
+            body: JSON.stringify((function () {
+                const donnees = { message: texte };
+                if (id) donnees.demande_id = id;
+                if (conversationActive) {
+                    donnees.conversation_id = conversationActive;
+                }
+                return donnees;
+            })())
         });
+
         const d = await r.json();
+
+        if (!r.ok) {
+            throw new Error(d.reponse || 'Erreur pendant la demande.');
+        }
+
+        if (d.conversation_id) {
+            conversationActive = d.conversation_id;
+            try {
+                localStorage.setItem(
+                    'sam_sarr_conversation_id', conversationActive
+                );
+            } catch (e) {}
+            await chargerListeConversations();
+        }
+
         await ecrire(zone, d.reponse || 'Réponse vide.');
     } catch (e) {
         zone.textContent = 'Erreur de connexion. Réessaie.';
+    } finally {
+        if (surveillance) {
+            await surveillance;
+        }
+
+        occupe = false;
+        envoi.disabled = false;
+        champ.focus();
     }
-    occupe = false;
-    envoi.disabled = false;
-    champ.focus();
 }
 
 function ajuster() {
@@ -196,6 +503,22 @@ document.querySelectorAll('.texte[data-brut]').forEach(function (z) {
     z.innerHTML = markdown(z.dataset.brut);
 });
 fil.scrollTop = fil.scrollHeight;
+
+// Charger l'historique et retrouver la dernière conversation ouverte.
+chargerListeConversations();
+
+if (accueil) {
+    try {
+        const derniereConversation = localStorage.getItem(
+            'sam_sarr_conversation_id'
+        );
+        if (derniereConversation) {
+            chargerConversation(derniereConversation);
+        }
+    } catch (e) {
+        // L'interface reste utilisable si le stockage local est indisponible.
+    }
+}
 </script>
 
 </body>

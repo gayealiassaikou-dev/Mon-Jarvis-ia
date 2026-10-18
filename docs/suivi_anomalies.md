@@ -1,4 +1,4 @@
-# Suivi des anomalies - Samba Sarr (Jarvis)
+# Suivi des anomalies - Sam Sarr (Jarvis)
 
 Branche : fiabilite-coeur
 Derniere mise a jour : 2026-10-10

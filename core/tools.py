@@ -5,6 +5,7 @@ import re
 import json
 import requests
 import base64
+import shutil
 
 DOSSIER_AUTORISE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -26,6 +27,7 @@ FICHIERS_PROTEGES = [
 
 DOSSIERS_PROTEGES = [
     os.path.join(DOSSIER_AUTORISE, "core"),
+    os.path.join(DOSSIER_AUTORISE, ".git"),
 ]
 
 def _fichier_protege(chemin_complet):
@@ -221,6 +223,52 @@ def supprimer_fichier(chemin):
     os.remove(chemin_complet)
     return f"Fichier {chemin} supprime avec succes."
 
+
+
+def supprimer_dossier(chemin):
+    """Supprime un dossier du projet après validation des protections."""
+    if not isinstance(chemin, str) or not chemin.strip():
+        return "Erreur : chemin du dossier absent."
+
+    chemin = chemin.strip()
+    chemin_complet = os.path.abspath(
+        os.path.join(DOSSIER_AUTORISE, chemin)
+    )
+    chemin_reel = os.path.realpath(chemin_complet)
+    racine_reelle = os.path.realpath(DOSSIER_AUTORISE)
+
+    if not _chemin_autorise(chemin_complet):
+        return "Erreur : accès refusé en dehors du projet."
+
+    if chemin_reel == racine_reelle:
+        return "Erreur : la racine du projet ne peut pas être supprimée."
+
+    chemin_relatif = os.path.relpath(chemin_complet, DOSSIER_AUTORISE)
+    chemin_verifie = DOSSIER_AUTORISE
+
+    for composant in chemin_relatif.split(os.sep):
+        if composant in ("", "."):
+            continue
+        chemin_verifie = os.path.join(chemin_verifie, composant)
+        if os.path.islink(chemin_verifie):
+            return "Erreur : les chemins contenant un lien symbolique ne peuvent pas être supprimés."
+
+
+    if _fichier_protege(chemin_reel):
+        return f"Erreur : {chemin} est un chemin protégé."
+
+    if not os.path.exists(chemin_reel):
+        return f"Erreur : le dossier {chemin} n'existe pas."
+
+    if not os.path.isdir(chemin_reel):
+        return f"Erreur : {chemin} n'est pas un dossier."
+
+    try:
+        shutil.rmtree(chemin_reel)
+        return f"Dossier {chemin} supprimé avec succès."
+    except OSError as exc:
+        return f"Erreur : impossible de supprimer le dossier {chemin} : {exc}"
+
 def lister_fichiers_original_en_ligne(dossier="."):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, dossier))
 
@@ -260,7 +308,7 @@ import functools as _ft
 def lister_fichiers(*args, **kwargs):
     r = lister_fichiers_original_en_ligne(*args, **kwargs)
     if isinstance(r, str):
-        return '[Contenu des fichiers du serveur de Samba Sarr, PAS du depot GitHub]\n' + r
+        return '[Contenu des fichiers du serveur de Sam Sarr, PAS du depot GitHub]\n' + r
     return r
 
 def creer_dossier(chemin):
@@ -578,301 +626,201 @@ def github_lister_repos(*args, **kwargs):
         return 'Erreur : GITHUB_TOKEN est absent, impossible de lister les depots GitHub depuis ce serveur. Aucune action effectuee.'
     return github_lister_repos_original_en_ligne(*args, **kwargs)
 
-def github_lire_fichier_original_en_ligne(repo, chemin):
-    """
-    Lit un fichier GitHub via l'authentification locale de GitHub CLI.
 
-    Le depot peut etre fourni sous la forme :
-    - "Dande-Lenol"
-    - "utilisateur/Dande-Lenol"
-
-    Aucun GITHUB_TOKEN n'est utilise.
-    """
-    import base64
-    import json
-    import subprocess
+def _github_resoudre_repo(repo):
+    """Resout un depot GitHub et retourne son nom et le token disponible."""
+    token = os.getenv("GITHUB_TOKEN", "").strip()
 
     if not isinstance(repo, str) or not repo.strip():
-        return "Erreur : le depot GitHub est obligatoire."
+        return None, None, "Erreur : le depot GitHub est obligatoire."
 
+    repo = repo.strip()
+
+    if "/" not in repo:
+        if not token:
+            return None, None, (
+                "Erreur : indique le depot sous la forme proprietaire/depot. "
+                "Un GITHUB_TOKEN est necessaire pour resoudre un nom court."
+            )
+        try:
+            reponse = requests.get(
+                "https://api.github.com/user",
+                headers=_github_entetes(token),
+                timeout=15,
+            )
+        except requests.RequestException:
+            return None, None, "Erreur : connexion a GitHub impossible."
+
+        if reponse.status_code != 200:
+            return None, None, (
+                "Erreur GitHub : impossible de verifier le compte "
+                f"(HTTP {reponse.status_code})."
+            )
+
+        repo = f"{reponse.json().get('login', '')}/{repo}"
+
+    morceaux = repo.split("/")
+    if (
+        len(morceaux) != 2
+        or not all(morceaux)
+        or any(
+            not re.fullmatch(r"[A-Za-z0-9_.-]+", partie)
+            for partie in morceaux
+        )
+    ):
+        return None, None, (
+            "Erreur : depot invalide. Utilise proprietaire/depot."
+        )
+
+    return repo, token, None
+
+
+def _github_entetes(token=None):
+    entetes = {
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if token:
+        entetes["Authorization"] = f"Bearer {token}"
+    return entetes
+
+
+def _github_message_erreur(reponse):
+    try:
+        message = reponse.json().get("message")
+    except (ValueError, AttributeError):
+        message = None
+    return str(message or "aucun detail fourni par GitHub")[:300]
+
+
+def github_lire_fichier_original_en_ligne(repo, chemin):
+    """Lit un fichier GitHub avec l'API REST officielle."""
     if not isinstance(chemin, str) or not chemin.strip():
         return "Erreur : le chemin du fichier est obligatoire."
 
-    repo = repo.strip()
-    chemin = chemin.strip()
+    chemin = chemin.strip().replace("\\", "/")
+    if chemin.startswith("/") or ".." in chemin.split("/"):
+        return "Erreur : chemin de fichier invalide."
 
-    if "/" not in repo:
-        try:
-            proprietaire = subprocess.run(
-                ["gh", "api", "user", "--jq", ".login"],
-                capture_output=True,
-                text=True,
-                timeout=15,
-                check=False,
-            )
-        except FileNotFoundError:
-            return "Erreur : GitHub CLI 'gh' est introuvable."
-        except subprocess.TimeoutExpired:
-            return "Erreur : recuperation du compte GitHub expiree."
-        except OSError as erreur:
-            return (
-                "Erreur systeme GitHub CLI : "
-                f"{type(erreur).__name__}: {erreur}"
-            )
+    repo, token, erreur = _github_resoudre_repo(repo)
+    if erreur:
+        return erreur
 
-        if proprietaire.returncode != 0:
-            details = (
-                proprietaire.stderr.strip()
-                or proprietaire.stdout.strip()
-                or "authentification GitHub indisponible"
-            )
-            return (
-                "Erreur : impossible de recuperer le compte GitHub : "
-                f"{details}"
-            )
-
-        login = proprietaire.stdout.strip()
-
-        if not login:
-            return (
-                "Erreur : le compte GitHub authentifie "
-                "est introuvable."
-            )
-
-        repo = f"{login}/{repo}"
-
-    chemin_api = f"repos/{repo}/contents/{chemin}"
+    from urllib.parse import quote
+    url = (
+        "https://api.github.com/repos/"
+        + quote(repo, safe="/")
+        + "/contents/"
+        + quote(chemin, safe="/")
+    )
 
     try:
-        lecture = subprocess.run(
-            [
-                "gh",
-                "api",
-                chemin_api,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=15,
-            check=False,
+        reponse = requests.get(
+            url, headers=_github_entetes(token), timeout=20
         )
-    except FileNotFoundError:
-        return "Erreur : GitHub CLI 'gh' est introuvable."
-    except subprocess.TimeoutExpired:
-        return "Erreur : lecture du fichier GitHub expiree."
-    except OSError as erreur:
-        return (
-            "Erreur systeme GitHub CLI : "
-            f"{type(erreur).__name__}: {erreur}"
-        )
+    except requests.RequestException:
+        return "Erreur : connexion a GitHub impossible pendant la lecture."
 
-    if lecture.returncode != 0:
-        details = (
-            lecture.stderr.strip()
-            or lecture.stdout.strip()
-            or "aucun detail fourni par gh"
-        )
+    if reponse.status_code != 200:
         return (
-            "Erreur lecture fichier GitHub : "
-            f"{details}"
+            f"Erreur lecture GitHub (HTTP {reponse.status_code}) : "
+            f"{_github_message_erreur(reponse)}"
         )
 
     try:
-        data = json.loads(lecture.stdout)
-    except json.JSONDecodeError as erreur:
-        return (
-            "Erreur : reponse GitHub invalide : "
-            f"{type(erreur).__name__}: {erreur}"
-        )
-
-    contenu_b64 = data.get("content")
-
-    if not isinstance(contenu_b64, str) or not contenu_b64:
-        return (
-            "Erreur : GitHub n'a retourne aucun contenu "
-            "pour ce fichier."
-        )
-
-    try:
-        return base64.b64decode(contenu_b64).decode("utf-8")
-    except (ValueError, UnicodeDecodeError) as erreur:
-        return (
-            "Erreur : impossible de decoder le contenu GitHub : "
-            f"{type(erreur).__name__}: {erreur}"
-        )
+        donnees = reponse.json()
+        if donnees.get("type") != "file":
+            return "Erreur : le chemin indique n'est pas un fichier."
+        contenu = donnees.get("content", "")
+        if not contenu:
+            return "Erreur : GitHub n'a retourne aucun contenu."
+        return base64.b64decode(contenu).decode("utf-8")
+    except (ValueError, UnicodeDecodeError, TypeError, AttributeError):
+        return "Erreur : contenu GitHub invalide ou non decodable."
 
 
-import functools as _ft
-@_ft.wraps(github_lire_fichier_original_en_ligne)
 def github_lire_fichier(*args, **kwargs):
-    import shutil as _sh
-    if not _sh.which('gh'):
-        return "Erreur : cet outil GitHub n'est pas disponible en ligne (la commande gh n'est installee que sur le telephone). Aucune action effectuee."
     return github_lire_fichier_original_en_ligne(*args, **kwargs)
 
 
 def github_ecrire_fichier_original_en_ligne(
-    repo,
-    chemin,
-    contenu,
-    message="Mise a jour via Jarvis",
+    repo, chemin, contenu, message="Mise a jour via Sam Sarr"
 ):
-    """
-    Cree ou met a jour un fichier GitHub via l'authentification locale gh.
-
-    Le depot peut etre fourni sous la forme :
-    - "Dande-Lenol"
-    - "utilisateur/Dande-Lenol"
-
-    Aucun GITHUB_TOKEN n'est utilise.
-    """
-    import json
-    import subprocess
-
-    if not isinstance(repo, str) or not repo.strip():
-        return "Erreur : le depot GitHub est obligatoire."
-
+    """Cree ou met a jour un fichier GitHub via l'API REST."""
     if not isinstance(chemin, str) or not chemin.strip():
         return "Erreur : le chemin du fichier est obligatoire."
-
     if not isinstance(contenu, str):
         return "Erreur : le contenu du fichier doit etre une chaine."
-
     if not isinstance(message, str) or not message.strip():
         return "Erreur : le message du commit est obligatoire."
 
-    repo = repo.strip()
-    chemin = chemin.strip()
-    message = message.strip()
+    chemin = chemin.strip().replace("\\", "/")
+    if chemin.startswith("/") or ".." in chemin.split("/"):
+        return "Erreur : chemin de fichier invalide."
 
-    if "/" not in repo:
-        try:
-            proprietaire = subprocess.run(
-                ["gh", "api", "user", "--jq", ".login"],
-                capture_output=True,
-                text=True,
-                timeout=15,
-                check=False,
-            )
-        except FileNotFoundError:
-            return "Erreur : GitHub CLI 'gh' est introuvable."
-        except subprocess.TimeoutExpired:
-            return "Erreur : recuperation du compte GitHub expiree."
-        except OSError as erreur:
-            return (
-                "Erreur systeme GitHub CLI : "
-                f"{type(erreur).__name__}: {erreur}"
-            )
+    repo, token, erreur = _github_resoudre_repo(repo)
+    if erreur:
+        return erreur
+    if not token:
+        return (
+            "Erreur : GITHUB_TOKEN est absent. "
+            "Configure-le dans les variables d'environnement de Velixir."
+        )
 
-        if proprietaire.returncode != 0:
-            details = (
-                proprietaire.stderr.strip()
-                or proprietaire.stdout.strip()
-                or "authentification GitHub indisponible"
-            )
-            return f"Erreur : impossible de recuperer le compte GitHub : {details}"
-
-        login = proprietaire.stdout.strip()
-
-        if not login:
-            return "Erreur : le compte GitHub authentifie est introuvable."
-
-        repo = f"{login}/{repo}"
-
-    contenu_b64 = base64.b64encode(
-        contenu.encode("utf-8")
-    ).decode("utf-8")
-
-    chemin_api = f"repos/{repo}/contents/{chemin}"
+    from urllib.parse import quote
+    url = (
+        "https://api.github.com/repos/"
+        + quote(repo, safe="/")
+        + "/contents/"
+        + quote(chemin, safe="/")
+    )
+    entetes = _github_entetes(token)
 
     try:
-        lecture = subprocess.run(
-            [
-                "gh",
-                "api",
-                chemin_api,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=15,
-            check=False,
-        )
-    except FileNotFoundError:
-        return "Erreur : GitHub CLI 'gh' est introuvable."
-    except subprocess.TimeoutExpired:
-        return "Erreur : lecture du fichier GitHub expiree."
-    except OSError as erreur:
-        return (
-            "Erreur systeme GitHub CLI : "
-            f"{type(erreur).__name__}: {erreur}"
-        )
+        lecture = requests.get(url, headers=entetes, timeout=20)
+    except requests.RequestException:
+        return "Erreur : connexion a GitHub impossible pendant la lecture."
 
     sha = None
-
-    if lecture.returncode == 0:
+    if lecture.status_code == 200:
         try:
-            donnees = json.loads(lecture.stdout)
-            sha = donnees.get("sha")
-        except json.JSONDecodeError:
-            return "Erreur : reponse GitHub invalide lors de la lecture du fichier."
-    elif "HTTP 404" not in lecture.stderr:
-        details = (
-            lecture.stderr.strip()
-            or lecture.stdout.strip()
-            or "lecture GitHub impossible"
+            sha = lecture.json().get("sha")
+        except (ValueError, AttributeError):
+            return "Erreur : reponse GitHub invalide."
+    elif lecture.status_code != 404:
+        return (
+            f"Erreur GitHub pendant la lecture (HTTP {lecture.status_code}) : "
+            f"{_github_message_erreur(lecture)}"
         )
-        return f"Erreur GitHub : {details}"
 
-    commande = [
-        "gh",
-        "api",
-        chemin_api,
-        "--method",
-        "PUT",
-        "-f",
-        f"message={message}",
-        "-f",
-        f"content={contenu_b64}",
-    ]
-
+    donnees = {
+        "message": message.strip(),
+        "content": base64.b64encode(
+            contenu.encode("utf-8")
+        ).decode("ascii"),
+    }
     if sha:
-        commande.extend(["-f", f"sha={sha}"])
+        donnees["sha"] = sha
 
     try:
-        resultat = subprocess.run(
-            commande,
-            capture_output=True,
-            text=True,
-            timeout=30,
-            check=False,
+        resultat = requests.put(
+            url, headers=entetes, json=donnees, timeout=30
         )
-    except FileNotFoundError:
-        return "Erreur : GitHub CLI 'gh' est introuvable."
-    except subprocess.TimeoutExpired:
-        return "Erreur : ecriture du fichier GitHub expiree."
-    except OSError as erreur:
-        return (
-            "Erreur systeme GitHub CLI : "
-            f"{type(erreur).__name__}: {erreur}"
-        )
+    except requests.RequestException:
+        return "Erreur : connexion a GitHub impossible pendant l'ecriture."
 
-    if resultat.returncode != 0:
-        details = (
-            resultat.stderr.strip()
-            or resultat.stdout.strip()
-            or "ecriture GitHub impossible"
+    if resultat.status_code not in (200, 201):
+        return (
+            f"Erreur ecriture GitHub (HTTP {resultat.status_code}) : "
+            f"{_github_message_erreur(resultat)}"
         )
-        return f"Erreur GitHub : {details}"
 
     return f"Fichier {chemin} envoye avec succes sur {repo}."
 
 
-import functools as _ft
-@_ft.wraps(github_ecrire_fichier_original_en_ligne)
 def github_ecrire_fichier(*args, **kwargs):
-    import shutil as _sh
-    if not _sh.which('gh'):
-        return "Erreur : cet outil GitHub n'est pas disponible en ligne (la commande gh n'est installee que sur le telephone). Aucune action effectuee."
     return github_ecrire_fichier_original_en_ligne(*args, **kwargs)
+
 
 def terminer_tache(nom):
     donnees = _charger_donnees()

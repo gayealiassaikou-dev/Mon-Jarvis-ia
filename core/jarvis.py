@@ -110,7 +110,7 @@ class Jarvis:
             except (KeyboardInterrupt, EOFError):
                 print()
                 self.logger.enregistrer("Arrêt de Jarvis")
-                print("Samba Sarr arrêté.")
+                print("Sam Sarr arrêté.")
                 break
 
             if not commande:
@@ -120,7 +120,7 @@ class Jarvis:
 
             if commande_lower in ["quitter", "exit", "stop"]:
                 self.logger.enregistrer("Arrêt de Jarvis")
-                print("Samba Sarr arrêté.")
+                print("Sam Sarr arrêté.")
                 break
 
             commandes_lecture = (
@@ -242,7 +242,7 @@ class Jarvis:
                 if reponse_locale.startswith(("Il est ", "Nous sommes ")):
                     print("[⚡ Commande locale date/heure.]")
                     derniere_reponse = reponse_locale
-                    print("[🔊 Samba Sarr parle...]")
+                    print("[🔊 Sam Sarr parle...]")
                     self.voice_manager.parler(reponse_locale)
                     continue
 
@@ -256,9 +256,9 @@ class Jarvis:
                     break
 
                 if commande_lower in ["quitter", "exit", "arrête jarvis", "arrête toi"]:
-                    self.voice_manager.parler("D'accord. J'arrête Samba Sarr.")
+                    self.voice_manager.parler("D'accord. J'arrête Sam Sarr.")
                     self.logger.enregistrer("Arrêt de Jarvis par commande vocale")
-                    print("Samba Sarr arrêté.")
+                    print("Sam Sarr arrêté.")
                     return
 
                 if commande_lower in [
@@ -310,7 +310,7 @@ class Jarvis:
                         )
                     continue
 
-                print("[🧠 Samba Sarr réfléchit...]")
+                print("[🧠 Sam Sarr réfléchit...]")
 
                 reponse = self.traiter_commande(
                     commande_vocale,
@@ -319,7 +319,7 @@ class Jarvis:
 
                 if reponse:
                     derniere_reponse = reponse
-                    print("[🔊 Samba Sarr parle...]")
+                    print("[🔊 Sam Sarr parle...]")
                     self.voice_manager.parler(reponse)
 
             except KeyboardInterrupt:
@@ -332,14 +332,24 @@ class Jarvis:
                     "Une erreur est survenue. Je continue à t'écouter."
                 )
 
-    def traiter_commande(self, commande, retourner_reponse=False):
+    def traiter_commande(self, commande, retourner_reponse=False,
+                         activity_tracker=None, demande_id=None):
+        def suivre(message, statut="information"):
+            if activity_tracker is not None and demande_id is not None:
+                try:
+                    activity_tracker.ajouter_etape(demande_id, message, statut)
+                except Exception:
+                    pass  # Le suivi ne doit jamais bloquer le traitement.
+
         # Nouvelle commande utilisateur = nouvelle fenêtre de correction automatique.
         self.validation_manager.corrections_utilisees = 0
         self.logger.enregistrer(f"Commande reçue : {commande}")
+        suivre("Analyse de la demande", "en_cours")
 
         resultat = self.command_manager.traiter(commande)
 
         if "Commande inconnue" in resultat:
+            suivre("Choix de l'agent", "en_cours")
             decision = self.decision_engine.decider(commande)
             agent = decision["agent"]
             analyse = decision["analyse"]
@@ -360,6 +370,7 @@ class Jarvis:
                 print(f"[Mission creee : {mission_id}]")
                 self.coordination_manager.demarrer_mission(mission_id)
 
+            suivre("Préparation du contexte", "en_cours")
             contexte_agent = self.decision_engine.obtenir_contexte_agent(agent)
             contexte_complet = self.contexte + "\n\n" + contexte_agent
 
@@ -375,6 +386,7 @@ class Jarvis:
                 if outil in outils_autorises_agent
             ]
 
+            suivre("Appel du moteur IA", "en_cours")
             reponse = self.ai_engine.demander(
                 commande,
                 contexte=contexte_complet,
@@ -382,6 +394,7 @@ class Jarvis:
                 outils_autorises=outils_autorises,
                 mode_action=bool(outils_autorises),
             )
+            suivre("Validation de la réponse", "en_cours")
             validation = self.validation_manager.valider(
                 reponse, mission_id, self.ai_engine.derniers_resultats_outils,
                 outils_attendus=bool(outils_autorises),

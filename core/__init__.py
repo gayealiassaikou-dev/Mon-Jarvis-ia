@@ -1,1 +1,1 @@
-"""Package cœur de Samba Sarr."""
+"""Package cœur de Sam Sarr."""

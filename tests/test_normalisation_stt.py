@@ -24,11 +24,11 @@ class TestNormalisationSTT(unittest.TestCase):
 
     def test_variantes_samba_sarr(self):
         for entree in ("samba sar", "samba ça", "samba serre", "samba sert"):
-            self.assertEqual(self.norm(entree), "Samba Sarr", entree)
+            self.assertEqual(self.norm(entree), "Sam Sarr", entree)
 
     def test_majuscules_et_phrase(self):
-        self.assertEqual(self.norm("SAMBA SAR"), "Samba Sarr")
-        self.assertEqual(self.norm("Bonjour samba sar"), "Bonjour Samba Sarr")
+        self.assertEqual(self.norm("SAMBA SAR"), "Sam Sarr")
+        self.assertEqual(self.norm("Bonjour samba sar"), "Bonjour Sam Sarr")
 
     def test_phrase_sans_rapport_inchangee(self):
         self.assertEqual(self.norm("quelle heure est-il"), "quelle heure est-il")
