@@ -488,6 +488,14 @@ class DecisionEngine:
                     f"Agent inconnu retourné par le LLM : {agent!r}"
                 )
 
+            demande_min = str(demande).casefold()
+            demande_github = any(
+                terme in demande_min
+                for terme in ("github", "git hub", "repository", "dépôt github", "depot github")
+            )
+            if demande_github and "01_developpeur" in liste_agents:
+                agent = "01_developpeur"
+
             outils = data.get("outils_suggeres", [])
 
             if not isinstance(outils, list):
@@ -504,6 +512,13 @@ class DecisionEngine:
             # Barrière de sécurité : les outils proposés par le LLM
             # sont toujours filtrés par les permissions de l'agent.
             outils = filtrer_outils(agent, outils)
+
+            # Une demande explicite GitHub doit au minimum pouvoir lister
+            # les dépôts ; l'outil reste soumis aux permissions de l'agent.
+            if demande_github:
+                requis = filtrer_outils(agent, ["github_lister_repos"])
+                outils = list(dict.fromkeys(outils + requis))
+
             demande_min = str(demande).casefold()
             if agent == "03_recherche" and "instruction" in demande_min and any(x in demande_min for x in ("lis", "lire", "lecture")):
                 requis = filtrer_outils(agent, ["lister_fichiers", "lire_fichier"])

@@ -1,0 +1,34 @@
+name: Deploy to Velixir
+
+on:
+  push:
+    branches: [fiabilite-coeur]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: velixir-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Velixir CLI
+        shell: bash
+        run: |
+          curl -fsSL https://velixir.net/install.sh | sh
+          echo "$HOME/.velixir/bin" >> "$GITHUB_PATH"
+
+      - name: Deploy Sam Sarr
+        env:
+          VELIXIR_API_KEY: ${{ secrets.VELIXIR_API_KEY }}
+        run: |
+          if [ -z "$VELIXIR_API_KEY" ]; then
+            echo "::error::Missing VELIXIR_API_KEY repository secret"
+            exit 1
+          fi
+          velixir deploy --app b52fa045-4e05-4f49-b46f-8838897dbd31

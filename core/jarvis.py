@@ -352,7 +352,16 @@ class Jarvis:
         resultat = self.command_manager.traiter(commande)
 
         if "Commande inconnue" in resultat:
-            reponse_locale = self.local_brain.repondre(commande)
+            # Les recherches GitHub doivent passer par le moteur de décision,
+            # jamais être interceptées par les fiches de connaissances locales.
+            demande_normalisee = str(commande).casefold()
+            recherche_github = any(mot in demande_normalisee for mot in (
+                "github", "git hub", "repository"
+            ))
+            reponse_locale = (
+                None if recherche_github
+                else self.local_brain.repondre(commande)
+            )
             if reponse_locale is not None:
                 print(reponse_locale)
                 self.logger.enregistrer(
