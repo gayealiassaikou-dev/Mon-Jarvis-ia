@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import core.ai_engine as moteur
 
-FOURNISSEURS = ["mistral", "openrouter", "groq", "gemini"]
+FOURNISSEURS = ["nvidia", "mistral", "openrouter", "groq", "gemini"]
 
 
 class TestRouteurDoubleExecution(unittest.TestCase):

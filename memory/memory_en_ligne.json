@@ -1,0 +1,38 @@
+{
+ "souvenirs": [],
+ "notes": [],
+ "projets": [
+  "Le projet Mon-Jarvis-ia utilise Groq et Gemini",
+  "Je peux aider a creer, organiser et developper des projets personnels et professionnels.",
+  "Application mobile de fitness: concevoir l'interface utilisateur, developper les fonctionnalites de suivi de l'activite physique et tester l'application.",
+  "l'utilisateur demande a plusieurs reprises bonjour jarvis sans fournir de contexte ou de demande specifique",
+  "Mon role est d'étre un assistant et un partenaire fiable pour aider les utilisateurs dans leurs projets et leurs tâches quotidiennes.",
+  "Application mobile de fitness",
+  "Je peux vous aider à créer et gérer des projets.",
+  "Le projet principal de l'utilisateur s'appelle Hale-Bou-Rer",
+  "mon projet principal s'appelle Hale-Bou-Rer.",
+  "Dandé Lenol est un projet d'intelligence artificielle linguistique de Naftoro IA.",
+  "Construire progressivement une infrastructure capable de comprendre, traiter et produire plusieurs langues."
+ ],
+ "decisions": [
+  "Je peux aider a prendre des decisions en fournissant des informations et des analyses pertinentes."
+ ],
+ "preferences": [
+  "Utilisateur s appelle Mado",
+  "prénom : Mado",
+  "Mado",
+  "Mado est mon utilisateur actuel",
+  "Je suis Partenaire, votre assistant intelligent",
+  "Je peux apprendre les preferences de l'utilisateur pour personnaliser mes reponses."
+ ],
+ "connaissances": [
+  "Je peux fournir des informations sur une variete de sujets, de la recherche a la mise en oeuvre de projets.",
+  "Sous-titrage Société Radio-Canada",
+  "TEST_JARVIS_MEMOIRE_2026",
+  "TEST_RACCORDEMENT_JARVIS_2026"
+ ],
+ "erreurs": [
+  "Je peux detecter et signaler les erreurs pour eviter les problemes futurs."
+ ],
+ "historique": []
+}

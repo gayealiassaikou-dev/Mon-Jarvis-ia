@@ -1656,6 +1656,7 @@ class AIEngine:
     historique=None,
     outils=None,
     mode_action=False,
+    timeout=30,
 ):
         messages = []
         if contexte:
@@ -1678,7 +1679,17 @@ class AIEngine:
 
                 if mode_action and iteration == 0:
                     payload["tool_choice"] = "required"
-            reponse = requests.post(url, headers=headers, json=payload, timeout=30)
+            reponse = requests.post(url, headers=headers, json=payload, timeout=timeout)
+            # Certains modeles repondent en texte alors que l'outil est impose :
+            # l'API refuse alors la reponse (HTTP 400, tool_use_failed).
+            # On relance une seule fois sans forcer l'outil.
+            if (
+                payload.get("tool_choice") == "required"
+                and getattr(reponse, "status_code", None) == 400
+                and "tool_use_failed" in (getattr(reponse, "text", "") or "")
+            ):
+                payload.pop("tool_choice", None)
+                reponse = requests.post(url, headers=headers, json=payload, timeout=timeout)
             try:
                 reponse.raise_for_status()
             except requests.HTTPError as erreur_http:
@@ -1806,6 +1817,25 @@ class AIEngine:
             historique,
             outils=self._obtenir_outils_autorises(),
             mode_action=self.mode_action,
+        )
+
+    def _demander_nvidia(self, message, contexte="", historique=None):
+        fournisseur = self.providers.get("nvidia", {})
+        cle = os.getenv(fournisseur.get("api_key_env", "NVIDIA_API_KEY"))
+        headers = {
+            "Authorization": f"Bearer {cle}",
+            "Content-Type": "application/json"
+        }
+        return self._appeler_openai_compatible(
+            fournisseur.get("url"),
+            headers,
+            fournisseur.get("model"),
+            message,
+            contexte,
+            historique,
+            outils=self._obtenir_outils_autorises(),
+            mode_action=self.mode_action,
+            timeout=90,
         )
 
     def _demander_gemini(self, message, contexte="", historique=None):

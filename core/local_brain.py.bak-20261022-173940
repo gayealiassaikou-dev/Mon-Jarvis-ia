@@ -1,0 +1,426 @@
+import ast
+import operator
+import os
+import re
+import shutil
+import unicodedata
+from datetime import datetime
+
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
+        "août", "septembre", "octobre", "novembre", "décembre"]
+
+OPS = {
+    ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+    ast.Div: operator.truediv, ast.Pow: operator.pow,
+    ast.USub: operator.neg, ast.UAdd: operator.pos,
+}
+
+EXCLUS = re.compile(
+    r"\b(ouvre|ouvert|ferme|ferment|rdv|rendez|reveil|alarme|rappel|avant|apres|"
+    r"demain|hier|match|cours|train|vol|bus|garage|magasin|banque|programme|"
+    r"naissance|limite|sortie|expiration)\b|\ba quelle heure\b"
+)
+
+
+def _sans_accents(texte):
+    return "".join(c for c in unicodedata.normalize("NFD", texte)
+                   if unicodedata.category(c) != "Mn")
+
+
+def _normaliser(texte):
+    t = _sans_accents(texte.lower().replace("’", "'"))
+    t = re.sub(r"\b(s'il (te|vous) plait|svp|stp|sam sarr|samba sarr|sambassar|jarvis)\b", " ", t)
+    t = re.sub(r"""[?!;:«»"“”]+""", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def _eval(noeud):
+    if isinstance(noeud, ast.Expression):
+        return _eval(noeud.body)
+    if (isinstance(noeud, ast.Constant) and isinstance(noeud.value, (int, float))
+            and not isinstance(noeud.value, bool)):
+        return noeud.value
+    if isinstance(noeud, ast.BinOp) and type(noeud.op) in OPS:
+        a, b = _eval(noeud.left), _eval(noeud.right)
+        if isinstance(noeud.op, ast.Pow) and (abs(b) > 100 or abs(a) > 1e6):
+            raise ValueError("puissance trop grande")
+        return OPS[type(noeud.op)](a, b)
+    if isinstance(noeud, ast.UnaryOp) and type(noeud.op) in OPS:
+        return OPS[type(noeud.op)](_eval(noeud.operand))
+    raise ValueError("expression non autorisée")
+
+
+def _formater(x):
+    if isinstance(x, float) and x == int(x) and abs(x) < 1e15:
+        x = int(x)
+    if isinstance(x, int):
+        return f"{x:,}".replace(",", " ")
+    s = f"{x:,.6f}".rstrip("0").rstrip(".")
+    return s.replace(",", " ").replace(".", ",")
+
+
+def _nombre(s):
+    return float(s.replace(",", "."))
+
+
+PREFIXE_CALCUL = (r"^(combien (font|fait|ca fait|vaut)|calcule(-moi)?|calcul|"
+                  r"quel est le resultat de|resultat de|donne moi le resultat de)\s+")
+
+
+def _calcul(t):
+    m = re.match(PREFIXE_CALCUL, t)
+    corps = t[m.end():] if m else t
+
+    p = re.fullmatch(r"(\d+(?:[.,]\d+)?) ?% de (\d+(?:[.,]\d+)?)", corps)
+    if p:
+        return "Le résultat est " + _formater(_nombre(p.group(1)) * _nombre(p.group(2)) / 100) + "."
+
+    corps = corps.replace("×", "*").replace("÷", "/")
+    corps = re.sub(r"(?<=\d) ?x ?(?=\d)", " * ", corps)
+    for mot, op in [("multiplie par", "*"), ("divise par", "/"), ("fois", "*"),
+                    ("plus", "+"), ("moins", "-"), ("puissance", "**")]:
+        corps = corps.replace(mot, f" {op} ")
+    corps = corps.replace("^", "**").replace(",", ".").strip()
+
+    if not re.fullmatch(r"[0-9+\-*/(). ]+", corps):
+        return None
+    if not re.search(r"\d", corps):
+        return None
+    if m is None and not re.search(r"[+*/]| - ", corps):
+        return None
+    try:
+        resultat = _eval(ast.parse(corps, mode="eval"))
+    except ZeroDivisionError:
+        return "Division par zéro impossible."
+    except Exception:
+        return None
+    return "Le résultat est " + _formater(resultat) + "."
+
+
+def _est_heure(t):
+    return bool(re.search(
+        r"\bquel(le)? heure?s?\b|\bl'?heure (actuelle|qu'il est|est il)\b|"
+        r"^(donne( moi)?|dis( moi)?) l'?heure$|\bheure est il\b|^heure$", t))
+
+
+def _est_date(t):
+    t = re.sub(r"\bl\s+date\b", "la date", t)
+    return bool(re.search(
+        r"\bquel(le)? (est la )?date\b|\bquel jour\b|\bdate d'?aujourd'?hui\b|"
+        r"\bdate d'aujourdui\b|\bon est (le combien|quel jour)\b|"
+        r"^date$|^(donne|dis)( moi)? la date$|^(et )?la date$", t))
+
+
+def _stockage(t):
+    return bool(re.search(
+        r"\bespace (disque|libre)\b|\bstockage (libre|restant|disponible)\b|"
+        r"\bcombien d'espace\b", t))
+
+
+def _corriger_fautes(texte):
+    """Corrige prudemment les fautes proches du vocabulaire local."""
+    from difflib import SequenceMatcher
+
+    lexique = {
+        "donne", "donner", "date", "heure", "aujourd'hui",
+        "d'aujourd'hui", "quel", "quelle", "quels", "quelles",
+        "est", "et", "la", "le", "les", "de", "du", "des",
+        "il", "fait", "font", "combien", "calcul", "calcule",
+        "resultat", "plus", "moins", "fois", "puissance",
+        "multiplie", "divise", "par", "demain", "hier",
+        "espace", "disque", "libre", "stockage", "disponible",
+        "ouvre", "ouvert", "ferme", "banque", "magasin",
+        "train", "rappel", "alarme", "rendez", "vous",
+        "aujourd", "hui", "etait", "est-ce", "bonjour",
+    }
+
+    # Répare les articles incomplets uniquement devant un nom reconnu.
+    texte = re.sub(r"\bl\s+(date)\b", r"la \1", texte)
+    texte = re.sub(r"\bl\s+(heure)\b", r"l'\1", texte)
+
+    def corriger(m):
+        mot = m.group(0)
+        if mot in lexique or len(mot) < 2 or not mot.isalpha():
+            return mot
+
+        candidats = [
+            (SequenceMatcher(None, mot, connu).ratio(), connu)
+            for connu in lexique
+            if abs(len(mot) - len(connu)) <= 2
+        ]
+        candidats.sort(reverse=True)
+        if not candidats:
+            return mot
+
+        score, meilleur = candidats[0]
+        seuil = 0.78 if len(mot) <= 4 else 0.80
+        if score < seuil:
+            return mot
+        if len(candidats) > 1 and score - candidats[1][0] < 0.06:
+            return mot
+        return meilleur
+
+    return re.sub(r"[a-z']+", corriger, texte)
+
+
+class LocalBrain:
+    """Répond sans IA. Retourne None si aucune règle ne correspond."""
+
+    THEMES_CONNAISSANCES = {
+        "identite": ("identite", "role", "mission", "qui es tu", "qui suis je"),
+        "agents": ("agent", "agents", "equipe", "specialistes"),
+        "architecture": ("architecture", "fonctionnement", "systeme", "cerveau"),
+        "memoire": ("memoire", "souvenir", "historique"),
+        "securite": (
+            "securite", "permission", "permissions", "regle", "regles",
+            "validation", "protege", "proteger", "protection", "donnees",
+            "projet", "projets",
+        ),
+        "outils": ("outil", "outils", "competence", "competences"),
+    }
+
+    def __init__(self, brain_manager=None):
+        self.brain_manager = brain_manager
+
+    def _repondre_liste_agents(self, commande):
+        """Liste les agents déclarés dans les fiches locales."""
+        demande = _normaliser(commande)
+        mots_agents = ("agent", "agents", "equipe", "specialistes", "specialises")
+        mots_liste = ("liste", "tous", "toutes", "quels", "quelles", "combien")
+
+        if not any(mot in demande for mot in mots_agents):
+            return None
+        if not any(mot in demande for mot in mots_liste):
+            return None
+
+        racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = os.path.join(racine, "agents")
+        if not os.path.isdir(dossier):
+            return None
+
+        agents = []
+        for fichier in sorted(os.listdir(dossier)):
+            if not fichier.endswith(".md"):
+                continue
+
+            chemin = os.path.join(dossier, fichier)
+            try:
+                with open(chemin, "r", encoding="utf-8") as f:
+                    contenu = f.read()
+            except (OSError, UnicodeError):
+                continue
+
+            titre = re.search(r"(?m)^#\s+(.+?)\s*$", contenu)
+            if not titre:
+                continue
+
+            nom = titre.group(1).strip()
+            lignes = contenu.splitlines()
+            mission = ""
+            dans_mission = False
+
+            for ligne in lignes:
+                texte = ligne.strip()
+                if re.match(r"^##\s+Mission\s*$", texte, re.IGNORECASE):
+                    dans_mission = True
+                    continue
+                if dans_mission and texte.startswith("#"):
+                    break
+                if dans_mission and texte:
+                    mission = texte
+                    break
+
+            agents.append((nom, mission))
+
+        if not agents:
+            return None
+
+        lignes_reponse = [
+            f"- {nom}" + (f" : {mission}" if mission else "")
+            for nom, mission in agents
+        ]
+        return (
+            f"D'après mes fiches locales, j'ai trouvé {len(agents)} agents :\n"
+            + "\n".join(lignes_reponse)
+        )
+
+    def _repondre_connaissances(self, commande):
+        """Extrait des passages pertinents des documents locaux."""
+        if self.brain_manager is None or not isinstance(commande, str):
+            return None
+
+        demande = _normaliser(commande)
+        themes = [
+            theme for theme, indices in self.THEMES_CONNAISSANCES.items()
+            if any(indice in demande for indice in indices)
+        ]
+        if not themes:
+            return None
+
+        try:
+            resultats = self.brain_manager.rechercher_connaissances(
+                " ".join(themes) + " " + demande, limite=4
+            )
+        except Exception:
+            return None
+
+        if not isinstance(resultats, list):
+            return None
+
+        if "agents" in themes and any(
+            mot in demande
+            for mot in ("liste", "tous", "toutes", "quels", "quelles", "combien")
+        ):
+            agents = {}
+            for resultat in resultats:
+                if not isinstance(resultat, dict):
+                    continue
+                contenu = str(resultat.get("contenu", ""))
+                lignes = contenu.splitlines()
+                for i, ligne in enumerate(lignes):
+                    titre = re.match(
+                        r"^\s*#{1,6}\s*(Directeur IA|Agent\s+[^#]+?)\s*$",
+                        ligne,
+                        re.IGNORECASE,
+                    )
+                    if titre:
+                        nom = " ".join(titre.group(1).split()).rstrip(" :")
+                        role = ""
+                        for suivante in lignes[i + 1:i + 12]:
+                            suivante = suivante.strip()
+                            if not suivante or suivante == "---":
+                                continue
+                            if suivante.startswith("#"):
+                                if suivante.lower().startswith(("## rôle", "## role")):
+                                    continue
+                                break
+                            if suivante.lower().startswith(("rôle :", "role :")):
+                                role = suivante.split(":", 1)[1].strip()
+                                break
+                            if suivante.startswith("- "):
+                                role = suivante[2:].strip()
+                                break
+
+                        cle = nom.lower()
+                        role_precedent = agents.get(cle, (nom, ""))[1]
+                        if role or not role_precedent:
+                            agents[cle] = (nom, role)
+
+            if agents:
+                ordre = ("directeur ia", "agent développeur", "agent designer",
+                         "agent recherche", "agent business")
+                selection = [
+                    agents[nom] for nom in ordre if nom in agents
+                ]
+                selection.extend(
+                    valeur for cle, valeur in agents.items()
+                    if cle not in ordre
+                )
+                lignes_reponse = [
+                    f"- {nom}" + (f" : {role}" if role else "")
+                    for nom, role in selection
+                ]
+                return "D'après mes documents locaux, voici les agents identifiés :\n" + "\n".join(lignes_reponse)
+
+        mots_cles = {
+            "identite": ("identite", "nom", "role", "mission", "assistant"),
+            "agents": ("agent", "directeur", "developpeur", "designer",
+                       "recherche", "business", "testeur", "specialise",
+                       "coordonne", "architecte"),
+            "architecture": ("architecture", "fonctionnement", "systeme",
+                             "directeur", "agent", "coordonne"),
+            "memoire": ("memoire", "historique", "souvenir"),
+            "securite": ("securite", "permission", "regle", "validation",
+                         "interdit", "protection"),
+            "outils": ("outil", "competence", "fonction", "utiliser"),
+        }
+
+        termes = set()
+        for theme in themes:
+            termes.update(mots_cles.get(theme, ()))
+
+        extraits = []
+        deja_vus = set()
+
+        for resultat in resultats:
+            if not isinstance(resultat, dict):
+                continue
+            nom = str(resultat.get("nom", "")).strip()
+            contenu = str(resultat.get("contenu", "")).strip()
+            score = resultat.get("score", 0)
+            if not nom or not contenu or not isinstance(score, (int, float)):
+                continue
+            if score < 2:
+                continue
+
+            selection = []
+            for ligne in contenu.splitlines():
+                texte = ligne.strip()
+                normalisee = _normaliser(texte)
+                if not texte or texte == "---":
+                    continue
+                if texte.startswith("#") or texte.startswith("- ") or any(
+                    terme in normalisee for terme in termes
+                ):
+                    cle = normalisee
+                    if cle not in deja_vus:
+                        selection.append(texte)
+                        deja_vus.add(cle)
+                if len(selection) >= 10:
+                    break
+
+            if selection:
+                extraits.append(f"[{nom}]\n" + "\n".join(selection))
+
+            if len(extraits) >= 2:
+                break
+
+        if not extraits:
+            return None
+
+        reponse = "D'après mes documents locaux :\n\n" + "\n\n".join(extraits)
+        return reponse[:1800].rsplit("\n", 1)[0] if len(reponse) > 1800 else reponse
+
+    def repondre(self, commande):
+        t = _normaliser(commande)
+        t = _corriger_fautes(t)
+        if not t:
+            return None
+
+        r = _calcul(t)
+        if r is not None:
+            return r
+
+        sans_ponct = re.sub(r"[.,]", " ", t)
+        sans_ponct = re.sub(r"\s+", " ", sans_ponct).strip()
+
+        if len(sans_ponct.split()) <= 9 and not EXCLUS.search(sans_ponct):
+            heure, date = _est_heure(sans_ponct), _est_date(sans_ponct)
+            now = datetime.now()
+            txt_date = f"{JOURS[now.weekday()]} {now.day} {MOIS[now.month - 1]} {now.year}"
+            if heure and date:
+                return f"Il est {now.strftime('%H:%M')} et nous sommes le {txt_date}."
+            if heure:
+                return f"Il est {now.strftime('%H:%M')}."
+            if date:
+                return f"Nous sommes le {txt_date}."
+
+        if _stockage(sans_ponct):
+            try:
+                u = shutil.disk_usage(os.path.expanduser("~"))
+                go = 1024 ** 3
+                return (f"Espace libre : {u.free / go:.1f} Go sur {u.total / go:.1f} Go "
+                        f"({u.used / go:.1f} Go utilisés).")
+            except Exception:
+                return None
+
+        reponse_agents = self._repondre_liste_agents(commande)
+        if reponse_agents is not None:
+            return reponse_agents
+
+        reponse_connaissances = self._repondre_connaissances(commande)
+        if reponse_connaissances is not None:
+            return reponse_connaissances
+
+        return None

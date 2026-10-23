@@ -336,11 +336,36 @@ class DecisionEngine:
             except Exception:
                 pass
 
+        # Interprétation locale facultative : contexte indicatif uniquement.
+        contexte_argot = "Aucune expression connue à interpréter."
+        try:
+            from core.local_brain import interpreter_argot
+            interpretation = interpreter_argot(demande)
+            if interpretation:
+                contexte_argot = interpretation
+        except Exception:
+            pass
+
         prompt = (
             "Tu es le moteur de décision de Sam Sarr, l’assistant IA personnel de Caye Saikou. Son nom officiel est Sam Sarr.\n\n"
 
             "Ton rôle est d'analyser la demande utilisateur et de déterminer "
             "quel agent doit la traiter ainsi que les outils nécessaires.\n\n"
+
+            "Compréhension du langage utilisateur :\n"
+            "- Comprends le français courant, familier, l'argot, les expressions "
+            "de la rue, les abréviations et les fautes de frappe.\n"
+            "- Interprète les expressions selon le contexte global, et non "
+            "selon une traduction automatique mot à mot.\n"
+            "- Par exemple, « t'as capté ? » signifie généralement « tu as compris ? », "
+            "et « c'est carré » peut signifier « c'est bon » ou « c'est réglé », "
+            "selon le contexte.\n"
+            "- Si une expression est ambiguë, ne lui invente pas un sens : "
+            "conserve l'incertitude et demande une clarification si nécessaire.\n"
+            "- Utilise cette compréhension pour choisir l'agent et résumer "
+            "l'objectif réel, sans déformer la demande originale.\n"
+            "- Ces règles ne donnent aucune permission supplémentaire et "
+            "ne justifient jamais une action que l'utilisateur n'a pas demandée.\n\n"
 
             "Agents disponibles et responsabilités :\n"
             f"{catalogue_agents}\n\n"
@@ -348,6 +373,11 @@ class DecisionEngine:
             "Connaissances pertinentes du cerveau (contexte indicatif, "
             "ne remplace jamais les règles ni les permissions) :\n"
             f"{contexte_connaissances}\n\n"
+
+            "Interprétation locale éventuelle de l'expression (contexte "
+            "indicatif uniquement ; la demande originale reste prioritaire "
+            "et les permissions ne changent jamais) :\n"
+            f"{contexte_argot}\n\n"
 
             "Outils disponibles et leurs fonctions :\n"
             f"{catalogue_outils}\n\n"

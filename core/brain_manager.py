@@ -7,15 +7,25 @@ class BrainManager:
         self.charger_brain()
 
     def charger_brain(self):
-        dossier = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "brain")
+        racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-        for fichier in os.listdir(dossier):
-            if fichier.endswith(".md"):
-                nom = fichier.replace(".md", "")
+        for sous_dossier in ("brain", "agents", "partenaire/brain"):
+            dossier = os.path.join(racine, sous_dossier)
+            if not os.path.isdir(dossier):
+                continue
+
+            for fichier in sorted(os.listdir(dossier)):
+                if not fichier.endswith(".md"):
+                    continue
+
+                nom = f"{sous_dossier}/{fichier[:-3]}"
                 chemin = os.path.join(dossier, fichier)
 
-                with open(chemin, "r", encoding="utf-8") as f:
-                    self.connaissances[nom] = f.read()
+                try:
+                    with open(chemin, "r", encoding="utf-8") as f:
+                        self.connaissances[nom] = f.read()
+                except (OSError, UnicodeError):
+                    continue
 
     def afficher_brain(self):
         print("Connaissances du cerveau :")

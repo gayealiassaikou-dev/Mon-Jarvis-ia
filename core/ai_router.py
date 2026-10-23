@@ -84,6 +84,11 @@ class AIRouter:
                         message, contexte, historique
                     )
 
+                elif fournisseur == "nvidia":
+                    reponse = self.ai_engine._demander_nvidia(
+                        message, contexte, historique
+                    )
+
                 else:
                     raise Exception(
                         f"{fournisseur} pas encore connecté"

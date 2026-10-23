@@ -67,3 +67,5 @@ test_groq_audio.mp4
 
 # Base de données privée des conversations de Sam Sarr
 /interface/data/conversations.db*
+
+memory/historique_archive.json

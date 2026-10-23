@@ -125,5 +125,37 @@ class TestRoutageTesteur(unittest.TestCase):
         )
 
 
+    def test_interpretation_argot_transmise_sans_modifier_demande(self):
+        moteur = object.__new__(DecisionEngine)
+        moteur.agent_manager = Mock()
+        moteur.agent_manager.agents = {
+            "00_directeur_ia": "Directeur",
+        }
+        moteur.ai_engine = Mock()
+        moteur.ai_engine.demander.return_value = json.dumps({
+            "agent": "00_directeur_ia",
+            "difficulte": "faible",
+            "risques": "aucun",
+            "validation_requise": False,
+            "resume": "Vérifier la compréhension de la demande",
+            "outils_suggeres": [],
+        })
+        moteur.outils_disponibles = []
+
+        demande = "T'as capté ?"
+        resultat = moteur.decider(demande)
+
+        self.assertEqual(resultat["agent"], "00_directeur_ia")
+        moteur.ai_engine.demander.assert_called_once()
+
+        args, kwargs = moteur.ai_engine.demander.call_args
+        prompt = args[0]
+
+        self.assertIn("Question informelle signifiant généralement", prompt)
+        self.assertIn(f'Demande utilisateur : "{demande}"', prompt)
+        self.assertEqual(kwargs.get("outils_autorises"), [])
+        self.assertIs(kwargs.get("mode_action"), False)
+
+
 if __name__ == "__main__":
     unittest.main()

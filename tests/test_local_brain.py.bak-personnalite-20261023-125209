@@ -1,0 +1,108 @@
+import re
+import unittest
+
+from core.local_brain import LocalBrain, interpreter_argot
+
+
+class TestLocalBrain(unittest.TestCase):
+    def setUp(self):
+        self.brain = LocalBrain()
+
+    def test_calcul_simple(self):
+        self.assertEqual(
+            self.brain.repondre("combien font 25 + 17 ?"),
+            "Le résultat est 42.",
+        )
+
+    def test_calcul_avec_faute_de_frappe(self):
+        self.assertEqual(
+            self.brain.repondre("combien font 25 plu 17"),
+            "Le résultat est 42.",
+        )
+
+    def test_date_avec_formulations_variantes(self):
+        for question in (
+            "donne la date",
+            "donne l date",
+            "et l date",
+            "quel es la date d'aujourdui",
+        ):
+            with self.subTest(question=question):
+                reponse = self.brain.repondre(question)
+                self.assertIsInstance(reponse, str)
+                self.assertIn("Nous sommes le", reponse)
+
+    def test_heure_avec_fautes_de_frappe(self):
+        reponse = self.brain.repondre("il fai quel heur")
+        self.assertIsInstance(reponse, str)
+        self.assertRegex(reponse, r"^Il est \d{2}:\d{2}\.$")
+
+    def test_actions_et_demandes_externes_non_traitees_localement(self):
+        for question in (
+            "ouvre la banque",
+            "rappelle-moi demain",
+            "quelle heure est le train",
+            "quel magasin est ouvert",
+        ):
+            with self.subTest(question=question):
+                self.assertIsNone(self.brain.repondre(question))
+
+    def test_demande_inconnue_non_traitee_localement(self):
+        self.assertIsNone(
+            self.brain.repondre("raconte-moi les dernières nouvelles")
+        )
+
+
+    def test_liste_agents_restitue_les_missions_completes(self):
+        reponse = self.brain.repondre("liste tous les agents")
+        self.assertIsInstance(reponse, str)
+        self.assertIn(
+            "automatisations et solutions IA fonctionnelles et vérifiables.",
+            reponse,
+        )
+
+
+    def test_identite_et_mission_reconnues_localement(self):
+        from core.brain_manager import BrainManager
+
+        brain = LocalBrain(BrainManager())
+
+        for question in ("Qui es-tu ?", "Quelle est ta mission ?"):
+            with self.subTest(question=question):
+                reponse = brain.repondre(question)
+                self.assertIsInstance(reponse, str)
+                self.assertIn("documents officiels locaux", reponse)
+
+    def test_reponse_locale_securite_contient_les_regles_essentielles(self):
+        from core.brain_manager import BrainManager
+
+        brain = LocalBrain(BrainManager())
+        reponse = brain.repondre("Quelles sont les règles de sécurité ?")
+
+        self.assertIsInstance(reponse, str)
+        self.assertIn("information sensible", reponse.lower())
+        self.assertIn("permissions", reponse.lower())
+        self.assertIn("risque de sécurité", reponse.lower())
+
+
+class TestInterpreteurArgot(unittest.TestCase):
+    def test_expressions_familieres_connues(self):
+        cas = (
+            ("T'as capté ?", "tu as compris"),
+            ("Tkt frérot", "ne t'inquiète pas"),
+            ("C'est carré", "selon le contexte"),
+            ("Il m'a douillé", "trompé"),
+        )
+
+        for demande, attendu in cas:
+            with self.subTest(demande=demande):
+                interpretation = interpreter_argot(demande)
+                self.assertIsInstance(interpretation, str)
+                self.assertIn(attendu, interpretation.lower())
+
+    def test_expression_inconnue_non_interpretee(self):
+        self.assertIsNone(interpreter_argot("Bonjour Sam Sarr"))
+
+
+if __name__ == "__main__":
+    unittest.main()

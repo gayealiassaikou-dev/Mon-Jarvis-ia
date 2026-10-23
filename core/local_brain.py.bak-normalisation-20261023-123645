@@ -1,0 +1,749 @@
+import ast
+import operator
+import os
+from pathlib import Path
+import re
+import shutil
+import unicodedata
+from datetime import datetime
+
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
+        "août", "septembre", "octobre", "novembre", "décembre"]
+
+OPS = {
+    ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+    ast.Div: operator.truediv, ast.Pow: operator.pow,
+    ast.USub: operator.neg, ast.UAdd: operator.pos,
+}
+
+EXCLUS = re.compile(
+    r"\b(ouvre|ouvert|ferme|ferment|rdv|rendez|reveil|alarme|rappel|avant|apres|"
+    r"demain|hier|match|cours|train|vol|bus|garage|magasin|banque|programme|"
+    r"naissance|limite|sortie|expiration)\b|\ba quelle heure\b"
+)
+
+
+def _sans_accents(texte):
+    return "".join(c for c in unicodedata.normalize("NFD", texte)
+                   if unicodedata.category(c) != "Mn")
+
+
+def _normaliser(texte):
+    t = _sans_accents(texte.lower().replace("’", "'"))
+    t = re.sub(r"\b(s'il (te|vous) plait|svp|stp|sam sarr|samba sarr|sambassar|jarvis)\b", " ", t)
+    t = re.sub(r"""[?!;:«»"“”]+""", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def interpreter_argot(texte):
+    """Interprète quelques expressions familières sans déclencher d'action."""
+    if not isinstance(texte, str) or not texte.strip():
+        return None
+
+    demande = _normaliser(texte)
+    demande = re.sub(r"[^a-z0-9' ]+", " ", demande)
+    demande = re.sub(r"\s+", " ", demande).strip()
+
+    expressions = (
+        (r"^(t'?as capt[eé]|t as capte)$",
+         "Question informelle signifiant généralement « tu as compris ? »."),
+        (r"^(tkt|t'inquiete|t inquiete)( fr[eé]rot)?$",
+         "Expression rassurante signifiant généralement « ne t'inquiète pas »."),
+        (r"^(c'?est carr[eé]|c est carre)$",
+         "Peut signifier « c'est bon », « c'est réglé » ou « c'est validé », selon le contexte."),
+        (r"^il m[\' ]a douill[eé]$",
+         "Peut signifier que quelqu'un l'a trompé, arnaqué ou lui a fait payer trop cher, selon le contexte."),
+    )
+
+    for motif, interpretation in expressions:
+        if re.fullmatch(motif, demande):
+            return interpretation
+
+    return None
+
+
+def _eval(noeud):
+    if isinstance(noeud, ast.Expression):
+        return _eval(noeud.body)
+    if (isinstance(noeud, ast.Constant) and isinstance(noeud.value, (int, float))
+            and not isinstance(noeud.value, bool)):
+        return noeud.value
+    if isinstance(noeud, ast.BinOp) and type(noeud.op) in OPS:
+        a, b = _eval(noeud.left), _eval(noeud.right)
+        if isinstance(noeud.op, ast.Pow) and (abs(b) > 100 or abs(a) > 1e6):
+            raise ValueError("puissance trop grande")
+        return OPS[type(noeud.op)](a, b)
+    if isinstance(noeud, ast.UnaryOp) and type(noeud.op) in OPS:
+        return OPS[type(noeud.op)](_eval(noeud.operand))
+    raise ValueError("expression non autorisée")
+
+
+def _formater(x):
+    if isinstance(x, float) and x == int(x) and abs(x) < 1e15:
+        x = int(x)
+    if isinstance(x, int):
+        return f"{x:,}".replace(",", " ")
+    s = f"{x:,.6f}".rstrip("0").rstrip(".")
+    return s.replace(",", " ").replace(".", ",")
+
+
+def _nombre(s):
+    return float(s.replace(",", "."))
+
+
+PREFIXE_CALCUL = (r"^(combien (font|fait|ca fait|vaut)|calcule(-moi)?|calcul|"
+                  r"quel est le resultat de|resultat de|donne moi le resultat de)\s+")
+
+
+def _calcul(t):
+    m = re.match(PREFIXE_CALCUL, t)
+    corps = t[m.end():] if m else t
+
+    p = re.fullmatch(r"(\d+(?:[.,]\d+)?) ?% de (\d+(?:[.,]\d+)?)", corps)
+    if p:
+        return "Le résultat est " + _formater(_nombre(p.group(1)) * _nombre(p.group(2)) / 100) + "."
+
+    corps = corps.replace("×", "*").replace("÷", "/")
+    corps = re.sub(r"(?<=\d) ?x ?(?=\d)", " * ", corps)
+    for mot, op in [("multiplie par", "*"), ("divise par", "/"), ("fois", "*"),
+                    ("plus", "+"), ("moins", "-"), ("puissance", "**")]:
+        corps = corps.replace(mot, f" {op} ")
+    corps = corps.replace("^", "**").replace(",", ".").strip()
+
+    if not re.fullmatch(r"[0-9+\-*/(). ]+", corps):
+        return None
+    if not re.search(r"\d", corps):
+        return None
+    if m is None and not re.search(r"[+*/]| - ", corps):
+        return None
+    try:
+        resultat = _eval(ast.parse(corps, mode="eval"))
+    except ZeroDivisionError:
+        return "Division par zéro impossible."
+    except Exception:
+        return None
+    return "Le résultat est " + _formater(resultat) + "."
+
+
+def _est_heure(t):
+    return bool(re.search(
+        r"\bquel(le)? heure?s?\b|\bl'?heure (actuelle|qu'il est|est il)\b|"
+        r"^(donne( moi)?|dis( moi)?) l'?heure$|\bheure est il\b|^heure$", t))
+
+
+def _est_date(t):
+    t = re.sub(r"\bl\s+date\b", "la date", t)
+    return bool(re.search(
+        r"\bquel(le)? (est la )?date\b|\bquel jour\b|\bdate d'?aujourd'?hui\b|"
+        r"\bdate d'aujourdui\b|\bon est (le combien|quel jour)\b|"
+        r"^date$|^(donne|dis)( moi)? la date$|^(et )?la date$", t))
+
+
+def _stockage(t):
+    return bool(re.search(
+        r"\bespace (disque|libre)\b|\bstockage (libre|restant|disponible)\b|"
+        r"\bcombien d'espace\b", t))
+
+
+def _corriger_fautes(texte):
+    """Corrige prudemment les fautes proches du vocabulaire local."""
+    from difflib import SequenceMatcher
+
+    lexique = {
+        "donne", "donner", "date", "heure", "aujourd'hui",
+        "d'aujourd'hui", "quel", "quelle", "quels", "quelles",
+        "est", "et", "la", "le", "les", "de", "du", "des",
+        "il", "fait", "font", "combien", "calcul", "calcule",
+        "resultat", "plus", "moins", "fois", "puissance",
+        "multiplie", "divise", "par", "demain", "hier",
+        "espace", "disque", "libre", "stockage", "disponible",
+        "ouvre", "ouvert", "ferme", "banque", "magasin",
+        "train", "rappel", "alarme", "rendez", "vous",
+        "aujourd", "hui", "etait", "est-ce", "bonjour",
+    }
+
+    # Répare les articles incomplets uniquement devant un nom reconnu.
+    texte = re.sub(r"\bl\s+(date)\b", r"la \1", texte)
+    texte = re.sub(r"\bl\s+(heure)\b", r"l'\1", texte)
+
+    def corriger(m):
+        mot = m.group(0)
+        if mot in lexique or len(mot) < 2 or not mot.isalpha():
+            return mot
+
+        candidats = [
+            (SequenceMatcher(None, mot, connu).ratio(), connu)
+            for connu in lexique
+            if abs(len(mot) - len(connu)) <= 2
+        ]
+        candidats.sort(reverse=True)
+        if not candidats:
+            return mot
+
+        score, meilleur = candidats[0]
+        seuil = 0.78 if len(mot) <= 4 else 0.80
+        if score < seuil:
+            return mot
+        if len(candidats) > 1 and score - candidats[1][0] < 0.06:
+            return mot
+        return meilleur
+
+    return re.sub(r"[a-z']+", corriger, texte)
+
+
+class LocalBrain:
+    """Répond sans IA. Retourne None si aucune règle ne correspond."""
+
+    THEMES_CONNAISSANCES = {
+        "identite": ("identite", "role", "mission", "qui es tu", "qui suis je"),
+        "agents": ("agent", "agents", "equipe", "specialistes"),
+        "architecture": ("architecture", "fonctionnement", "systeme", "cerveau"),
+        "memoire": ("memoire", "souvenir", "historique"),
+        "securite": (
+            "securite", "permission", "permissions", "regle", "regles",
+            "validation", "protege", "proteger", "protection", "donnees",
+            "projet", "projets",
+        ),
+        "outils": ("outil", "outils", "competence", "competences"),
+    }
+
+    def __init__(self, brain_manager=None):
+        self.brain_manager = brain_manager
+
+    def _repondre_liste_agents(self, commande):
+        """Liste les agents déclarés dans les fiches locales."""
+        demande = _normaliser(commande)
+        mots_agents = ("agent", "agents", "equipe", "specialistes", "specialises")
+        mots_liste = ("liste", "tous", "toutes", "quels", "quelles", "combien")
+
+        if not any(mot in demande for mot in mots_agents):
+            return None
+        if not any(mot in demande for mot in mots_liste):
+            return None
+
+        racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = os.path.join(racine, "agents")
+        if not os.path.isdir(dossier):
+            return None
+
+        agents = []
+        for fichier in sorted(os.listdir(dossier)):
+            if not fichier.endswith(".md"):
+                continue
+
+            chemin = os.path.join(dossier, fichier)
+            try:
+                with open(chemin, "r", encoding="utf-8") as f:
+                    contenu = f.read()
+            except (OSError, UnicodeError):
+                continue
+
+            titre = re.search(r"(?m)^#\s+(.+?)\s*$", contenu)
+            if not titre:
+                continue
+
+            nom = titre.group(1).strip()
+            lignes = contenu.splitlines()
+            mission_lignes = []
+            dans_mission = False
+
+            for ligne in lignes:
+                texte = ligne.strip()
+                if re.match(r"^##\s+Mission\s*$", texte, re.IGNORECASE):
+                    dans_mission = True
+                    continue
+                if dans_mission and texte.startswith("#"):
+                    break
+                if dans_mission and texte:
+                    mission_lignes.append(texte)
+
+            mission = " ".join(mission_lignes)
+
+            agents.append((nom, mission))
+
+        if not agents:
+            return None
+
+        lignes_reponse = [
+            f"- {nom}" + (f" : {mission}" if mission else "")
+            for nom, mission in agents
+        ]
+        return (
+            f"D'après mes fiches locales, j'ai trouvé {len(agents)} agents :\n"
+            + "\n".join(lignes_reponse)
+        )
+
+    def _repondre_connaissances(self, commande):
+        """Extrait des passages pertinents des documents locaux."""
+        if self.brain_manager is None or not isinstance(commande, str):
+            return None
+
+        demande = _normaliser(commande)
+
+        # Répondre directement depuis la fiche de l'agent concerné.
+        cible = None
+        if any(mot in demande for mot in ("qualite", "realisations", "livraison")):
+            cible = "08_testeur_ia.md"
+        elif "developpeur" in demande and any(
+            mot in demande for mot in ("mission", "role", "responsabilite", "fait")
+        ):
+            cible = "01_developpeur.md"
+
+        if cible:
+            chemin = (
+                Path(__file__).resolve().parent.parent
+                / "agents"
+                / cible
+            )
+            try:
+                contenu_fiche = chemin.read_text(encoding="utf-8")
+                titre = re.search(r"(?m)^#\s+(.+?)\s*$", contenu_fiche)
+                mission = re.search(
+                    r"(?ims)^##\s+Mission\s*\n(.*?)(?=^##\s|\Z)",
+                    contenu_fiche,
+                )
+                if titre and mission:
+                    description = " ".join(mission.group(1).split())
+                    if description:
+                        return f"{titre.group(1).strip()} : {description}"
+            except (OSError, UnicodeError):
+                pass
+
+        # Réponse directe à partir de l'identité et de la mission officielles.
+        demande_simple = re.sub(r"[^a-z0-9 ]", " ", demande)
+        demande_simple = re.sub(r"\\s+", " ", demande_simple).strip()
+        parle_identite = any(
+            expression in demande_simple
+            for expression in ("qui es tu", "identite", "nom de l assistant")
+        )
+        parle_mission = any(
+            expression in demande_simple
+            for expression in ("mission", "quel est ton role", "quel est ton rôle")
+        )
+        if parle_identite or parle_mission:
+            racine = Path(__file__).resolve().parent.parent
+            fichiers = []
+            if parle_identite:
+                fichiers.append(("Identité", racine / "partenaire" / "brain" / "identity.md"))
+            if parle_mission:
+                fichiers.append(("Mission", racine / "partenaire" / "brain" / "mission.md"))
+
+            sections = []
+            for titre, fichier in fichiers:
+                try:
+                    contenu = fichier.read_text(encoding="utf-8").strip()
+                    if contenu:
+                        sections.append(f"## {titre} de Sam Sarr\n\n{contenu}")
+                except (OSError, UnicodeError):
+                    continue
+
+            if sections:
+                return "D'après mes documents officiels locaux :\n\n" + "\n\n".join(sections)
+
+        # Réponse structurée sur le fonctionnement de la mémoire.
+        if "memoire" in demande and any(
+            mot in demande
+            for mot in ("comment", "fonctionnement", "fonctionne", "systeme",
+                        "historique", "souvenir", "types", "categorie")
+        ):
+            racine = Path(__file__).resolve().parent.parent
+            fichiers = (
+                racine / "brain" / "systeme_memoire.md",
+                racine / "brain" / "04_centre_de_memoire_intelligente.md",
+            )
+            sections = []
+            for fichier in fichiers:
+                try:
+                    contenu = fichier.read_text(encoding="utf-8").strip()
+                    if contenu:
+                        sections.append(contenu)
+                except (OSError, UnicodeError):
+                    continue
+            if sections:
+                return "D'après mes documents locaux sur la mémoire :\n\n" + "\n\n".join(sections)
+
+        # Réponse directe sur l'architecture des agents.
+        if "architecture" in demande and any(
+            mot in demande
+            for mot in ("explique", "comment", "fonctionnement", "systeme", "agents")
+        ):
+            chemin = (
+                Path(__file__).resolve().parent.parent
+                / "brain"
+                / "architecture_agents.md"
+            )
+            try:
+                document = chemin.read_text(encoding="utf-8").strip()
+                if document:
+                    return "D'après mon document local sur l'architecture :\n\n" + document
+            except (OSError, UnicodeError):
+                pass
+
+        # Réponse structurée au processus de décision.
+        if "decision" in demande and any(
+            mot in demande for mot in ("fonctionnement", "comment", "processus", "systeme")
+        ):
+            chemin = (
+                Path(__file__).resolve().parent.parent
+                / "brain"
+                / "systeme_decision_ia.md"
+            )
+            try:
+                document = chemin.read_text(encoding="utf-8")
+                sections = []
+                for titre in ("Processus de décision", "Critères de décision"):
+                    correspondance = re.search(
+                        rf"(?ims)^##\s+{re.escape(titre)}\s*\n(.*?)(?=^##\s|\Z)",
+                        document,
+                    )
+                    if correspondance:
+                        texte = correspondance.group(1).strip()
+                        if texte:
+                            sections.append(f"## {titre}\n{texte}")
+                if sections:
+                    return "D'après mes documents locaux :\n\n" + "\n\n".join(sections)
+            except (OSError, UnicodeError):
+                pass
+
+        themes = [
+            theme for theme, indices in self.THEMES_CONNAISSANCES.items()
+            if any(indice in demande for indice in indices)
+        ]
+        if not themes:
+            return None
+
+        try:
+            resultats = self.brain_manager.rechercher_connaissances(
+                " ".join(themes) + " " + demande, limite=4
+            )
+        except Exception:
+            return None
+
+        if not isinstance(resultats, list):
+            return None
+
+        if "agents" in themes and any(
+            mot in demande
+            for mot in ("liste", "tous", "toutes", "quels", "quelles", "combien")
+        ):
+            agents = {}
+            for resultat in resultats:
+                if not isinstance(resultat, dict):
+                    continue
+                contenu = str(resultat.get("contenu", ""))
+                lignes = contenu.splitlines()
+                for i, ligne in enumerate(lignes):
+                    titre = re.match(
+                        r"^\s*#{1,6}\s*(Directeur IA|Agent\s+[^#]+?)\s*$",
+                        ligne,
+                        re.IGNORECASE,
+                    )
+                    if titre:
+                        nom = " ".join(titre.group(1).split()).rstrip(" :")
+                        role = ""
+                        for suivante in lignes[i + 1:i + 12]:
+                            suivante = suivante.strip()
+                            if not suivante or suivante == "---":
+                                continue
+                            if suivante.startswith("#"):
+                                if suivante.lower().startswith(("## rôle", "## role")):
+                                    continue
+                                break
+                            if suivante.lower().startswith(("rôle :", "role :")):
+                                role = suivante.split(":", 1)[1].strip()
+                                break
+                            if suivante.startswith("- "):
+                                role = suivante[2:].strip()
+                                break
+
+                        cle = nom.lower()
+                        role_precedent = agents.get(cle, (nom, ""))[1]
+                        if role or not role_precedent:
+                            agents[cle] = (nom, role)
+
+            if agents:
+                ordre = ("directeur ia", "agent développeur", "agent designer",
+                         "agent recherche", "agent business")
+                selection = [
+                    agents[nom] for nom in ordre if nom in agents
+                ]
+                selection.extend(
+                    valeur for cle, valeur in agents.items()
+                    if cle not in ordre
+                )
+                lignes_reponse = [
+                    f"- {nom}" + (f" : {role}" if role else "")
+                    for nom, role in selection
+                ]
+                return "D'après mes documents locaux, voici les agents identifiés :\n" + "\n".join(lignes_reponse)
+
+        mots_cles = {
+            "identite": ("identite", "nom", "role", "mission", "assistant"),
+            "agents": ("agent", "directeur", "developpeur", "designer",
+                       "recherche", "business", "testeur", "specialise",
+                       "coordonne", "architecte"),
+            "architecture": ("architecture", "fonctionnement", "systeme",
+                             "directeur", "agent", "coordonne"),
+            "memoire": ("memoire", "historique", "souvenir"),
+            "securite": ("securite", "permission", "regle", "validation",
+                         "interdit", "protection"),
+            "outils": ("outil", "competence", "fonction", "utiliser"),
+        }
+
+        termes = set()
+        for theme in themes:
+            termes.update(mots_cles.get(theme, ()))
+
+        # Pour une question sur les règles de sécurité, privilégier
+        # la section dédiée plutôt que les premières lignes du document.
+        if "securite" in themes and any(
+            mot in demande for mot in ("regle", "regles", "interdit", "protection")
+        ):
+            chemin = (
+                Path(__file__).resolve().parent.parent
+                / "agents"
+                / "09_securite_ia.md"
+            )
+            try:
+                contenu_fiche = chemin.read_text(encoding="utf-8")
+                section = re.search(
+                    r"(?ims)^##\s+Règles\s*\n(.*?)(?=^##\s|\Z)",
+                    contenu_fiche,
+                )
+                if section:
+                    lignes_regles = [
+                        ligne.strip()
+                        for ligne in section.group(1).splitlines()
+                        if ligne.strip()
+                    ]
+                    if lignes_regles:
+                        return (
+                            "D'après la fiche locale de sécurité :\n"
+                            + "\n".join(lignes_regles)
+                        )
+            except (OSError, UnicodeError):
+                pass
+
+        extraits = []
+        deja_vus = set()
+
+        for resultat in resultats:
+            if not isinstance(resultat, dict):
+                continue
+            nom = str(resultat.get("nom", "")).strip()
+            contenu = str(resultat.get("contenu", "")).strip()
+            score = resultat.get("score", 0)
+            if not nom or not contenu or not isinstance(score, (int, float)):
+                continue
+            if score < 2:
+                continue
+
+            selection = []
+            for ligne in contenu.splitlines():
+                texte = ligne.strip()
+                normalisee = _normaliser(texte)
+                if not texte or texte == "---":
+                    continue
+                if texte.startswith("#") or texte.startswith("- ") or any(
+                    terme in normalisee for terme in termes
+                ):
+                    cle = normalisee
+                    if cle not in deja_vus:
+                        selection.append(texte)
+                        deja_vus.add(cle)
+                if len(selection) >= 10:
+                    break
+
+            if selection:
+                extraits.append(f"[{nom}]\n" + "\n".join(selection))
+
+            if len(extraits) >= 2:
+                break
+
+        if not extraits:
+            return None
+
+        reponse = "D'après mes documents locaux :\n\n" + "\n\n".join(extraits)
+        return reponse[:1800].rsplit("\n", 1)[0] if len(reponse) > 1800 else reponse
+
+    def _lire_memoire(self):
+        """Lit memory.json en lecture seule ({} en cas de probleme)."""
+        try:
+            import json
+            from core.paths import MEMORY_DIR
+            with open(MEMORY_DIR / "memory.json", encoding="utf-8") as f:
+                data = json.load(f)
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    def _repondre_projets_taches(self, texte):
+        """Lit les projets et les tâches locales sans appeler une IA."""
+        demande = _normaliser(texte)
+
+        mots_taches = ("tache", "taches", "faire", "dois faire")
+        demande_taches = (
+            any(mot in demande for mot in mots_taches)
+            or "a faire" in demande
+        )
+        mots_liste = ("quels sont", "quelles sont", "liste", "donne",
+                      "montre", "affiche", "tous", "toutes")
+        demande_projets = (
+            "projet" in demande
+            and any(mot in demande for mot in mots_liste)
+        )
+
+        if not demande_taches and not demande_projets:
+            return None
+
+        racine = Path(__file__).resolve().parent.parent
+        fichier = racine / "data" / "projets_taches.json"
+
+        try:
+            import json
+            with fichier.open(encoding="utf-8") as f:
+                donnees = json.load(f)
+            projets = donnees.get("projets", [])
+            taches = donnees.get("taches", [])
+            if not isinstance(projets, list) or not isinstance(taches, list):
+                return None
+        except (OSError, ValueError, AttributeError, TypeError):
+            return None
+
+        def statut_normalise(element):
+            return _normaliser(str(element.get("statut", ""))).replace("_", " ")
+
+        if demande_taches:
+            en_cours = "en cours" in demande and "tache" in demande
+            doit_faire = "dois faire" in demande or "a faire" in demande
+
+            if en_cours:
+                selection = [
+                    t for t in taches
+                    if isinstance(t, dict) and statut_normalise(t) == "en cours"
+                ]
+                titre = "Tâches actuellement en cours"
+                if not selection:
+                    return "Aucune tâche n'est actuellement en cours dans tes données locales."
+            elif doit_faire:
+                selection = [
+                    t for t in taches
+                    if isinstance(t, dict)
+                    and statut_normalise(t) not in ("termine", "terminee", "termine e")
+                ]
+                titre = "Voici les tâches qu'il te reste à effectuer"
+                if not selection:
+                    return "Toutes les tâches enregistrées sont terminées."
+            else:
+                selection = [t for t in taches if isinstance(t, dict)]
+                titre = "Voici tes tâches"
+
+            lignes = []
+            for t in selection:
+                nom = str(t.get("nom", "")).strip()
+                if not nom:
+                    continue
+                projet = str(t.get("projet", "")).strip()
+                statut = str(t.get("statut", "inconnu")).strip()
+                ligne = f"- {nom} ({statut})"
+                if projet:
+                    ligne += f" — Projet : {projet}"
+                lignes.append(ligne)
+
+            if not lignes:
+                return "Aucune tâche enregistrée dans tes données locales."
+            return titre + " :\n" + "\n".join(lignes)
+
+        selection = [p for p in projets if isinstance(p, dict)]
+        if not selection:
+            return "Aucun projet enregistré dans tes données locales."
+
+        lignes = []
+        for p in selection:
+            nom = str(p.get("nom", "")).strip()
+            if nom:
+                lignes.append(f"- {nom} ({str(p.get('statut', 'inconnu')).strip()})")
+
+        return "Voici tes projets enregistrés :\n" + "\n".join(lignes)
+
+    def _repondre_memoire(self, texte):
+        """Repond aux listes simples (mes projets, mes preferences...) sans IA."""
+        m = re.search(
+            r"^(?:(?:quels|quelles) sont|(?:liste|donne|montre|affiche|dis)"
+            r"(?: moi)?(?: la liste de)?)? ?(?:tous )?mes (projets|preferences|decisions)$",
+            texte,
+        )
+        if not m:
+            return None
+        categorie = m.group(1)
+        libelle = {"projets": "projets", "preferences": "préférences",
+                   "decisions": "décisions"}[categorie]
+        elements = [str(x).strip() for x in self._lire_memoire().get(categorie, []) if str(x).strip()]
+        if not elements:
+            if categorie == "projets":
+                return None
+            return f"Je n'ai encore rien enregistré dans tes {libelle}."
+        lignes = [f"- {e[:200]}" for e in elements[:10]]
+        if len(elements) > 10:
+            lignes.append(f"(et {len(elements) - 10} autres)")
+        return f"Voici tes {libelle} :\n" + "\n".join(lignes)
+
+    def repondre(self, commande):
+        t = _normaliser(commande)
+        t = _corriger_fautes(t)
+        if not t:
+            return None
+
+        r = _calcul(t)
+        if r is not None:
+            return r
+
+        sans_ponct = re.sub(r"[.,]", " ", t)
+        sans_ponct = re.sub(r"\s+", " ", sans_ponct).strip()
+
+        if len(sans_ponct.split()) <= 9 and not EXCLUS.search(sans_ponct):
+            heure, date = _est_heure(sans_ponct), _est_date(sans_ponct)
+            now = datetime.now()
+            txt_date = f"{JOURS[now.weekday()]} {now.day} {MOIS[now.month - 1]} {now.year}"
+            if heure and date:
+                return f"Il est {now.strftime('%H:%M')} et nous sommes le {txt_date}."
+            if heure:
+                return f"Il est {now.strftime('%H:%M')}."
+            if date:
+                return f"Nous sommes le {txt_date}."
+
+        if _stockage(sans_ponct):
+            try:
+                u = shutil.disk_usage(os.path.expanduser("~"))
+                go = 1024 ** 3
+                return (f"Espace libre : {u.free / go:.1f} Go sur {u.total / go:.1f} Go "
+                        f"({u.used / go:.1f} Go utilisés).")
+            except Exception:
+                return None
+
+        reponse_memoire = self._repondre_memoire(sans_ponct)
+        if reponse_memoire is not None:
+            return reponse_memoire
+
+        reponse_projets_taches = self._repondre_projets_taches(sans_ponct)
+        if reponse_projets_taches is not None:
+            return reponse_projets_taches
+
+        # Questions personnelles : la memoire et l'IA repondent mieux que les fiches locales.
+        if re.search(
+            r"\b(mon|ma|mes)\s+(projets?|preferences?|decisions?|prenom)\b"
+            r"|\bte souviens\b|\bte rappelles\b",
+            sans_ponct,
+        ):
+            return None
+
+        reponse_agents = self._repondre_liste_agents(commande)
+        if reponse_agents is not None:
+            return reponse_agents
+
+        reponse_connaissances = self._repondre_connaissances(commande)
+        if reponse_connaissances is not None:
+            return reponse_connaissances
+
+        return None

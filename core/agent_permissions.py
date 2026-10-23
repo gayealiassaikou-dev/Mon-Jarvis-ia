@@ -14,8 +14,7 @@ PERMISSIONS_AGENTS = {
     "01_developpeur": [
         "lire_fichier", "ecrire_fichier", "supprimer_fichier", "supprimer_dossier",
         "lister_fichiers", "creer_dossier",
-        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
-        "executer_tests_python"
+        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo"
     ],
 
     "02_designer": [

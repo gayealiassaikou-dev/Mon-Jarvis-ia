@@ -1,0 +1,155 @@
+import ast
+import operator
+import os
+import re
+import shutil
+import unicodedata
+from datetime import datetime
+
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet",
+        "août", "septembre", "octobre", "novembre", "décembre"]
+
+OPS = {
+    ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
+    ast.Div: operator.truediv, ast.Pow: operator.pow,
+    ast.USub: operator.neg, ast.UAdd: operator.pos,
+}
+
+EXCLUS = re.compile(
+    r"\b(ouvre|ouvert|ferme|ferment|rdv|rendez|reveil|alarme|rappel|avant|apres|"
+    r"demain|hier|match|cours|train|vol|bus|garage|magasin|banque|programme|"
+    r"naissance|limite|sortie|expiration)\b|\ba quelle heure\b"
+)
+
+
+def _sans_accents(texte):
+    return "".join(c for c in unicodedata.normalize("NFD", texte)
+                   if unicodedata.category(c) != "Mn")
+
+
+def _normaliser(texte):
+    t = _sans_accents(texte.lower().replace("’", "'"))
+    t = re.sub(r"\b(s'il (te|vous) plait|svp|stp|sam sarr|samba sarr|sambassar|jarvis)\b", " ", t)
+    t = re.sub(r"""[?!;:«»"“”]+""", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def _eval(noeud):
+    if isinstance(noeud, ast.Expression):
+        return _eval(noeud.body)
+    if (isinstance(noeud, ast.Constant) and isinstance(noeud.value, (int, float))
+            and not isinstance(noeud.value, bool)):
+        return noeud.value
+    if isinstance(noeud, ast.BinOp) and type(noeud.op) in OPS:
+        a, b = _eval(noeud.left), _eval(noeud.right)
+        if isinstance(noeud.op, ast.Pow) and (abs(b) > 100 or abs(a) > 1e6):
+            raise ValueError("puissance trop grande")
+        return OPS[type(noeud.op)](a, b)
+    if isinstance(noeud, ast.UnaryOp) and type(noeud.op) in OPS:
+        return OPS[type(noeud.op)](_eval(noeud.operand))
+    raise ValueError("expression non autorisée")
+
+
+def _formater(x):
+    if isinstance(x, float) and x == int(x) and abs(x) < 1e15:
+        x = int(x)
+    if isinstance(x, int):
+        return f"{x:,}".replace(",", " ")
+    s = f"{x:,.6f}".rstrip("0").rstrip(".")
+    return s.replace(",", " ").replace(".", ",")
+
+
+def _nombre(s):
+    return float(s.replace(",", "."))
+
+
+PREFIXE_CALCUL = (r"^(combien (font|fait|ca fait|vaut)|calcule(-moi)?|calcul|"
+                  r"quel est le resultat de|resultat de|donne moi le resultat de)\s+")
+
+
+def _calcul(t):
+    m = re.match(PREFIXE_CALCUL, t)
+    corps = t[m.end():] if m else t
+
+    p = re.fullmatch(r"(\d+(?:[.,]\d+)?) ?% de (\d+(?:[.,]\d+)?)", corps)
+    if p:
+        return "Le résultat est " + _formater(_nombre(p.group(1)) * _nombre(p.group(2)) / 100) + "."
+
+    corps = corps.replace("×", "*").replace("÷", "/")
+    corps = re.sub(r"(?<=\d) ?x ?(?=\d)", " * ", corps)
+    for mot, op in [("multiplie par", "*"), ("divise par", "/"), ("fois", "*"),
+                    ("plus", "+"), ("moins", "-"), ("puissance", "**")]:
+        corps = corps.replace(mot, f" {op} ")
+    corps = corps.replace("^", "**").replace(",", ".").strip()
+
+    if not re.fullmatch(r"[0-9+\-*/(). ]+", corps):
+        return None
+    if not re.search(r"\d", corps):
+        return None
+    if m is None and not re.search(r"[+*/]| - ", corps):
+        return None
+    try:
+        resultat = _eval(ast.parse(corps, mode="eval"))
+    except ZeroDivisionError:
+        return "Division par zéro impossible."
+    except Exception:
+        return None
+    return "Le résultat est " + _formater(resultat) + "."
+
+
+def _est_heure(t):
+    return bool(re.search(
+        r"\bquel(le)? heure?s?\b|\bl'?heure (actuelle|qu'il est|est il)\b|"
+        r"^(donne( moi)?|dis( moi)?) l'?heure$|\bheure est il\b|^heure$", t))
+
+
+def _est_date(t):
+    return bool(re.search(
+        r"\bquel(le)? (est la )?date\b|\bquel jour\b|\bdate d'?aujourd'?hui\b|"
+        r"on est (le combien|quel jour)|^date$|^(donne|dis)( moi)? la date$|"
+        r"^(et )?(la|l) date$|^et (la date|l date)$", t))
+
+
+def _stockage(t):
+    return bool(re.search(
+        r"\bespace (disque|libre)\b|\bstockage (libre|restant|disponible)\b|"
+        r"\bcombien d'espace\b", t))
+
+
+class LocalBrain:
+    """Répond sans IA. Retourne None si aucune règle ne correspond."""
+
+    def repondre(self, commande):
+        t = _normaliser(commande)
+        if not t:
+            return None
+
+        r = _calcul(t)
+        if r is not None:
+            return r
+
+        sans_ponct = re.sub(r"[.,]", " ", t)
+        sans_ponct = re.sub(r"\s+", " ", sans_ponct).strip()
+
+        if len(sans_ponct.split()) <= 9 and not EXCLUS.search(sans_ponct):
+            heure, date = _est_heure(sans_ponct), _est_date(sans_ponct)
+            now = datetime.now()
+            txt_date = f"{JOURS[now.weekday()]} {now.day} {MOIS[now.month - 1]} {now.year}"
+            if heure and date:
+                return f"Il est {now.strftime('%H:%M')} et nous sommes le {txt_date}."
+            if heure:
+                return f"Il est {now.strftime('%H:%M')}."
+            if date:
+                return f"Nous sommes le {txt_date}."
+
+        if _stockage(sans_ponct):
+            try:
+                u = shutil.disk_usage(os.path.expanduser("~"))
+                go = 1024 ** 3
+                return (f"Espace libre : {u.free / go:.1f} Go sur {u.total / go:.1f} Go "
+                        f"({u.used / go:.1f} Go utilisés).")
+            except Exception:
+                return None
+
+        return None

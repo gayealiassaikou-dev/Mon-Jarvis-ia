@@ -1,7 +1,9 @@
 import json
 import os
+import time
 from core.agent_manager import AgentManager
 from core.command_manager import CommandManager
+from core.local_brain import LocalBrain
 from core.memory_manager import MemoryManager
 from core.skill_manager import SkillManager
 from core.brain_manager import BrainManager
@@ -30,8 +32,9 @@ class Jarvis:
         self.memory_manager = MemoryManager()
         self.agent_manager = AgentManager()
         self.command_manager = CommandManager()
-        self.skill_manager = SkillManager()
         self.brain_manager = BrainManager()
+        self.local_brain = LocalBrain(self.brain_manager)
+        self.skill_manager = SkillManager()
         self.logger = Logger()
         self.system_checker = SystemChecker()
         self.task_manager = TaskManager()
@@ -349,8 +352,24 @@ class Jarvis:
         resultat = self.command_manager.traiter(commande)
 
         if "Commande inconnue" in resultat:
+            reponse_locale = self.local_brain.repondre(commande)
+            if reponse_locale is not None:
+                print(reponse_locale)
+                self.logger.enregistrer(
+                    "[LOCAL] Réponse fournie sans fournisseur IA."
+                )
+                self.memory_manager.ajouter_echange(
+                    commande, reponse_locale
+                )
+                if retourner_reponse:
+                    return reponse_locale
+                return
             suivre("Choix de l'agent", "en_cours")
+            debut_mesure = time.perf_counter()
             decision = self.decision_engine.decider(commande)
+            self.logger.enregistrer(
+                f"[PERFORMANCE] Choix de l'agent : {time.perf_counter() - debut_mesure:.2f} s"
+            )
             agent = decision["agent"]
             analyse = decision["analyse"]
 
@@ -373,6 +392,16 @@ class Jarvis:
             suivre("Préparation du contexte", "en_cours")
             contexte_agent = self.decision_engine.obtenir_contexte_agent(agent)
             contexte_complet = self.contexte + "\n\n" + contexte_agent
+            # Mémoire à long terme : souvenirs pertinents pour cette demande.
+            try:
+                souvenirs = self.memory_manager.rechercher_souvenirs_pertinents(commande, limite=5)
+                if souvenirs:
+                    contexte_complet += (
+                        "\n\nSouvenirs pertinents (mémoire à long terme) :\n"
+                        + "\n".join(s[:300] for s in souvenirs)
+                    )
+            except Exception:
+                pass
 
             historique = self.memory_manager.obtenir_historique_recent()
 
@@ -387,12 +416,16 @@ class Jarvis:
             ]
 
             suivre("Appel du moteur IA", "en_cours")
+            debut_mesure = time.perf_counter()
             reponse = self.ai_engine.demander(
                 commande,
                 contexte=contexte_complet,
                 historique=historique,
                 outils_autorises=outils_autorises,
                 mode_action=bool(outils_autorises),
+            )
+            self.logger.enregistrer(
+                f"[PERFORMANCE] Appel principal du moteur IA : {time.perf_counter() - debut_mesure:.2f} s"
             )
             suivre("Validation de la réponse", "en_cours")
             validation = self.validation_manager.valider(
@@ -449,11 +482,15 @@ class Jarvis:
                                 "d'autre outil."
                             )
 
+                            debut_mesure = time.perf_counter()
                             reponse = self.ai_engine.demander(
                                 commande,
                                 contexte=contexte_correction,
                                 historique=historique,
                                 outils_autorises=[]
+                            )
+                            self.logger.enregistrer(
+                                f"[PERFORMANCE] Appel de correction : {time.perf_counter() - debut_mesure:.2f} s"
                             )
 
                             # Si le modele ne fournit aucune reponse apres

@@ -959,6 +959,18 @@
             "statut": "bloquee",
             "date_creation": "2026-10-11T00:34:34",
             "date_maj": "2026-10-11T00:34:40"
+        },
+        {
+            "id": "a488adab",
+            "nom": "Exécuter le module principal core.main du projet Mon-Jarvis-ia",
+            "objectif": "cd ~/Mon-Jarvis-ia && python - << 'PYEOF' && python -m core.main",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-10-22T21:27:58",
+            "date_maj": "2026-10-22T21:28:00"
         }
     ]
 }
