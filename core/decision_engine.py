@@ -300,8 +300,63 @@ class DecisionEngine:
 
         return True
 
+    def _decision_locale(self, demande, liste_agents):
+        """Choix d'agent sans IA pour les demandes simples (None = laisser l'IA décider)."""
+        import re
+        import unicodedata
+        if not isinstance(demande, str) or not demande.strip() or len(demande) > 400:
+            return None
+        texte = unicodedata.normalize("NFKD", demande.casefold())
+        texte = "".join(c for c in texte if not unicodedata.combining(c))
+        mots = re.findall(r"\w+", texte)
+        racines_action = (
+            "supprim", "efface", "cre", "ecri", "modifi", "install", "deploi",
+            "lance", "execut", "lis", "ouvr", "ajout", "renomm", "deplac",
+            "push", "commit", "memoris", "retien", "mission", "tache",
+            "projet", "cherch", "recherch", "github", "git", "depot",
+            "repo", "fichier", "dossier",
+        )
+        if any(m.startswith(r) for m in mots for r in racines_action):
+            return None
+        themes = {
+            "01_developpeur": {"code", "python", "bug", "programme", "script",
+                               "flask", "termux", "fonction", "variable", "api",
+                               "syntaxe", "compilation"},
+            "02_designer": {"design", "couleur", "couleurs", "logo", "maquette",
+                            "interface", "police", "style"},
+            "04_business": {"business", "client", "clients", "vente", "ventes",
+                            "marketing", "prix", "entreprise", "boutique",
+                            "commerce", "commercant"},
+            "05_architecte_ia": {"architecture"},
+            "09_securite_ia": {"securite", "faille", "piratage", "chiffrement"},
+        }
+        scores = []
+        for agent, vocabulaire in themes.items():
+            if agent in liste_agents:
+                scores.append((sum(1 for m in mots if m in vocabulaire), agent))
+        scores.sort(reverse=True)
+        if not scores or scores[0][0] < 1:
+            return None
+        if len(scores) > 1 and scores[1][0] == scores[0][0]:
+            return None
+        return {
+            "agent": scores[0][1],
+            "analyse": {
+                "difficulte": "moyenne",
+                "risques": "faible",
+                "validation_requise": False,
+                "resume": demande,
+            },
+            "outils_suggeres": [],
+        }
+
     def decider(self, demande):
         liste_agents = list(self.agent_manager.agents.keys())
+        decision_locale = self._decision_locale(demande, liste_agents)
+        if decision_locale is not None:
+            print("[DecisionEngine] Choix local de l'agent (sans IA) : "
+                  f"{decision_locale['agent']}")
+            return decision_locale
 
         defaut = {
             "agent": "00_directeur_ia",
