@@ -138,7 +138,15 @@ class AIRouter:
 
                 continue
 
+        detail = (
+            "\n".join(erreurs)
+            if erreurs
+            else "Fournisseurs temporairement bloqués (quota ou crédits), "
+                 "nouvel essai dans quelques minutes."
+        )
         return (
             "Toutes les IA sont indisponibles :\n"
-            + "\n".join(erreurs)
+            + detail
+            + "\nEn attendant, je peux encore répondre sans IA : calculs, "
+              "heure, date, espace libre, projets, tâches, mémoire."
         )
