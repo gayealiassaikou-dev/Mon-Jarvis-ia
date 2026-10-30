@@ -17,7 +17,7 @@ class CommandManager:
             return "Je suis Sam Sarr, ton assistant IA personnel."
 
         elif commande == "agents":
-            return "Agents disponibles : Directeur IA, Developpeur, Designer, Recherche, Business."
+            return "12 agents disponibles : Directeur IA, Développeur, Designer, Recherche, Business, Architecte IA, Mémoire, Automatisation, Testeur, Sécurité, Assistant vocal, Gestionnaire d'outils."
 
         elif commande == "memoire":
             return "La memoire de Sam Sarr est active."
@@ -75,7 +75,7 @@ class CommandManager:
             )
 
         elif commande == "aide":
-            return "Commandes disponibles : bonjour, qui es-tu, agents, memoire, version, aide."
+            return "Commandes disponibles : bonjour, qui es-tu, agents, memoire, version, heure, date, aide. Je sais aussi calculer (ex : combien font 12 fois 7)."
 
         else:
             return "Commande inconnue. Tape aide pour voir les commandes."
