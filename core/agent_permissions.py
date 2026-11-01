@@ -5,7 +5,8 @@ TOUS_LES_OUTILS = [
     "creer_projet", "ajouter_tache", "lister_projets", "lister_taches",
     "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet",
     "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
-    "memoriser_info", "rechercher_souvenir", "executer_tests_python"
+    "memoriser_info", "rechercher_souvenir", "executer_tests_python",
+    "definir_projet_actif", "obtenir_projet_actif"
 ]
 
 PERMISSIONS_AGENTS = {
@@ -14,7 +15,8 @@ PERMISSIONS_AGENTS = {
     "01_developpeur": [
         "lire_fichier", "ecrire_fichier", "supprimer_fichier", "supprimer_dossier",
         "lister_fichiers", "creer_dossier",
-        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo"
+        "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
+        "obtenir_projet_actif"
     ],
 
     "02_designer": [
@@ -31,7 +33,7 @@ PERMISSIONS_AGENTS = {
 
     "05_architecte_ia": [
         "lire_fichier", "lister_fichiers", "creer_dossier",
-        "github_lister_repos", "github_lire_fichier"
+        "github_lister_repos", "github_lire_fichier", "obtenir_projet_actif"
     ],
 
     "06_memoire_ia": [
@@ -47,7 +49,7 @@ PERMISSIONS_AGENTS = {
     ],
 
     "08_testeur_ia": [
-        "lire_fichier", "lister_fichiers", "executer_tests_python"
+        "lire_fichier", "lister_fichiers", "executer_tests_python", "obtenir_projet_actif"
     ],
 
     "09_securite_ia": [

@@ -5,7 +5,7 @@ import unicodedata
 import requests
 from dotenv import load_dotenv
 from core.ai_router import AIRouter
-from core.tools import executer_tests_python, lire_fichier, ecrire_fichier, creer_parent_manquant_pour_ecriture, supprimer_fichier, supprimer_dossier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
+from core.tools import definir_projet_actif, obtenir_projet_actif, executer_tests_python, lire_fichier, ecrire_fichier, creer_parent_manquant_pour_ecriture, supprimer_fichier, supprimer_dossier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
 
 load_dotenv()
 
@@ -235,6 +235,28 @@ OUTILS = [
     {
         "type": "function",
         "function": {
+            "name": "definir_projet_actif",
+            "description": "Selectionne explicitement le projet sur lequel travailler.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nom": {"type": "string", "description": "Nom exact du projet existant"}
+                },
+                "required": ["nom"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "obtenir_projet_actif",
+            "description": "Indique quel projet est actuellement selectionne.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "lister_projets",
             "description": "Liste tous les projets enregistres",
             "parameters": {"type": "object", "properties": {}}
@@ -319,6 +341,7 @@ OUTILS = [
 # routeur peut essayer un autre fournisseur sans risque de double execution.
 OUTILS_LECTURE_SEULE = frozenset({
     "lire_fichier", "lister_fichiers", "lister_projets", "lister_taches",
+    "obtenir_projet_actif",
     "rechercher_web", "rechercher_souvenir",
     "github_lister_repos", "github_lire_fichier",
 })
@@ -335,6 +358,8 @@ FONCTIONS_DISPONIBLES = {
     "github_lire_fichier": github_lire_fichier,
     "github_ecrire_fichier": github_ecrire_fichier,
     "rechercher_web": rechercher_web,
+    "definir_projet_actif": definir_projet_actif,
+    "obtenir_projet_actif": obtenir_projet_actif,
     "creer_projet": creer_projet,
     "ajouter_tache": ajouter_tache,
     "lister_projets": lister_projets,
@@ -415,7 +440,7 @@ class AIEngine:
         self.mistral_url = mistral.get("url")
         self.mistral_model = mistral.get("model")
 
-        self.router = AIRouter(self)
+        self.router = AIRouter(self, persister_quotas=True)
 
     def demander(
         self,
@@ -1596,6 +1621,41 @@ class AIEngine:
             return {
                 "verifie": True,
                 "details": "La disparition du dossier a ete verifiee physiquement."
+            }
+
+        if nom_fonction == "definir_projet_actif":
+            if isinstance(resultat, str) and resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"La selection du projet a echoue : {resultat}"
+                }
+
+            prefixe = "Projet actif selectionne : "
+            if not isinstance(resultat, str) or not resultat.startswith(prefixe):
+                return {
+                    "verifie": False,
+                    "details": "La selection du projet n'a pas retourne de confirmation valide."
+                }
+
+            nom_selectionne = resultat[len(prefixe):].rstrip(".").strip()
+            if not nom_selectionne:
+                return {
+                    "verifie": False,
+                    "details": "Le nom du projet selectionne est absent."
+                }
+
+            projet_relu = obtenir_projet_actif()
+            confirmation_attendue = f"Projet actif : {nom_selectionne}."
+
+            if projet_relu == confirmation_attendue:
+                return {
+                    "verifie": True,
+                    "details": "Le projet actif a ete relu depuis le fichier et correspond a la selection."
+                }
+
+            return {
+                "verifie": False,
+                "details": f"La verification du projet actif a echoue : {projet_relu}"
             }
 
         if nom_fonction != "ecrire_fichier":

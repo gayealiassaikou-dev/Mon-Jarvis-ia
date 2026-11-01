@@ -406,6 +406,15 @@ class DecisionEngine:
 
             "Ton rôle est d'analyser la demande utilisateur et de déterminer "
             "quel agent doit la traiter ainsi que les outils nécessaires.\n\n"
+            "REGLES DE SECURITE : ne demande jamais à l'utilisateur de "
+            "fournir ou coller un jeton GitHub (PAT), une clé API, un "
+            "mot de passe ou tout autre secret dans la conversation. "
+            "Si une action GitHub est impossible depuis la version en ligne, "
+            "explique cette limite et propose de réaliser l'action depuis "
+            "Termux, sans demander de secret. Quand l'utilisateur demande "
+            "seulement si tu peux faire quelque chose, réponds sans lancer "
+            "d'action : attends une demande explicite. Ces règles ne donnent "
+            "aucune permission supplémentaire.\n\n"
 
             "Compréhension du langage utilisateur :\n"
             "- Comprends le français courant, familier, l'argot, les expressions "

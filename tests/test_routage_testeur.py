@@ -157,5 +157,42 @@ class TestRoutageTesteur(unittest.TestCase):
         self.assertIs(kwargs.get("mode_action"), False)
 
 
+    def test_regles_securite_transmises_au_directeur(self):
+        moteur = object.__new__(DecisionEngine)
+        moteur.agent_manager = Mock()
+        moteur.agent_manager.agents = {"00_directeur_ia": "Directeur"}
+        moteur.ai_engine = Mock()
+        moteur.ai_engine.demander.return_value = json.dumps({
+            "agent": "00_directeur_ia",
+            "difficulte": "faible",
+            "risques": "aucun",
+            "validation_requise": False,
+            "resume": "Question sur GitHub",
+            "outils_suggeres": [],
+        })
+        moteur.outils_disponibles = []
+
+        moteur.decider("Peux-tu vérifier mon dépôt GitHub ?")
+
+        moteur.ai_engine.demander.assert_called_once()
+        args, kwargs = moteur.ai_engine.demander.call_args
+        prompt = args[0]
+
+        for regle in (
+            "REGLES DE SECURITE",
+            "jeton GitHub (PAT)",
+            "clé API",
+            "mot de passe",
+            "version en ligne",
+            "Termux",
+            "sans lancer",
+            "aucune permission supplémentaire",
+        ):
+            self.assertIn(regle, prompt)
+
+        self.assertEqual(kwargs.get("outils_autorises"), [])
+        self.assertIs(kwargs.get("mode_action"), False)
+
+
 if __name__ == "__main__":
     unittest.main()

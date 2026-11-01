@@ -27,8 +27,9 @@ class AIRouter:
     Essaie les fournisseurs dans l'ordre défini.
     """
 
-    def __init__(self, ai_engine):
+    def __init__(self, ai_engine, persister_quotas=False):
         self.ai_engine = ai_engine
+        self.persister_quotas = persister_quotas
         configuration = getattr(ai_engine, "providers", {})
         self.fournisseurs = sorted(
             configuration,
@@ -39,6 +40,7 @@ class AIRouter:
         )
 
         self.indisponibles = {}
+        self._persister("restaurer_blocages", self)
 
     def disponible(self, fournisseur):
         if fournisseur in self.indisponibles:
@@ -49,8 +51,22 @@ class AIRouter:
 
         return True
 
-    def bloquer_temporairement(self, fournisseur, secondes=300):
+    def _persister(self, fonction, *args):
+        if not self.persister_quotas:
+            return
+        try:
+            import threading
+            from core import quotas
+
+            threading.Thread(
+                target=getattr(quotas, fonction), args=args, daemon=True
+            ).start()
+        except Exception:
+            pass
+
+    def bloquer_temporairement(self, fournisseur, secondes=300, erreur=""):
         self.indisponibles[fournisseur] = time.time() + secondes
+        self._persister("marquer_bloque", fournisseur, erreur, secondes)
 
     def demander(self, message, contexte="", historique=None):
 
@@ -122,7 +138,9 @@ class AIRouter:
                     any(code in erreur for code in ("402", "429", "503"))
                     or "quota" in erreur
                 ):
-                    self.bloquer_temporairement(fournisseur)
+                    self.bloquer_temporairement(
+                        fournisseur, erreur=masquer_secrets(str(e))
+                    )
 
                 # Si un outil a déjà été engagé, l'erreur peut être
                 # survenue après une action réelle. Ne pas relancer

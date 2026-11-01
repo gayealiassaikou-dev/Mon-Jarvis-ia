@@ -69,3 +69,10 @@ test_groq_audio.mp4
 /interface/data/conversations.db*
 
 memory/historique_archive.json
+
+# Session privee Supabase de Sam Sarr
+.supabase_session.json
+
+# File locale des reprises en attente
+/data/reprise_en_attente.jsonl
+/data/projet_actif.json

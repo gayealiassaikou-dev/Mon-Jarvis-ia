@@ -363,6 +363,7 @@ def rechercher_web(requete):
         return f"Erreur recherche web inattendue : {e}"
 
 CHEMIN_DONNEES = os.path.join(DOSSIER_AUTORISE, "data", "projets_taches.json")
+CHEMIN_PROJET_ACTIF = os.path.join(DOSSIER_AUTORISE, "data", "projet_actif.json")
 
 def _charger_donnees():
     if not os.path.exists(CHEMIN_DONNEES):
@@ -412,6 +413,67 @@ def lister_projets():
     for p in donnees["projets"]:
         texte += f"- {p['nom']} ({p['statut']})\n"
     return texte
+
+def definir_projet_actif(nom):
+    """Selectionne un projet existant et memorise son nom."""
+    if not isinstance(nom, str) or not nom.strip():
+        return "Erreur : nom de projet invalide."
+
+    donnees = _charger_donnees()
+    for projet in donnees.get("projets", []):
+        if not isinstance(projet, dict):
+            continue
+        nom_projet = projet.get("nom", "")
+        if isinstance(nom_projet, str) and nom_projet.strip().lower() == nom.strip().lower():
+            os.makedirs(os.path.dirname(CHEMIN_PROJET_ACTIF), exist_ok=True)
+            with open(CHEMIN_PROJET_ACTIF, "w", encoding="utf-8") as f:
+                json.dump({"nom": nom_projet.strip()}, f, ensure_ascii=False, indent=4)
+            return f"Projet actif selectionne : {nom_projet.strip()}."
+
+    return f"Erreur : le projet '{nom.strip()}' n'existe pas."
+
+
+def _obtenir_nom_projet_actif():
+    """Retourne le nom exact du projet actif, ou None si invalide."""
+    try:
+        with open(CHEMIN_PROJET_ACTIF, "r", encoding="utf-8") as f:
+            actif = json.load(f)
+        nom = actif.get("nom", "")
+        if not isinstance(nom, str) or not nom.strip():
+            return None
+
+        for projet in _charger_donnees().get("projets", []):
+            if isinstance(projet, dict):
+                nom_projet = projet.get("nom", "")
+                if isinstance(nom_projet, str) and nom_projet.strip().lower() == nom.strip().lower():
+                    return nom_projet.strip()
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return None
+    return None
+
+
+def obtenir_projet_actif():
+    """Retrouve le projet actif memorise et verifie qu'il existe encore."""
+    if not os.path.exists(CHEMIN_PROJET_ACTIF):
+        return "Aucun projet actif selectionne."
+
+    try:
+        with open(CHEMIN_PROJET_ACTIF, "r", encoding="utf-8") as f:
+            donnees_actives = json.load(f)
+        nom = donnees_actives.get("nom", "")
+        if not isinstance(nom, str) or not nom.strip():
+            return "Erreur : fichier du projet actif invalide."
+
+        for projet in _charger_donnees().get("projets", []):
+            if isinstance(projet, dict):
+                nom_projet = projet.get("nom", "")
+                if isinstance(nom_projet, str) and nom_projet.strip().lower() == nom.strip().lower():
+                    return f"Projet actif : {nom_projet.strip()}."
+
+        return f"Le projet memorise '{nom}' n'existe plus dans la liste des projets."
+    except (OSError, json.JSONDecodeError, AttributeError):
+        return "Erreur : impossible de lire le projet actif."
+
 
 def lister_taches():
     donnees = _charger_donnees()

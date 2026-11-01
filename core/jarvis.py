@@ -24,6 +24,8 @@ from core.ai_engine import AIEngine
 from core.agent_permissions import obtenir_outils_autorises
 from core.contexte_ia import charger_contexte
 from core.paths import PROJECT_ROOT
+from core.reprise import sauvegarder_point
+from core.tools import _obtenir_nom_projet_actif
 
 
 class Jarvis:
@@ -400,7 +402,21 @@ class Jarvis:
 
             suivre("Préparation du contexte", "en_cours")
             contexte_agent = self.decision_engine.obtenir_contexte_agent(agent)
-            contexte_complet = self.contexte + "\n\n" + contexte_agent
+            regle_securite = (
+                "REGLES DE SECURITE (tous les agents) : ne demande jamais a "
+                "l'utilisateur de fournir, coller ou envoyer un jeton (PAT), "
+                "une cle API, un mot de passe ou tout autre secret dans la "
+                "conversation. Si une action GitHub est impossible, explique "
+                "simplement que les outils GitHub fonctionnent depuis la "
+                "version Termux (telephone) et pas depuis la version en ligne, "
+                "et propose de la faire depuis Termux. Quand on te demande "
+                "si tu peux faire quelque chose, reponds par oui ou non et "
+                "explique ce qui est possible, sans lancer d'action tant que "
+                "la demande n'est pas explicite."
+            )
+            contexte_complet = (
+                self.contexte + "\n\n" + contexte_agent + "\n\n" + regle_securite
+            )
             # Mémoire à long terme : souvenirs pertinents pour cette demande.
             try:
                 souvenirs = self.memory_manager.rechercher_souvenirs_pertinents(commande, limite=5)
@@ -555,6 +571,44 @@ class Jarvis:
                 print(
                     f"[Avertissement : {validation['avertissement']}]"
                 )
+
+            # Reprise : uniquement apres validation d'une action reelle.
+            if validation.get("valide") is True:
+                resultats = getattr(self.ai_engine, "derniers_resultats_outils", []) or []
+                resultat = next(
+                    (r for r in reversed(resultats)
+                     if isinstance(r, dict)
+                     and r.get("execute") is True
+                     and r.get("statut") == "succes"
+                     and isinstance(r.get("verification"), dict)
+                     and r["verification"].get("verifie") is True
+                     and r.get("outil") not in {
+                         "definir_projet_actif", "obtenir_projet_actif"
+                     }),
+                    None,
+                )
+                if resultat is not None:
+                    try:
+                        projet = _obtenir_nom_projet_actif()
+                        if projet:
+                            source = sauvegarder_point(
+                                projet,
+                                derniere_action="Action verifiee : " + str(resultat.get("outil", "outil")),
+                                derniere_etape="Execution et verification reussies",
+                                prochaine_action="A determiner a la prochaine reprise",
+                                fichiers=[],
+                                contexte="Action confirmee par le moteur d'execution de Sam Sarr.",
+                            )
+                            self.logger.enregistrer(
+                                f"[Reprise] Point sauvegarde ({source})."
+                            )
+                    except Exception as erreur:
+                        try:
+                            self.logger.enregistrer(
+                                "[Reprise] Sauvegarde ignoree : " + type(erreur).__name__
+                            )
+                        except Exception:
+                            pass
 
             self.coordination_manager.superviser_resultat(
                 reponse,
