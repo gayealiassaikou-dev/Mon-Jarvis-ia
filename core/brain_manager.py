@@ -34,13 +34,16 @@ class BrainManager:
             print("-", connaissance)
 
     def rechercher_connaissances(self, requete, limite=3):
-        """Retourne les connaissances les plus pertinentes pour une demande."""
+        """Classe les documents selon leur pertinence pour une demande."""
         import re
         import unicodedata
+        from collections import Counter
 
         def normaliser(texte):
-            texte = unicodedata.normalize("NFKD", str(texte).lower())
-            texte = "".join(c for c in texte if not unicodedata.combining(c))
+            texte = unicodedata.normalize("NFKD", str(texte).casefold())
+            texte = "".join(
+                c for c in texte if not unicodedata.combining(c)
+            )
             return re.findall(r"[a-z0-9_]+", texte)
 
         if not isinstance(requete, str) or not requete.strip():
@@ -51,26 +54,46 @@ class BrainManager:
         except (TypeError, ValueError):
             limite = 3
 
-        mots = set(normaliser(requete))
-        mots_utiles = mots - {
+        mots_vides = {
             "a", "au", "aux", "avec", "ce", "ces", "dans", "de",
             "des", "du", "elle", "en", "et", "il", "je", "la",
             "le", "les", "ma", "mais", "me", "mon", "ne", "nos",
             "notre", "on", "ou", "par", "pas", "pour", "que",
             "qui", "sa", "se", "ses", "son", "sur", "ta", "te",
-            "tes", "un", "une", "vos", "votre", "vous"
+            "tes", "un", "une", "vos", "votre", "vous",
         }
-        if not mots_utiles:
-            mots_utiles = mots
 
+        mots_requete = normaliser(requete)
+        mots_utiles = set(mots_requete) - mots_vides
+        if not mots_utiles:
+            mots_utiles = set(mots_requete)
+        if not mots_utiles:
+            return []
+
+        phrase = " ".join(mots_requete)
         resultats = []
+
         for nom, contenu in self.connaissances.items():
-            mots_titre = set(normaliser(nom.replace("_", " ")))
-            mots_contenu = set(normaliser(contenu))
+            contenu = str(contenu)
+            titre = " ".join(normaliser(nom.replace("_", " ")))
+            texte_normalise = " ".join(normaliser(contenu))
+            compteur = Counter(normaliser(contenu))
+            mots_titre = set(normaliser(titre))
+
+            correspondances = mots_utiles & set(compteur)
+            couverture = len(correspondances)
+
             score = (
-                3 * len(mots_utiles & mots_titre)
-                + len(mots_utiles & mots_contenu)
+                5 * len(mots_utiles & mots_titre)
+                + sum(min(compteur[mot], 4) * 2 for mot in mots_utiles)
+                + couverture * 3
             )
+
+            if phrase and phrase in titre:
+                score += 10
+            if phrase and phrase in texte_normalise:
+                score += 8
+
             if score:
                 resultats.append({
                     "nom": nom,
@@ -78,5 +101,7 @@ class BrainManager:
                     "score": score,
                 })
 
-        resultats.sort(key=lambda element: element["score"], reverse=True)
+        resultats.sort(
+            key=lambda element: (-element["score"], element["nom"])
+        )
         return resultats[:limite]

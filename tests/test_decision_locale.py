@@ -44,7 +44,8 @@ class TestDecisionLocale(unittest.TestCase):
 
     def test_format_de_retour(self):
         r = self.d._decision_locale("explique ce bug python", AGENTS)
-        self.assertEqual(set(r), {"agent", "analyse", "outils_suggeres"})
+        self.assertEqual(set(r), {"agent", "complexite", "analyse", "outils_suggeres"})
+        self.assertEqual(r["complexite"], "simple")
         self.assertFalse(r["analyse"]["validation_requise"])
         self.assertEqual(r["outils_suggeres"], [])
 

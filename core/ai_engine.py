@@ -5,7 +5,7 @@ import unicodedata
 import requests
 from dotenv import load_dotenv
 from core.ai_router import AIRouter
-from core.tools import definir_projet_actif, obtenir_projet_actif, executer_tests_python, lire_fichier, ecrire_fichier, creer_parent_manquant_pour_ecriture, supprimer_fichier, supprimer_dossier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
+from core.tools import definir_projet_actif, obtenir_projet_actif, executer_tests_python, executer_programme_python, reparer_syntaxe_python, diagnostiquer_code_python, analyser_erreur_python, corriger_code_python, lire_fichier, ecrire_fichier, creer_parent_manquant_pour_ecriture, supprimer_fichier, supprimer_dossier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
 
 load_dotenv()
 
@@ -330,9 +330,81 @@ OUTILS = [
     {
         "type": "function",
         "function": {
+            "name": "corriger_code_python",
+            "description": "Applique une correction exacte a un fichier Python uniquement si le nouveau code passe la verification syntaxique.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "chemin": {"type": "string"},
+                    "ancien_code": {"type": "string"},
+                    "nouveau_code": {"type": "string"}
+                },
+                "required": ["chemin", "ancien_code", "nouveau_code"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "reparer_syntaxe_python",
+            "description": "Repare localement certaines erreurs de syntaxe Python simples, puis verifie le fichier.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "chemin": {"type": "string", "description": "Chemin du fichier Python a reparer"}
+                },
+                "required": ["chemin"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyser_erreur_python",
+            "description": "Analyse un traceback Python et explique localement le type d'erreur, le fichier, la ligne et sa cause probable.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "traceback": {"type": "string", "description": "Traceback complet retourne par l'execution Python"}
+                },
+                "required": ["traceback"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "diagnostiquer_code_python",
+            "description": "Analyse localement la syntaxe d'un fichier Python et indique les erreurs et leurs lignes, sans executer le code ni appeler une IA externe.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "chemin": {"type": "string", "description": "Chemin du fichier Python a analyser"}
+                },
+                "required": ["chemin"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "executer_tests_python",
-            "description": "Lance la suite complete des tests Python du depot et retourne les resultats reels, avec un delai maximal de 90 secondes.",
+            "description": "Lance la suite complete des tests Python du depot et retourne les resultats reels.",
             "parameters": {"type": "object", "properties": {}, "required": []}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "executer_programme_python",
+            "description": "Execute un programme Python present dans espace_travail et retourne sa sortie et ses erreurs.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "chemin": {"type": "string", "description": "Chemin du fichier Python dans espace_travail"}
+                },
+                "required": ["chemin"]
+            }
         }
     }
 ]
@@ -368,7 +440,12 @@ FONCTIONS_DISPONIBLES = {
     "supprimer_tache": supprimer_tache,
     "supprimer_projet": supprimer_projet,
     "modifier_statut_projet": modifier_statut_projet,
-    "executer_tests_python": executer_tests_python
+    "reparer_syntaxe_python": reparer_syntaxe_python,
+    "analyser_erreur_python": analyser_erreur_python,
+    "diagnostiquer_code_python": diagnostiquer_code_python,
+    "corriger_code_python": corriger_code_python,
+    "executer_tests_python": executer_tests_python,
+    "executer_programme_python": executer_programme_python
 }
 
 
@@ -449,6 +526,7 @@ class AIEngine:
         historique=None,
         outils_autorises=None,
         mode_action=False,
+        message_utilisateur_origine=None,
     ):
         # Nouvelle demande : aucune action n'est encore engagée.
         self.action_engagee = False
@@ -468,7 +546,10 @@ class AIEngine:
         self.outils_autorises = outils_autorises
         self.mode_action = bool(mode_action)
         ancien_message = getattr(self, "_message_utilisateur_courant", "")
-        self._message_utilisateur_courant = str(message or "")
+        self._message_utilisateur_courant = str(
+            message if message_utilisateur_origine is None
+            else message_utilisateur_origine
+        )
 
         try:
             return self.router.demander(
@@ -1201,6 +1282,32 @@ class AIEngine:
         if nom_fonction == "github_creer_repo":
             return self._verifier_github_creer_repo(arguments, resultat)
 
+        if nom_fonction == "executer_programme_python":
+            if not isinstance(resultat, str):
+                return {
+                    "verifie": False,
+                    "details": "Le resultat de l'execution Python n'est pas du texte."
+                }
+
+            premiere_ligne = resultat.splitlines()[0] if resultat.splitlines() else ""
+
+            if premiere_ligne.startswith("SUCCES :") and "code 0" in premiere_ligne:
+                return {
+                    "verifie": True,
+                    "details": "Le programme Python s'est termine avec le code 0."
+                }
+
+            if premiere_ligne.startswith("ECHEC :"):
+                return {
+                    "verifie": False,
+                    "details": f"Le programme Python a echoue : {premiere_ligne}"
+                }
+
+            return {
+                "verifie": False,
+                "details": "Le resultat de l'execution Python est inattendu."
+            }
+
         if nom_fonction == "creer_dossier":
             if isinstance(resultat, str) and resultat.startswith("Erreur"):
                 return {
@@ -1706,6 +1813,41 @@ class AIEngine:
             "details": "Le fichier a ete relu et son contenu correspond exactement a la demande."
         }
 
+    def _post_avec_reessai_429(self, url, headers, payload, timeout):
+        """POST avec patience sur les limites de debit (HTTP 429).
+
+        Si le fournisseur indique un delai de reprise court (30 s max),
+        on attend puis on refait le meme appel HTTP, 2 fois au plus.
+        Rien n'est rejoue : l'appel refuse n'a produit aucune reponse.
+        """
+        import re
+        import time
+
+        reponse = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        for _ in range(2):
+            if getattr(reponse, "status_code", None) != 429:
+                break
+            attente = None
+            entetes = getattr(reponse, "headers", None) or {}
+            try:
+                valeur = entetes.get("retry-after")
+                if valeur:
+                    attente = float(valeur)
+            except (TypeError, ValueError, AttributeError):
+                attente = None
+            if attente is None:
+                trouve = re.search(
+                    r"try again in ([0-9.]+)s",
+                    str(getattr(reponse, "text", "") or ""),
+                )
+                if trouve:
+                    attente = float(trouve.group(1))
+            if attente is None or attente > 30:
+                break
+            time.sleep(attente + 1)
+            reponse = requests.post(url, headers=headers, json=payload, timeout=timeout)
+        return reponse
+
     def _appeler_openai_compatible(
     self,
     url,
@@ -1739,7 +1881,7 @@ class AIEngine:
 
                 if mode_action and iteration == 0:
                     payload["tool_choice"] = "required"
-            reponse = requests.post(url, headers=headers, json=payload, timeout=timeout)
+            reponse = self._post_avec_reessai_429(url, headers, payload, timeout)
             # Certains modeles repondent en texte alors que l'outil est impose :
             # l'API refuse alors la reponse (HTTP 400, tool_use_failed).
             # On relance une seule fois sans forcer l'outil.
@@ -1749,7 +1891,7 @@ class AIEngine:
                 and "tool_use_failed" in (getattr(reponse, "text", "") or "")
             ):
                 payload.pop("tool_choice", None)
-                reponse = requests.post(url, headers=headers, json=payload, timeout=timeout)
+                reponse = self._post_avec_reessai_429(url, headers, payload, timeout)
             try:
                 reponse.raise_for_status()
             except requests.HTTPError as erreur_http:

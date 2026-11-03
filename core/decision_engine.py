@@ -22,7 +22,12 @@ class DecisionEngine:
     """
 
     DESCRIPTIONS_OUTILS = {
+        "reparer_syntaxe_python": "Repare localement certaines erreurs de syntaxe Python simples sans IA externe.",
+        "analyser_erreur_python": "Analyse un traceback Python et explique la cause probable de l erreur.",
+        "diagnostiquer_code_python": "Analyse localement la syntaxe Python et localise les erreurs sans IA externe.",
+        "corriger_code_python": "Applique une correction ciblee au code Python apres verification syntaxique.",
         "executer_tests_python": "Lance la suite complete des tests Python du depot et rapporte les erreurs reelles pour aider au debogage.",
+    "executer_programme_python": "Execute un programme Python de espace_travail pour le developper et le tester.",
         "lire_fichier": (
             "Lit le contenu d'un fichier local du projet."
         ),
@@ -31,6 +36,9 @@ class DecisionEngine:
         ),
         "supprimer_fichier": (
             "Supprime un fichier local du projet."
+        ),
+        "supprimer_dossier": (
+            "Supprime un dossier local du projet, selon les protections applicables."
         ),
         "lister_fichiers": (
             "Liste les fichiers disponibles dans le projet."
@@ -77,6 +85,9 @@ class DecisionEngine:
         "github_creer_repo": (
             "Crée un nouveau dépôt GitHub avec l'authentification locale "
             "GitHub CLI, puis vérifie que le dépôt existe."
+        ),
+        "obtenir_projet_actif": (
+            "Identifie le projet actuellement actif dans l'espace de travail."
         ),
         "memoriser_info": (
             "Enregistre une information dans la mémoire de Jarvis."
@@ -192,7 +203,12 @@ class DecisionEngine:
     }
 
     OUTILS_AGENTS_SPECIALISES = {
+        "reparer_syntaxe_python": "01_developpeur",
+        "analyser_erreur_python": "01_developpeur",
+        "diagnostiquer_code_python": "01_developpeur",
+        "corriger_code_python": "01_developpeur",
         "executer_tests_python": "08_testeur_ia",
+    "executer_programme_python": "01_developpeur",
         "ecrire_fichier": "01_developpeur",
         "supprimer_fichier": "01_developpeur",
         "creer_dossier": "01_developpeur",
@@ -266,6 +282,7 @@ class DecisionEngine:
 
         return {
             "agent": "00_directeur_ia",
+            "complexite": "simple",
             "analyse": {
                 "difficulte": "moyenne",
                 "risques": "eleve",
@@ -341,6 +358,7 @@ class DecisionEngine:
             return None
         return {
             "agent": scores[0][1],
+            "complexite": "simple",
             "analyse": {
                 "difficulte": "moyenne",
                 "risques": "faible",
@@ -360,6 +378,7 @@ class DecisionEngine:
 
         defaut = {
             "agent": "00_directeur_ia",
+            "complexite": "simple",
             "analyse": {
                 "difficulte": "moyenne",
                 "risques": "faible",
@@ -493,6 +512,7 @@ class DecisionEngine:
             "sans texte avant ou après, exactement au format suivant :\n"
 
             '{"agent": "nom exact d’un agent de la liste", '
+            '"complexite": "simple|complexe", '
             '"difficulte": "faible|moyenne|elevee", '
             '"risques": "aucun|faible|moyen|eleve", '
             '"validation_requise": true ou false, '
@@ -503,6 +523,10 @@ class DecisionEngine:
             "modifie, supprime, crée des fichiers, installe, déploie ou "
             "exécute une action irréversible.\n"
 
+            "complexite vaut simple par défaut. Choisis complexe uniquement "
+            "si la demande nécessite plusieurs sous-tâches distinctes confiées "
+            "à plusieurs agents spécialistes. Une demande qui peut être traitée "
+            "par un seul agent reste simple.\n\n"
             "Pour une analyse, une explication, une idée, une planification "
             "ou une proposition, validation_requise doit toujours être false."
         )
@@ -536,6 +560,13 @@ class DecisionEngine:
             if not isinstance(data, dict):
                 raise ValueError(
                     "La decision du LLM n'est pas un objet JSON."
+                )
+
+            complexite = data.get("complexite", "simple")
+            if complexite not in ("simple", "complexe"):
+                return self._decision_securisee(
+                    demande,
+                    f"Complexité inconnue retournée par le LLM : {complexite!r}"
                 )
 
             agent = data.get("agent")
@@ -596,6 +627,7 @@ class DecisionEngine:
 
             return {
                 "agent": agent,
+                "complexite": complexite,
                 "analyse": {
                     "difficulte": data.get(
                         "difficulte",

@@ -15,3 +15,34 @@ def test_recherche_le_nom_de_sam_sarr():
 
     assert resultats
     assert any("partenaire/brain/" in resultat["nom"] for resultat in resultats)
+
+
+
+def test_classe_les_documents_par_pertinence():
+    brain = BrainManager()
+    brain.connaissances = {
+        "guide_general": "Le fournisseur est configuré dans le projet.",
+        "routeur_ia": (
+            "Le routeur choisit le fournisseur. "
+            "Le routeur gere le choix du fournisseur."
+        ),
+    }
+
+    resultats = brain.rechercher_connaissances(
+        "routeur fournisseur", limite=2
+    )
+
+    assert resultats[0]["nom"] == "routeur_ia"
+    assert resultats[0]["score"] > resultats[1]["score"]
+
+
+def test_recherche_insensible_aux_accents():
+    brain = BrainManager()
+    brain.connaissances = {
+        "securite": "La sécurité protège les fichiers."
+    }
+
+    resultats = brain.rechercher_connaissances("securite")
+
+    assert resultats
+    assert resultats[0]["nom"] == "securite"

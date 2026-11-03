@@ -6,7 +6,7 @@ TOUS_LES_OUTILS = [
     "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet",
     "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
     "memoriser_info", "rechercher_souvenir", "executer_tests_python",
-    "definir_projet_actif", "obtenir_projet_actif"
+    "definir_projet_actif", "obtenir_projet_actif", "executer_programme_python", "reparer_syntaxe_python", "diagnostiquer_code_python", "analyser_erreur_python", "corriger_code_python"
 ]
 
 PERMISSIONS_AGENTS = {
@@ -16,7 +16,7 @@ PERMISSIONS_AGENTS = {
         "lire_fichier", "ecrire_fichier", "supprimer_fichier", "supprimer_dossier",
         "lister_fichiers", "creer_dossier",
         "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
-        "obtenir_projet_actif"
+        "obtenir_projet_actif", "executer_programme_python", "reparer_syntaxe_python", "diagnostiquer_code_python", "analyser_erreur_python", "corriger_code_python"
     ],
 
     "02_designer": [
@@ -49,7 +49,7 @@ PERMISSIONS_AGENTS = {
     ],
 
     "08_testeur_ia": [
-        "lire_fichier", "lister_fichiers", "executer_tests_python", "obtenir_projet_actif"
+        "lire_fichier", "lister_fichiers", "executer_tests_python", "executer_programme_python", "diagnostiquer_code_python", "obtenir_projet_actif"
     ],
 
     "09_securite_ia": [
