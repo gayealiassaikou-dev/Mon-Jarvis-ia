@@ -6,7 +6,7 @@ TOUS_LES_OUTILS = [
     "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet",
     "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
     "memoriser_info", "rechercher_souvenir", "executer_tests_python",
-    "definir_projet_actif", "obtenir_projet_actif", "executer_programme_python", "reparer_syntaxe_python", "diagnostiquer_code_python", "analyser_erreur_python", "corriger_code_python"
+    "definir_projet_actif", "obtenir_projet_actif", "gerer_musique", "executer_programme_python", "reparer_syntaxe_python", "diagnostiquer_code_python", "analyser_erreur_python", "corriger_code_python"
 ]
 
 PERMISSIONS_AGENTS = {
@@ -57,7 +57,7 @@ PERMISSIONS_AGENTS = {
     ],
 
     "10_assistant_vocal_ia": [
-        "lister_projets", "lister_taches"
+        "lister_projets", "lister_taches", "gerer_musique"
     ],
 
     "11_gestionnaire_outils_ia": TOUS_LES_OUTILS

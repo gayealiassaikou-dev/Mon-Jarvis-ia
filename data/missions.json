@@ -971,6 +971,109 @@
             "statut": "terminee",
             "date_creation": "2026-10-22T21:27:58",
             "date_maj": "2026-10-22T21:28:00"
+        },
+        {
+            "id": "d6a68908",
+            "nom": "Créer, exécuter et tester un programme Python qui additionne deux nombres et afficher le résultat",
+            "objectif": "Crée un petit programme Python qui calcule la somme de deux nombres. Crée le fichier, exécute-le, teste-le et montre-moi le résultat. Ne te contente pas de me donner le code",
+            "agents": [
+                "01_developpeur"
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-01T13:06:21",
+            "date_maj": "2026-11-01T13:07:26"
+        },
+        {
+            "id": "8d091a2e",
+            "nom": "Créer et exécuter un script Python qui calcule la somme des carrés de 1 à 10 et afficher le résultat.",
+            "objectif": "Crée le fichier espace_travail/test_carres.py qui calcule la somme des carrés des nombres de 1 à 10 et l'affiche. Exécute-le puis montre-moi sa sortie réelle.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-03T20:35:23",
+            "date_maj": "2026-11-03T20:35:27"
+        },
+        {
+            "id": "20d7e367",
+            "nom": "Créer le fichier test_carres.py qui calcule et affiche la somme des carrés de 1 à 10, l'exécuter et fournir la sortie.",
+            "objectif": "Crée le fichier espace_travail/test_carres.py qui calcule la somme des carrés des nombres de 1 à 10 et l'affiche. Exécute-le puis montre-moi sa sortie réelle.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-03T21:12:51",
+            "date_maj": "2026-11-03T21:13:07"
+        },
+        {
+            "id": "96ea521f",
+            "nom": "Créer et exécuter un script Python qui calcule et affiche la somme des carrés de 1 à 10.",
+            "objectif": "Crée le fichier espace_travail/test_carres.py qui calcule la somme des carrés des nombres de 1 à 10 et l'affiche. Exécute-le puis montre-moi sa sortie réelle.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-03T21:30:42",
+            "date_maj": "2026-11-03T21:30:49"
+        },
+        {
+            "id": "dc338e89",
+            "nom": "Créer le fichier espace_travail/test_pid.py affichant le PID, l'exécuter et montrer la sortie",
+            "objectif": "Crée le fichier espace_travail/test_pid.py qui affiche le numéro de processus (os.getpid()). Exécute-le puis montre-moi sa sortie réelle.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-03T21:38:24",
+            "date_maj": "2026-11-03T21:38:42"
+        },
+        {
+            "id": "37351ebe",
+            "nom": "Créer et exécuter un script Python qui écrit le PID dans un fichier puis l'affiche.",
+            "objectif": "Crée le fichier espace_travail/test_pid2.py qui écrit os.getpid() dans le fichier espace_travail/pid_sortie.txt puis l'affiche. Exécute-le puis donne-moi le numéro affiché.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-03T21:41:44",
+            "date_maj": "2026-11-03T21:42:53"
+        },
+        {
+            "id": "8360775a",
+            "nom": "Créer et exécuter un script Python qui écrit le PID du processus dans un fichier puis l'affiche.",
+            "objectif": "Crée le fichier espace_travail/test_pid3.py qui écrit os.getpid() dans le fichier espace_travail/pid_sortie3.txt puis l'affiche. Exécute-le puis donne-moi le numéro affiché.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-03T21:46:03",
+            "date_maj": "2026-11-03T21:46:22"
+        },
+        {
+            "id": "6a422b9d",
+            "nom": "Créer le fichier Python test_journal.py dans le répertoire espace_travail/",
+            "objectif": "Crée un fichier Python nommé \"test_journal.py\" dans \"espace_travail/\".",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-03T22:10:44",
+            "date_maj": "2026-11-03T22:12:43"
         }
     ]
 }

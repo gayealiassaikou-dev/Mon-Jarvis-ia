@@ -46,7 +46,7 @@ class Jarvis:
         self.context_manager = ContextManager()
         self.knowledge_manager = KnowledgeManager()
 
-        self.ai_engine = AIEngine(memory_manager=self.memory_manager)
+        self.ai_engine = AIEngine(memory_manager=self.memory_manager, logger=self.logger)
         self.contexte = charger_contexte()
         self.decision_engine = DecisionEngine(
             self.brain_manager,
