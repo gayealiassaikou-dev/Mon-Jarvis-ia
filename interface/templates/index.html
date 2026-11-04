@@ -176,7 +176,7 @@ function ajouterUtilisateur(t) {
 function ajouterAssistant() {
     const l = document.createElement('div');
     l.className = 'ligne assistant';
-    l.innerHTML = '<div class="avatar" role="img" aria-label="Œil de Sam Sarr">
+    l.innerHTML = `<div class="avatar" role="img" aria-label="Œil de Sam Sarr">
         <svg class="oeil-anime" viewBox="0 0 240 150" aria-hidden="true">
             <path d="M12 75 C42 31 82 12 120 12 C158 12 198 31 228 75 C198 119 158 138 120 138 C82 138 42 119 12 75Z" fill="#071b35" stroke="#42baff" stroke-width="7"/>
             <g class="iris">
@@ -186,7 +186,7 @@ function ajouterAssistant() {
                 <circle cx="137" cy="88" r="4" fill="#bcecff"/>
             </g>
         </svg>
-    </div><div class="texte"></div>';
+    </div><div class="texte"></div>`;
     fil.appendChild(l);
     defiler();
     return l.querySelector('.texte');
