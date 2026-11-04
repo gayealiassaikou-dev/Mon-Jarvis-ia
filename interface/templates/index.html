@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+    <meta name="theme-color" content="#080d18">
     <meta name="color-scheme" content="dark light">
     <title>Sam Sarr</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -648,6 +650,17 @@ if (accueil) {
     } catch (e) {
         // L'interface reste utilisable si le stockage local est indisponible.
     }
+}
+</script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw.js").catch(function (erreur) {
+            console.error("Enregistrement PWA impossible :", erreur);
+        });
+    });
 }
 </script>
 

@@ -6,7 +6,7 @@ import tempfile
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "core"))
 
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 from jarvis import Jarvis
 from voice_manager import VoiceManager
 from activity_tracker import ActivityTracker
@@ -22,6 +22,18 @@ conversation_store = ConversationStore()
 @app.route("/")
 def accueil():
     return render_template("index.html")
+
+@app.route("/sw.js")
+def service_worker():
+    response = send_from_directory(
+        app.static_folder,
+        "sw.js",
+        mimetype="application/javascript"
+    )
+    response.headers["Cache-Control"] = "no-cache"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
 
 @app.route("/health")
 def health():
