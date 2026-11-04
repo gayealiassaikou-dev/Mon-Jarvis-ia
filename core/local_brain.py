@@ -192,6 +192,13 @@ def _corriger_fautes(texte):
     return re.sub(r"[a-z']+", corriger, texte)
 
 
+ACTION_PROGRAMMATION = re.compile(
+    r"\b(cree|creer|creez|ecris|ecrire|execute|executer|lance|lancer|"
+    r"corrige|corriger|repare|reparer|supprime|supprimer|modifie|modifier|"
+    r"ajoute|ajouter|fichier|dossier|script|programme|python|code|test|teste|tester)\b"
+)
+
+
 class LocalBrain:
     """Répond sans IA. Retourne None si aucune règle ne correspond."""
 
@@ -704,6 +711,10 @@ class LocalBrain:
         r = _calcul(t)
         if r is not None:
             return r
+
+        # Garde-fou : une demande de programmation va aux fournisseurs IA, pas aux fiches locales.
+        if ACTION_PROGRAMMATION.search(t):
+            return None
 
         sans_ponct = re.sub(r"[.,]", " ", t)
         sans_ponct = re.sub(r"\s+", " ", sans_ponct).strip()

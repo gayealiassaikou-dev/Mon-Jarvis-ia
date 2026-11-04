@@ -1074,6 +1074,45 @@
             "statut": "bloquee",
             "date_creation": "2026-11-03T22:10:44",
             "date_maj": "2026-11-03T22:12:43"
+        },
+        {
+            "id": "7e26da69",
+            "nom": "Créer test_sam/premiers.py avec une fonction est_premier affichant les nombres premiers jusqu'à 50, puis l'exécuter et montrer la sortie.",
+            "objectif": "Crée le fichier test_sam/premiers.py avec une fonction est_premier(n) qui affiche tous les nombres premiers jusqu'à 50. Exécute-le et montre-moi la sortie réelle",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-04T10:32:47",
+            "date_maj": "2026-11-04T10:33:12"
+        },
+        {
+            "id": "d37ddd6c",
+            "nom": "Créer le fichier espace_travail/premiers.py avec une fonction est_premier et exécuter le script pour afficher les nombres premiers jusqu'à 50.",
+            "objectif": "Crée le fichier espace_travail/premiers.py avec une fonction est_premier(n) qui affiche tous les nombres premiers jusqu'à 50. Exécute-le avec l'outil d'exécution et montre-moi la sortie réelle.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-04T10:47:31",
+            "date_maj": "2026-11-04T10:48:16"
+        },
+        {
+            "id": "6df69182",
+            "nom": "Créer un script Python qui écrit le PID et l'heure exacte dans un fichier texte, les affiche, puis exécuter le script et montrer la sortie.",
+            "objectif": "Crée espace_travail/preuve.py qui écrit dans espace_travail/preuve.txt le PID du processus et l'heure exacte avec les secondes, puis les affiche. Exécute-le avec l'outil d'exécution et montre-moi la sortie réelle.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-04T10:50:54",
+            "date_maj": "2026-11-04T10:51:18"
         }
     ]
 }
