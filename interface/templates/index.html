@@ -31,7 +31,19 @@
 <main id="fil" class="fil">
     {% if not message and not reponse %}
     <div id="accueil" class="accueil">
-        <div class="logo-grand">S</div>
+        <div class="logo-grand" role="img" aria-label="Œil bleu de Sam Sarr">
+            <svg viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <defs><linearGradient id="iris-bleu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9be8ff"/><stop offset=".5" stop-color="#168bff"/><stop offset="1" stop-color="#1239b8"/></linearGradient></defs>
+                <path d="M12 75 C42 31 82 12 120 12 C158 12 198 31 228 75 C198 119 158 138 120 138 C82 138 42 119 12 75Z" fill="#071b35" stroke="#42baff" stroke-width="5"/>
+                <g class="iris">
+                    <circle cx="120" cy="75" r="38" fill="url(#iris-bleu)" stroke="#9be8ff" stroke-width="3"/>
+                    <circle cx="120" cy="75" r="19" fill="#020817"/>
+                    <circle cx="108" cy="61" r="8" fill="white"/>
+                    <circle cx="137" cy="88" r="4" fill="#bcecff"/>
+                </g>
+                <path d="M32 75 C58 46 87 34 120 34 C153 34 182 46 208 75" fill="none" stroke="#8cddff" stroke-width="2" opacity=".55"/>
+            </svg>
+        </div>
         <h1>Comment puis-je t'aider ?</h1>
     </div>
     {% endif %}
@@ -51,6 +63,12 @@
 <form id="formulaire" class="saisie">
     <div class="boite">
         <textarea id="champ" rows="1" placeholder="Pose ta question à Sam Sarr" autocomplete="off"></textarea>
+        <button type="button" id="micro" aria-label="Démarrer l'enregistrement" title="Parler à Sam Sarr">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="2" width="6" height="13" rx="3"></rect>
+                <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"></path>
+            </svg>
+        </button>
         <button type="submit" id="envoi" aria-label="Envoyer">&#8593;</button>
     </div>
     <p class="note">Sam Sarr peut faire des erreurs. Vérifie les informations importantes.</p>
@@ -62,6 +80,7 @@ const fil = document.getElementById('fil');
 const champ = document.getElementById('champ');
 const formulaire = document.getElementById('formulaire');
 const envoi = document.getElementById('envoi');
+const micro = document.getElementById('micro');
 const accueil = document.getElementById('accueil');
 const FENCE = String.fromCharCode(96).repeat(3);
 let occupe = false;
@@ -365,7 +384,12 @@ function demarrerNouvelleDiscussion() {
 
     const logo = document.createElement('div');
     logo.className = 'logo-grand';
-    logo.textContent = 'S';
+    logo.innerHTML = `<svg viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs><linearGradient id="iris-bleu-nouveau" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9be8ff"/><stop offset=".5" stop-color="#168bff"/><stop offset="1" stop-color="#1239b8"/></linearGradient></defs>
+        <path d="M12 75 C42 31 82 12 120 12 C158 12 198 31 228 75 C198 119 158 138 120 138 C82 138 42 119 12 75Z" fill="#071b35" stroke="#42baff" stroke-width="5"/>
+        <g class="iris"><circle cx="120" cy="75" r="38" fill="url(#iris-bleu-nouveau)" stroke="#9be8ff" stroke-width="3"/><circle cx="120" cy="75" r="19" fill="#020817"/><circle cx="108" cy="61" r="8" fill="white"/><circle cx="137" cy="88" r="4" fill="#bcecff"/></g>
+        <path d="M32 75 C58 46 87 34 120 34 C153 34 182 46 208 75" fill="none" stroke="#8cddff" stroke-width="2" opacity=".55"/>
+    </svg>`;
 
     const titre = document.createElement('h1');
     titre.textContent = 'Comment puis-je t’aider ?';
@@ -480,6 +504,112 @@ function ajuster() {
     champ.style.height = 'auto';
     champ.style.height = Math.min(champ.scrollHeight, 160) + 'px';
 }
+
+
+let enregistreur = null;
+let fluxMicro = null;
+let morceauxAudio = [];
+
+micro.addEventListener('click', async function () {
+    if (occupe) return;
+
+    if (enregistreur && enregistreur.state === 'recording') {
+        enregistreur.stop();
+        micro.classList.remove('enregistrement');
+        micro.disabled = true;
+        micro.setAttribute('aria-label', 'Enregistrement terminé');
+        return;
+    }
+
+    try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia ||
+            typeof MediaRecorder === 'undefined') {
+            throw new Error("L'enregistrement audio n'est pas pris en charge par ce navigateur.");
+        }
+
+        fluxMicro = await navigator.mediaDevices.getUserMedia({ audio: true });
+        morceauxAudio = [];
+
+        let typeAudio = '';
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+            typeAudio = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            typeAudio = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
+            typeAudio = 'audio/ogg';
+        }
+
+        enregistreur = new MediaRecorder(
+            fluxMicro,
+            typeAudio ? { mimeType: typeAudio } : undefined
+        );
+
+        enregistreur.ondataavailable = function (e) {
+            if (e.data && e.data.size > 0) morceauxAudio.push(e.data);
+        };
+
+        enregistreur.onstop = async function () {
+            try {
+                const blob = new Blob(morceauxAudio, {
+                    type: enregistreur.mimeType || 'audio/webm'
+                });
+
+                if (blob.size === 0) {
+                    throw new Error("Aucun son n'a été enregistré.");
+                }
+
+                const extension = blob.type.includes('mp4') ? 'mp4' :
+                    blob.type.includes('ogg') ? 'ogg' : 'webm';
+
+                const donnees = new FormData();
+                donnees.append('audio', blob, 'sam-sarr.' + extension);
+
+                micro.title = 'Transcription en cours…';
+
+                const resultat = await fetch('/api/audio/transcrire', {
+                    method: 'POST',
+                    body: donnees
+                });
+
+                const reponse = await resultat.json();
+
+                if (!resultat.ok || !reponse.message) {
+                    throw new Error(reponse.erreur || 'Transcription impossible.');
+                }
+
+                champ.value = reponse.message;
+                ajuster();
+                envoyer(reponse.message);
+                champ.value = '';
+                ajuster();
+            } catch (erreur) {
+                alert(erreur.message || 'Erreur pendant la transcription.');
+            } finally {
+                if (fluxMicro) {
+                    fluxMicro.getTracks().forEach(piste => piste.stop());
+                    fluxMicro = null;
+                }
+                enregistreur = null;
+                morceauxAudio = [];
+                micro.disabled = false;
+                micro.title = 'Parler à Sam Sarr';
+                micro.setAttribute('aria-label', 'Démarrer l’enregistrement');
+            }
+        };
+
+        enregistreur.start();
+        micro.classList.add('enregistrement');
+        micro.setAttribute('aria-label', 'Arrêter l’enregistrement');
+        micro.title = 'Appuyer pour arrêter';
+    } catch (erreur) {
+        if (fluxMicro) {
+            fluxMicro.getTracks().forEach(piste => piste.stop());
+            fluxMicro = null;
+        }
+        micro.disabled = false;
+        alert(erreur.message || "Impossible d'accéder au microphone.");
+    }
+});
 
 formulaire.addEventListener('submit', function (e) {
     e.preventDefault();

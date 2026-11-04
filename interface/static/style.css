@@ -78,16 +78,34 @@ body {
 }
 
 .logo-grand {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--bouton);
-    color: var(--bouton-texte);
+    width: min(78vw, 260px);
+    height: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 26px;
-    font-weight: 700;
+    filter: drop-shadow(0 0 18px rgba(38, 157, 255, .38));
+}
+
+.logo-grand svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.logo-grand .iris {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: regard-sam 4s ease-in-out infinite alternate;
+}
+
+@keyframes regard-sam {
+    0%, 100% { transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .logo-grand .iris { animation: none; }
 }
 
 .accueil h1 {
@@ -272,6 +290,48 @@ textarea::placeholder {
     opacity: 0.35;
     cursor: default;
 }
+
+#micro {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    border: 1px solid var(--bordure);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--texte);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#micro svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+#micro.enregistrement {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    animation: pulsation-micro 1.2s infinite;
+}
+
+#micro:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+@keyframes pulsation-micro {
+    50% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0.18); }
+}
+
 
 .note {
     margin: 8px 0 0 0;

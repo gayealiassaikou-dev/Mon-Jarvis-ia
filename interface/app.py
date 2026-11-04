@@ -1,10 +1,12 @@
 import sys
 import os
 import secrets
+import tempfile
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "core"))
 
-from flask import Flask, render_template, request, jsonify
+from io import BytesIO
+from flask import Flask, render_template, request, jsonify, send_file
 from jarvis import Jarvis
 from voice_manager import VoiceManager
 from activity_tracker import ActivityTracker
@@ -24,6 +26,78 @@ def accueil():
 @app.route("/health")
 def health():
     return "ok", 200
+
+
+@app.route("/api/audio/synthetiser", methods=["POST"])
+def synthetiser_audio():
+    data = request.get_json(silent=True) or {}
+    texte = data.get("texte")
+
+    if not isinstance(texte, str) or not texte.strip():
+        return jsonify({"erreur": "Texte vide."}), 400
+
+    try:
+        audio = voice.generer_audio_gtts(texte)
+        return send_file(
+            audio,
+            mimetype="audio/mpeg",
+            download_name="sam-sarr.mp3"
+        )
+    except Exception:
+        app.logger.exception("Erreur de synthèse gTTS")
+        return jsonify({"erreur": "Synthèse vocale indisponible."}), 500
+
+
+@app.route("/api/audio/transcrire", methods=["POST"])
+def transcrire_audio_android():
+    audio = request.files.get("audio")
+
+    if audio is None:
+        return jsonify({"erreur": "Fichier audio manquant."}), 400
+
+    extension = os.path.splitext(audio.filename or "")[1].lower()
+    extensions_autorisees = {
+        ".m4a", ".mp4", ".wav", ".webm",
+        ".ogg", ".aac", ".mp3"
+    }
+
+    if extension not in extensions_autorisees:
+        return jsonify({"erreur": "Format audio non accepté."}), 400
+
+    chemin_temporaire = None
+
+    try:
+        contenu = audio.read(25 * 1024 * 1024 + 1)
+
+        if not contenu:
+            return jsonify({"erreur": "Fichier audio vide."}), 400
+
+        if len(contenu) > 25 * 1024 * 1024:
+            return jsonify({"erreur": "Fichier audio trop volumineux."}), 413
+
+        with tempfile.NamedTemporaryFile(
+            mode="wb",
+            suffix=extension,
+            delete=False
+        ) as fichier:
+            fichier.write(contenu)
+            chemin_temporaire = fichier.name
+
+        texte = voice._transcrire_assemblyai(chemin_temporaire)
+        texte = voice._normaliser_transcription(texte)
+
+        if voice._est_hallucination(texte):
+            return jsonify({"erreur": "Transcription non exploitable."}), 422
+
+        return jsonify({"message": texte})
+
+    except Exception:
+        app.logger.exception("Erreur de transcription audio Android")
+        return jsonify({"erreur": "Transcription audio indisponible."}), 502
+
+    finally:
+        if chemin_temporaire and os.path.exists(chemin_temporaire):
+            os.remove(chemin_temporaire)
 
 
 @app.route("/activite/demarrer", methods=["POST"])

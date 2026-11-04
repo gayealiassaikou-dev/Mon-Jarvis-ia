@@ -38,6 +38,22 @@ class VoiceManager:
 
         return " ".join(lignes).strip()
 
+    def generer_audio_gtts(self, texte):
+        """Génère le MP3 français avec la voix gTTS habituelle."""
+        import io
+        from gtts import gTTS
+
+        texte = self._nettoyer_texte(str(texte))
+        texte = self._limiter_longueur(texte)
+
+        if not texte:
+            raise ValueError("Texte vide.")
+
+        fichier = io.BytesIO()
+        gTTS(texte, lang="fr").write_to_fp(fichier)
+        fichier.seek(0)
+        return fichier
+
     def definir_vitesse(self, vitesse):
         vitesse = float(vitesse)
         vitesse = max(0.5, min(2.0, vitesse))
