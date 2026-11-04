@@ -34,7 +34,7 @@
     {% if not message and not reponse %}
     <div id="accueil" class="accueil">
         <div class="logo-grand" role="img" aria-label="Œil bleu de Sam Sarr">
-            <svg viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <svg class="oeil-anime" viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <defs><linearGradient id="iris-bleu" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9be8ff"/><stop offset=".5" stop-color="#168bff"/><stop offset="1" stop-color="#1239b8"/></linearGradient></defs>
                 <path d="M12 75 C42 31 82 12 120 12 C158 12 198 31 228 75 C198 119 158 138 120 138 C82 138 42 119 12 75Z" fill="#071b35" stroke="#42baff" stroke-width="5"/>
                 <g class="iris">
@@ -56,7 +56,17 @@
 
     {% if reponse %}
     <div class="ligne assistant">
-        <div class="avatar">S</div>
+        <div class="avatar" role="img" aria-label="Œil de Sam Sarr">
+        <svg class="oeil-anime" viewBox="0 0 240 150" aria-hidden="true">
+            <path d="M12 75 C42 31 82 12 120 12 C158 12 198 31 228 75 C198 119 158 138 120 138 C82 138 42 119 12 75Z" fill="#071b35" stroke="#42baff" stroke-width="7"/>
+            <g class="iris">
+                <circle cx="120" cy="75" r="38" fill="#168bff" stroke="#9be8ff" stroke-width="5"/>
+                <circle cx="120" cy="75" r="19" fill="#020817"/>
+                <circle cx="108" cy="61" r="8" fill="white"/>
+                <circle cx="137" cy="88" r="4" fill="#bcecff"/>
+            </g>
+        </svg>
+    </div>
         <div class="texte" data-brut="{{ reponse }}"></div>
     </div>
     {% endif %}
@@ -166,7 +176,17 @@ function ajouterUtilisateur(t) {
 function ajouterAssistant() {
     const l = document.createElement('div');
     l.className = 'ligne assistant';
-    l.innerHTML = '<div class="avatar">S</div><div class="texte"></div>';
+    l.innerHTML = '<div class="avatar" role="img" aria-label="Œil de Sam Sarr">
+        <svg class="oeil-anime" viewBox="0 0 240 150" aria-hidden="true">
+            <path d="M12 75 C42 31 82 12 120 12 C158 12 198 31 228 75 C198 119 158 138 120 138 C82 138 42 119 12 75Z" fill="#071b35" stroke="#42baff" stroke-width="7"/>
+            <g class="iris">
+                <circle cx="120" cy="75" r="38" fill="#168bff" stroke="#9be8ff" stroke-width="5"/>
+                <circle cx="120" cy="75" r="19" fill="#020817"/>
+                <circle cx="108" cy="61" r="8" fill="white"/>
+                <circle cx="137" cy="88" r="4" fill="#bcecff"/>
+            </g>
+        </svg>
+    </div><div class="texte"></div>';
     fil.appendChild(l);
     defiler();
     return l.querySelector('.texte');
@@ -391,7 +411,7 @@ function demarrerNouvelleDiscussion() {
 
     const logo = document.createElement('div');
     logo.className = 'logo-grand';
-    logo.innerHTML = `<svg viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    logo.innerHTML = `<svg class="oeil-anime" viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <defs><linearGradient id="iris-bleu-nouveau" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9be8ff"/><stop offset=".5" stop-color="#168bff"/><stop offset="1" stop-color="#1239b8"/></linearGradient></defs>
         <path d="M12 75 C42 31 82 12 120 12 C158 12 198 31 228 75 C198 119 158 138 120 138 C82 138 42 119 12 75Z" fill="#071b35" stroke="#42baff" stroke-width="5"/>
         <g class="iris"><circle cx="120" cy="75" r="38" fill="url(#iris-bleu-nouveau)" stroke="#9be8ff" stroke-width="3"/><circle cx="120" cy="75" r="19" fill="#020817"/><circle cx="108" cy="61" r="8" fill="white"/><circle cx="137" cy="88" r="4" fill="#bcecff"/></g>
