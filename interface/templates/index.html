@@ -831,5 +831,210 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
+<style>
+.boite{position:relative}
+.boite.vocal > *:not(.barre-vocale){visibility:hidden}
+.barre-vocale{position:absolute;top:0;right:0;bottom:0;left:0;display:flex;align-items:center;gap:10px;padding:0 10px;z-index:5;color:inherit}
+.barre-vocale[hidden]{display:none}
+.barre-vocale button{width:36px;height:36px;border:0;border-radius:50%;cursor:pointer;flex:0 0 auto;font-size:18px;line-height:1;color:inherit;background:transparent}
+.barre-vocale .bv-envoyer{background:#168bff;color:#fff}
+.bv-point{width:10px;height:10px;border-radius:50%;background:#ff4d4f;flex:0 0 auto;animation:bvClignote 1s infinite}
+.bv-temps{font-variant-numeric:tabular-nums;font-size:15px;min-width:38px}
+.bv-ondes{flex:1;display:flex;align-items:center;gap:3px;height:32px;overflow:hidden}
+.bv-ondes span{flex:1;min-width:2px;max-width:5px;height:12%;border-radius:2px;background:#42baff}
+@keyframes bvClignote{50%{opacity:.25}}
+#transcription-vocale{margin:0 auto 8px;max-width:720px;padding:6px 12px;border:1px solid rgba(66,186,255,.4);border-radius:12px;background:rgba(66,186,255,.12);font-size:14px;text-align:center}
+#transcription-vocale[hidden]{display:none}
+</style>
+<script>
+(function () {
+  var NB = 28, SEUIL = 600, MIN = 500;
+  var boite = champ.parentNode;
+  var ancien = document.getElementById('micro');
+  var bouton = ancien.cloneNode(true);
+  ancien.replaceWith(bouton);
+  bouton.style.touchAction = 'none';
+  bouton.style.userSelect = 'none';
+  bouton.style.webkitUserSelect = 'none';
+  bouton.style.webkitTouchCallout = 'none';
+  bouton.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  var barre = document.createElement('div');
+  barre.className = 'barre-vocale';
+  barre.hidden = true;
+  var html = '<button type="button" class="bv-annuler" aria-label="Annuler l\'enregistrement">&#10005;</button>' +
+    '<span class="bv-point"></span><span class="bv-temps">0:00</span><div class="bv-ondes">';
+  for (var i = 0; i < NB; i++) html += '<span></span>';
+  html += '</div><button type="button" class="bv-envoyer" aria-label="Envoyer le vocal">&#8593;</button>';
+  barre.innerHTML = html;
+  boite.appendChild(barre);
+  var elTemps = barre.querySelector('.bv-temps');
+  var barres = barre.querySelectorAll('.bv-ondes span');
+
+  var puce = document.createElement('div');
+  puce.id = 'transcription-vocale';
+  puce.hidden = true;
+  formulaire.parentNode.insertBefore(puce, formulaire);
+  var minuteurPuce = null;
+  function cacherPuce() { clearTimeout(minuteurPuce); puce.hidden = true; puce.textContent = ''; }
+  function montrerPuce(texte, delai) {
+    clearTimeout(minuteurPuce);
+    puce.textContent = texte;
+    puce.hidden = false;
+    if (delai) minuteurPuce = setTimeout(cacherPuce, delai);
+  }
+
+  var etat = 'repos', appui = false, tAppui = 0, tDebut = 0, tRelache = 0, dureeMs = 0;
+  var flux = null, enr = null, morceaux = [], annule = false;
+  var ctx = null, analyseur = null, donnees = null, niveaux = [], tNiv = null, tTemps = null;
+
+  function dessiner() {
+    for (var i = 0; i < NB; i++) barres[i].style.height = (12 + niveaux[i] * 88) + '%';
+  }
+  function formaterTemps(ms) {
+    var s = Math.floor(ms / 1000);
+    return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2);
+  }
+  function liberer() {
+    clearInterval(tNiv); clearInterval(tTemps);
+    if (ctx) { try { ctx.close(); } catch (e) {} ctx = null; }
+    analyseur = null;
+    if (flux) { flux.getTracks().forEach(function (p) { p.stop(); }); flux = null; }
+    boite.classList.remove('vocal');
+    barre.hidden = true;
+    bouton.classList.remove('enregistrement');
+    bouton.disabled = false;
+  }
+  function lancerAnalyse() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      ctx = new AC();
+      if (ctx.resume) ctx.resume();
+      var src = ctx.createMediaStreamSource(flux);
+      analyseur = ctx.createAnalyser();
+      analyseur.fftSize = 256;
+      src.connect(analyseur);
+      donnees = new Uint8Array(analyseur.fftSize);
+      tNiv = setInterval(function () {
+        if (!analyseur) return;
+        analyseur.getByteTimeDomainData(donnees);
+        var somme = 0;
+        for (var i = 0; i < donnees.length; i++) { var v = (donnees[i] - 128) / 128; somme += v * v; }
+        niveaux.push(Math.min(1, Math.sqrt(somme / donnees.length) * 5));
+        niveaux.shift();
+        dessiner();
+      }, 70);
+    } catch (e) {}
+  }
+
+  async function demarrer() {
+    if (etat !== 'repos' || occupe) return;
+    etat = 'demarrage';
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined') {
+        throw new Error("L'enregistrement audio n'est pas pris en charge par ce navigateur.");
+      }
+      flux = await navigator.mediaDevices.getUserMedia({ audio: true });
+      var type = '';
+      if (MediaRecorder.isTypeSupported('audio/webm')) type = 'audio/webm';
+      else if (MediaRecorder.isTypeSupported('audio/mp4')) type = 'audio/mp4';
+      else if (MediaRecorder.isTypeSupported('audio/ogg')) type = 'audio/ogg';
+      morceaux = []; annule = false;
+      enr = new MediaRecorder(flux, type ? { mimeType: type } : undefined);
+      enr.ondataavailable = function (e) { if (e.data && e.data.size > 0) morceaux.push(e.data); };
+      enr.onstop = surArret;
+      enr.start();
+      tDebut = Date.now();
+      if (tDebut - tAppui > SEUIL) appui = false;
+      etat = 'enregistrement';
+      niveaux = [];
+      for (var i = 0; i < NB; i++) niveaux.push(0);
+      dessiner();
+      elTemps.textContent = '0:00';
+      boite.classList.add('vocal');
+      barre.hidden = false;
+      bouton.classList.add('enregistrement');
+      lancerAnalyse();
+      tTemps = setInterval(function () { elTemps.textContent = formaterTemps(Date.now() - tDebut); }, 250);
+    } catch (e) {
+      liberer();
+      etat = 'repos';
+      montrerPuce(e.message || "Impossible d'accéder au microphone.", 5000);
+    }
+  }
+
+  function terminer(envoyerVocal) {
+    if (etat !== 'enregistrement') return;
+    annule = !envoyerVocal;
+    dureeMs = Date.now() - tDebut;
+    etat = 'traitement';
+    bouton.disabled = true;
+    try { enr.stop(); } catch (e) { liberer(); etat = 'repos'; }
+  }
+
+  async function surArret() {
+    var type = (enr && enr.mimeType) || 'audio/webm';
+    var blob = new Blob(morceaux, { type: type });
+    var abandon = annule;
+    var court = dureeMs < MIN;
+    enr = null; morceaux = [];
+    liberer();
+    if (abandon) { etat = 'repos'; return; }
+    if (court || blob.size === 0) {
+      etat = 'repos';
+      montrerPuce('Enregistrement trop court. Réessaie.', 3000);
+      return;
+    }
+    var ext = blob.type.indexOf('mp4') >= 0 ? 'mp4' : (blob.type.indexOf('ogg') >= 0 ? 'ogg' : 'webm');
+    var form = new FormData();
+    form.append('audio', blob, 'sam-sarr.' + ext);
+    bouton.disabled = true;
+    montrerPuce('Transcription en cours…');
+    var message = null;
+    try {
+      var r = await fetch('/api/audio/transcrire', { method: 'POST', body: form });
+      var d = await r.json();
+      if (!r.ok || !d.message) throw new Error(d.erreur || 'Transcription impossible.');
+      message = d.message;
+    } catch (e) {
+      montrerPuce(e.message || 'Erreur pendant la transcription.', 6000);
+    }
+    bouton.disabled = false;
+    etat = 'repos';
+    if (!message) return;
+    montrerPuce('🎙️ Transcription : « ' + message + ' »');
+    Promise.resolve(envoyer(message)).then(cacherPuce, cacherPuce);
+  }
+
+  bouton.addEventListener('pointerdown', function (e) {
+    if (e.button > 0) return;
+    e.preventDefault();
+    try { bouton.setPointerCapture(e.pointerId); } catch (err) {}
+    appui = true;
+    tAppui = Date.now();
+    demarrer();
+  });
+  function relacher() {
+    if (!appui) return;
+    appui = false;
+    tRelache = Date.now();
+    if (etat === 'enregistrement' && tRelache - tDebut >= SEUIL) terminer(true);
+  }
+  window.addEventListener('pointerup', relacher);
+  window.addEventListener('pointercancel', relacher);
+  bouton.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (etat === 'repos') demarrer(); }
+  });
+  barre.addEventListener('pointerdown', function () { appui = false; });
+  barre.querySelector('.bv-annuler').addEventListener('click', function () { terminer(false); });
+  barre.querySelector('.bv-envoyer').addEventListener('click', function () { terminer(true); });
+
+  if (typeof window.ecrire === 'function') {
+    var ecrireOrigine = window.ecrire;
+    window.ecrire = function () { cacherPuce(); return ecrireOrigine.apply(this, arguments); };
+  }
+})();
+</script>
 </body>
 </html>
