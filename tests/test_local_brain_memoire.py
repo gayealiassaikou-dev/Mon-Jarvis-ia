@@ -14,7 +14,12 @@ def cerveau(monkeypatch, memoire=FAUSSE):
 class TestListesMemoire:
     def test_liste_des_projets(self, monkeypatch):
         r = cerveau(monkeypatch).repondre("Quels sont mes projets ?")
-        assert "Sam Sarr" in r and "Hale-Bou-Rer" in r
+        assert "Voice Music" in r
+        assert "Mon-Jarvis-ia" in r
+        assert "Hale-Bou-Rer" in r
+        assert "Tabac Mauritanie Express" in r
+        assert "Application mobile de fitness" not in r
+        assert "Application Salon de Coiffure" not in r
 
     def test_liste_vide(self, monkeypatch):
         r = cerveau(monkeypatch).repondre("mes préférences")

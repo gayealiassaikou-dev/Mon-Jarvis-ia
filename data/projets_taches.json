@@ -1,61 +1,23 @@
 {
     "projets": [
         {
-            "nom": "Application mobile de fitness",
-            "statut": "en cours"
-        },
-        {
-            "nom": "Conception d'application",
-            "statut": "en cours"
-        },
-        {
-            "nom": "Application Salon de Coiffure",
-            "statut": "en cours"
-        },
-        {
-            "nom": "test officiel",
-            "statut": "en cours"
-        },
-        {
             "nom": "Voice Music",
             "statut": "en cours"
         },
         {
-            "nom": "Audit-Jarvis",
-            "statut": "termine"
+            "nom": "Mon-Jarvis-ia",
+            "statut": "en cours"
+        },
+        {
+            "nom": "Hale-Bou-Rer",
+            "statut": "en cours"
+        },
+        {
+            "nom": "Tabac Mauritanie Express",
+            "statut": "en cours"
         }
     ],
     "taches": [
-        {
-            "nom": "Tester et deboguer l'application",
-            "projet": "Application mobile de fitness",
-            "statut": "en attente"
-        },
-        {
-            "nom": "Définir les objectifs et la cible",
-            "projet": "Conception d'application",
-            "statut": "en attente"
-        },
-        {
-            "nom": "Développer le backend",
-            "projet": "Conception d'application",
-            "statut": "en attente"
-        },
-        {
-            "nom": "Tester l'application",
-            "projet": "Conception d'application",
-            "statut": "en attente"
-        },
-        {
-            "nom": "Déployer l'application",
-            "projet": "Conception d'application",
-            "statut": "en attente"
-        },
-        {
-            "nom": "Maintenir et mettre à jour l'application",
-            "projet": "Conception d'application",
-            "statut": "en attente"
-        },
         {
             "nom": "Test diagnostic",
             "projet": "Mon-Jarvis-ia",
@@ -65,11 +27,6 @@
             "nom": "TEST JARVIS AUDIT",
             "projet": "Mon-Jarvis-ia",
             "statut": "en attente"
-        },
-        {
-            "nom": "Tester les outils de Jarvis",
-            "projet": "Audit-Jarvis",
-            "statut": "terminee"
         }
     ]
 }

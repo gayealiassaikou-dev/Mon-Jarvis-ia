@@ -25,7 +25,7 @@ from core.agent_permissions import obtenir_outils_autorises
 from core.contexte_ia import charger_contexte
 from core.paths import PROJECT_ROOT
 from core.reprise import sauvegarder_point
-from core.tools import _obtenir_nom_projet_actif
+from core.tools import _obtenir_nom_projet_actif, lire_etat_projets_taches
 
 
 class Jarvis:
@@ -430,6 +430,22 @@ class Jarvis:
             contexte_complet = (
                 self.contexte + "\n\n" + contexte_agent + "\n\n" + regle_securite
             )
+            # Projets et tâches : transmettre l'état actuel au moteur IA.
+            try:
+                etat_projets = lire_etat_projets_taches()
+                projets = etat_projets.get("projets", [])
+                if isinstance(projets, list) and projets:
+                    lignes_projets = [
+                        f"- {p.get('nom', '').strip()} (statut : {p.get('statut', 'non précisé')})"
+                        for p in projets
+                        if isinstance(p, dict) and isinstance(p.get("nom"), str) and p["nom"].strip()
+                    ]
+                    if lignes_projets:
+                        contexte_complet += (
+                            "\n\nProjets enregistrés :\n" + "\n".join(lignes_projets)
+                        )
+            except Exception as e:
+                self.logger.warning(f"Impossible de charger les projets dans le contexte : {e}")
             # Mémoire à long terme : souvenirs pertinents pour cette demande.
             try:
                 souvenirs = self.memory_manager.rechercher_souvenirs_pertinents(commande, limite=5)

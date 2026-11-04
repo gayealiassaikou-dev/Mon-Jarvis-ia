@@ -690,6 +690,8 @@ class LocalBrain:
         if not m:
             return None
         categorie = m.group(1)
+        if categorie == "projets":
+            return self._repondre_projets_taches("quels sont tous mes projets")
         libelle = {"projets": "projets", "preferences": "préférences",
                    "decisions": "décisions"}[categorie]
         elements = [str(x).strip() for x in self._lire_memoire().get(categorie, []) if str(x).strip()]
