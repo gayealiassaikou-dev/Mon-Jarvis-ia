@@ -154,12 +154,25 @@ class Jarvis:
                 None
             )
 
-            if phrase_lecture:
-                debut_phrase = commande_lower.index(phrase_lecture)
+            import re as _re
+            motif_lecture = None
+            if not phrase_lecture:
+                motif_lecture = _re.search(
+                    r"\b(?:(?:lis|lire|lit|réponds|reponds|répond|repond|dis)(?:[- ]moi)?(?:[- ](?:le|la))?\s*(?:le\s+r[ée]sultat|la\s+r[ée]ponse|ta\s+r[ée]ponse|tout)?\s*)?(?:[àa]\s+)?(?:haute voix|voix haute)\b",
+                    commande_lower
+                )
+
+            if phrase_lecture or motif_lecture:
+                if phrase_lecture:
+                    debut_phrase = commande_lower.index(phrase_lecture)
+                    fin_phrase = debut_phrase + len(phrase_lecture)
+                else:
+                    debut_phrase = motif_lecture.start()
+                    fin_phrase = motif_lecture.end()
                 question = (
-                    commande[:debut_phrase]
-                    + commande[debut_phrase + len(phrase_lecture):]
+                    commande[:debut_phrase] + commande[fin_phrase:]
                 ).strip(" ,.!?;:-")
+                question = _re.sub(r"\s+et$", "", question, flags=_re.IGNORECASE).strip(" ,.!?;:-")
 
                 if question:
                     reponse = self.traiter_commande(
