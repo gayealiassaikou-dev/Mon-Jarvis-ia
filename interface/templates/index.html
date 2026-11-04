@@ -86,6 +86,9 @@ const micro = document.getElementById('micro');
 const accueil = document.getElementById('accueil');
 const FENCE = String.fromCharCode(96).repeat(3);
 let occupe = false;
+let lectureVocaleActivee = false;
+let confirmationVocaleEnAttente = false;
+let audioVocalEnCours = null;
 
 function echapper(t) {
     return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -96,6 +99,8 @@ function enLigne(t) {
     t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
     t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     t = t.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+    t = t.replace(/(https?:\/\/[^\s<]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
     return t;
 }
 
@@ -422,8 +427,147 @@ document.getElementById('bouton-historique').addEventListener('click', function 
     }
 });
 
+function normaliserCommande(texte) {
+    return String(texte || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
+}
+
+async function lireReponseAudio(texte, zone) {
+    try {
+        const resultat = await fetch("/api/audio/synthetiser", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ texte: texte })
+        });
+
+        if (!resultat.ok) {
+            throw new Error("La synthèse vocale est indisponible.");
+        }
+
+        const urlAudio = URL.createObjectURL(await resultat.blob());
+        const audio = new Audio(urlAudio);
+
+        if (audioVocalEnCours) {
+            audioVocalEnCours.pause();
+        }
+        audioVocalEnCours = audio;
+
+        audio.addEventListener("ended", function () {
+            URL.revokeObjectURL(urlAudio);
+            if (audioVocalEnCours === audio) audioVocalEnCours = null;
+        }, { once: true });
+
+        try {
+            await audio.play();
+        } catch (erreurLecture) {
+            const bouton = document.createElement("button");
+            bouton.type = "button";
+            bouton.textContent = "▶ Écouter la réponse";
+            bouton.addEventListener("click", function () {
+                audio.play().catch(function () {
+                    bouton.textContent = "Lecture audio impossible";
+                });
+            });
+            zone.appendChild(bouton);
+        }
+    } catch (erreur) {
+        const note = document.createElement("p");
+        note.textContent = "Voix indisponible : " + erreur.message;
+        zone.appendChild(note);
+    }
+}
+
+async function afficherReponseLocale(question, reponse, lire) {
+    occupe = true;
+    envoi.disabled = true;
+
+    try {
+        if (accueil) accueil.remove();
+        ajouterUtilisateur(question);
+        const zone = ajouterAssistant();
+        await ecrire(zone, reponse);
+        if (lire) await lireReponseAudio(reponse, zone);
+    } finally {
+        occupe = false;
+        envoi.disabled = false;
+        champ.focus();
+    }
+}
+
 async function envoyer(texte) {
     if (occupe) { return; }
+
+    const commande = normaliserCommande(texte);
+
+    if (confirmationVocaleEnAttente &&
+        /^(oui|ouais|daccord|dac|bien sur|vas y|fais ca|fait ca)(\b|\s)/.test(commande)) {
+        confirmationVocaleEnAttente = false;
+        lectureVocaleActivee = true;
+        await afficherReponseLocale(
+            texte,
+            "D'accord. Je lirai maintenant mes réponses à haute voix. Dis « arrête la voix » pour désactiver.",
+            true
+        );
+        return;
+    }
+
+    if (/(arrete|stop|desactive|coupe).*(voix|lecture|parler)/.test(commande)) {
+        confirmationVocaleEnAttente = false;
+        lectureVocaleActivee = false;
+        if (audioVocalEnCours) {
+            audioVocalEnCours.pause();
+            audioVocalEnCours = null;
+        }
+        await afficherReponseLocale(
+            texte,
+            "D'accord, la lecture à haute voix est désactivée.",
+            false
+        );
+        return;
+    }
+
+    if (/(haute voix|voix haute|oralement)/.test(commande) &&
+        /(repond|parl|lis)/.test(commande)) {
+        confirmationVocaleEnAttente = true;
+        await afficherReponseLocale(
+            texte,
+            "Oui. Je peux lire mes réponses à haute voix. Souhaites-tu activer cette fonction ?",
+            false
+        );
+        return;
+    }
+
+    const demandeMusique = texte.match(
+        /^(?:s'il te plait\s+)?(?:joue|lance|mets|cherche|recherche|trouve)\s+(?:moi\s+)?(?:la\s+)?(?:musique|chanson|morceau|son)\s+(?:de\s+)?(.+)$/i
+    );
+
+    if (demandeMusique) {
+        const titre = demandeMusique[1]
+            .replace(/\s+sur\s+(youtube|spotify)\s*$/i, "")
+            .trim();
+        const spotify = /spotify/.test(commande);
+        const url = spotify
+            ? "https://open.spotify.com/search/" + encodeURIComponent(titre)
+            : "https://www.youtube.com/results?search_query=" + encodeURIComponent(titre);
+
+        const fenetre = window.open(url, "_blank");
+        if (fenetre) {
+            fenetre.opener = null;
+        } else {
+            window.location.assign(url);
+        }
+
+        await afficherReponseLocale(
+            texte,
+            "J'ouvre la recherche de « " + titre + " » sur " +
+                (spotify ? "Spotify." : "YouTube."),
+            false
+        );
+        return;
+    }
 
     occupe = true;
     envoi.disabled = true;
@@ -489,6 +633,9 @@ async function envoyer(texte) {
         }
 
         await ecrire(zone, d.reponse || 'Réponse vide.');
+        if (lectureVocaleActivee) {
+            await lireReponseAudio(d.reponse || 'Réponse vide.', zone);
+        }
     } catch (e) {
         zone.textContent = 'Erreur de connexion. Réessaie.';
     } finally {
