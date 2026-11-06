@@ -656,6 +656,9 @@ async function envoyer(texte) {
         if (lectureVocaleActivee) {
             await lireReponseAudio(d.reponse || 'Réponse vide.', zone);
         }
+        if (d.ouvrir_url) {
+            ouvrirMusique(d.ouvrir_url, zone);
+        }
     } catch (e) {
         zone.textContent = 'Erreur de connexion. Réessaie.';
     } finally {
@@ -666,6 +669,24 @@ async function envoyer(texte) {
         occupe = false;
         envoi.disabled = false;
         champ.focus();
+    }
+}
+
+function ouvrirMusique(url, zone) {
+    if (typeof url !== 'string' || url.indexOf('https://www.youtube.com/') !== 0) {
+        return;
+    }
+    let fenetre = null;
+    try {
+        fenetre = window.open(url, '_blank');
+    } catch (e) {}
+    if (!fenetre) {
+        const lien = document.createElement('a');
+        lien.href = url;
+        lien.target = '_blank';
+        lien.rel = 'noopener noreferrer';
+        lien.textContent = ' ▶ Ouvrir la musique';
+        zone.appendChild(lien);
     }
 }
 

@@ -126,6 +126,31 @@ def consulter_activite(demande_id):
         return jsonify({"erreur": "Activité introuvable."}), 404
     return jsonify(activite)
 
+def _demande_musique(message):
+    """Detecte 'joue ...' : renvoie (titre, lien YouTube) ou None."""
+    import re, urllib.parse
+    motif = r"^(?:joue(?: moi)?(?: la musique| la chanson| le morceau)?|(?:mets|lance)(?: moi)? (?:la musique|la chanson|le morceau)) (.+)$"
+    m = re.match(motif, message.strip().lower().rstrip(" ?!.,;:"))
+    if not m:
+        return None
+    titre = m.group(1).strip()
+    ident = None
+    try:
+        import yt_dlp
+        options = {"quiet": True, "no_warnings": True, "extract_flat": True,
+                   "skip_download": True, "socket_timeout": 10}
+        with yt_dlp.YoutubeDL(options) as ydl:
+            info = ydl.extract_info("ytsearch1:" + titre, download=False)
+        entrees = (info or {}).get("entries") or []
+        if entrees:
+            ident = entrees[0].get("id")
+    except Exception:
+        ident = None
+    if ident:
+        return titre, "https://www.youtube.com/watch?v=" + ident + "&autoplay=1"
+    return titre, "https://www.youtube.com/results?search_query=" + urllib.parse.quote_plus(titre)
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
     data = request.get_json(silent=True) or {}
@@ -167,13 +192,19 @@ def chat():
         return jsonify({"reponse": "Impossible de sauvegarder la conversation."}), 500
 
     succes = False
+    ouvrir_url = None
     try:
-        reponse = jarvis.traiter_commande(
-            message,
-            retourner_reponse=True,
-            activity_tracker=activity_tracker,
-            demande_id=demande_id,
-        )
+        musique = _demande_musique(message)
+        if musique:
+            titre_musique, ouvrir_url = musique
+            reponse = "Je lance : " + titre_musique + "."
+        else:
+            reponse = jarvis.traiter_commande(
+                message,
+                retourner_reponse=True,
+                activity_tracker=activity_tracker,
+                demande_id=demande_id,
+            )
         activity_tracker.ajouter_etape(
             demande_id, "Réponse préparée", "succes"
         )
@@ -195,6 +226,7 @@ def chat():
         "reponse": str(reponse),
         "demande_id": demande_id,
         "conversation_id": conversation_id,
+        "ouvrir_url": ouvrir_url,
     })
 
 

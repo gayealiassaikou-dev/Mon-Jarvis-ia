@@ -77,5 +77,23 @@ class CommandManager:
         elif commande == "aide":
             return "Commandes disponibles : bonjour, qui es-tu, agents, memoire, version, heure, date, aide. Je sais aussi calculer (ex : combien font 12 fois 7)."
 
+        elif re.match(r"^(?:joue(?: moi)?(?: la musique| la chanson| le morceau)?|(?:mets|lance)(?: moi)? (?:la musique|la chanson|le morceau)) (.+)$", commande):
+            titre = re.match(r"^(?:joue(?: moi)?(?: la musique| la chanson| le morceau)?|(?:mets|lance)(?: moi)? (?:la musique|la chanson|le morceau)) (.+)$", commande).group(1)
+            return self._jouer_musique(titre)
+
         else:
             return "Commande inconnue. Tape aide pour voir les commandes."
+
+    def _jouer_musique(self, titre):
+        import os, subprocess
+        racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        script = os.path.join(racine, "jouer_musique.sh")
+        if not os.path.exists(script) or not os.path.exists("/data/data/com.termux"):
+            return "La lecture de musique marche seulement sur le telephone (Termux)."
+        try:
+            r = subprocess.run(["bash", script, titre], capture_output=True, text=True, timeout=40)
+        except Exception as e:
+            return "Impossible de lancer la musique : " + str(e)
+        if r.returncode != 0:
+            return "Je n'ai pas trouve cette musique."
+        return "Je lance : " + titre + "."
