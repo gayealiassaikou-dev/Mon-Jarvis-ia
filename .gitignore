@@ -76,3 +76,4 @@ memory/historique_archive.json
 # File locale des reprises en attente
 /data/reprise_en_attente.jsonl
 /data/projet_actif.json
+.env
