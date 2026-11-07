@@ -13,7 +13,7 @@ def _trouver_routeur(jarvis):
     return None
 
 
-def demarrer_memoire(jarvis, attente=6):
+def demarrer_memoire(jarvis, attente=10):
     resultat = {}
     routeur = _trouver_routeur(jarvis)
 
