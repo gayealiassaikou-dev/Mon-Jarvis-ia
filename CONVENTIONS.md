@@ -1,0 +1,13 @@
+# Regles pour Mon-Jarvis-ia (Samba Sarr)
+- Reponds toujours en francais, simplement.
+- UNE seule modification a la fois, la plus petite possible.
+- Ne modifie JAMAIS sans demande explicite : core/jarvis.py, core/decision_engine.py, tests/test_routage_testeur.py.
+- Ne touche JAMAIS a : .env, .git, .patches/, memory/, archive/.
+- Ne supprime aucun fichier. Ne renomme pas jarvis.py ni le dossier du projet.
+- Ne lance jamais git push. Les commits restent sur la branche courante.
+- Ne demande jamais de cle API ou de jeton dans le chat.
+- Ne reconstruis pas ce qui marche deja. Lis le code existant avant de modifier.
+- Garde le prefixe d'erreur "Toutes les IA sont indisponibles" (teste ailleurs).
+- Tests : PYTHONPATH=. python tests/<fichier>.py (pytest n'est pas installe).
+- Ne dis jamais qu'une fonction marche sans l'avoir testee pour de vrai.
+- Rien d'invente : si tu ne sais pas, dis-le.
