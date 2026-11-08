@@ -71,7 +71,7 @@ class TestBoutEnBoutOutils(unittest.TestCase):
         self.moteur.action_engagee = False
         self.moteur.outils_autorises = outils_autorises
 
-        with patch.object(moteur.requests, "post", faux_post), \
+        with patch.object(self.moteur, "_post_avec_reessai_429", faux_post), \
                 patch.dict(moteur.FONCTIONS_DISPONIBLES,
                            {"creer_dossier": faux_outil}):
             return self.moteur._appeler_openai_compatible(
