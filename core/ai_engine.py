@@ -525,6 +525,7 @@ class AIEngine:
         mistral = self.providers.get("mistral", {})
 
         self.api_key = os.getenv(groq.get("api_key_env", "GROQ_API_KEY"))
+        self.api_key_1 = os.getenv("GROQ_API_KEY_1")
         self.url = groq.get("url")
         self.model = groq.get("model")
 
@@ -2061,20 +2062,33 @@ class AIEngine:
         raise Exception("Trop d'appels d'outils enchaines.")
 
     def _demander_groq(self, message, contexte="", historique=None):
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        return self._appeler_openai_compatible(
-            self.url,
-            headers,
-            self.model,
-            message,
-            contexte,
-            historique,
-            outils=self._obtenir_outils_autorises(),
-            mode_action=self.mode_action,
-        )
+        def appeler_avec_cle(cle):
+            headers = {
+                "Authorization": f"Bearer {cle}",
+                "Content-Type": "application/json"
+            }
+            return self._appeler_openai_compatible(
+                self.url,
+                headers,
+                self.model,
+                message,
+                contexte,
+                historique,
+                outils=self._obtenir_outils_autorises(),
+                mode_action=self.mode_action,
+            )
+
+        try:
+            return appeler_avec_cle(self.api_key)
+        except Exception:
+            if (
+                getattr(self, "action_engagee", False)
+                or not self.api_key_1
+                or self.api_key_1 == self.api_key
+            ):
+                raise
+            return appeler_avec_cle(self.api_key_1)
+
     def _demander_openrouter(self, message, contexte="", historique=None):
         headers = {
             "Authorization": f"Bearer {self.openrouter_key}",
