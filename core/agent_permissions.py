@@ -57,7 +57,8 @@ PERMISSIONS_AGENTS = {
     ],
 
     "10_assistant_vocal_ia": [
-        "lister_projets", "lister_taches", "gerer_musique"
+        "lister_projets", "lister_taches", "gerer_musique",
+        "lire_batterie", "regler_volume", "lampe_torche", "envoyer_notification", "lire_presse_papiers"
     ],
 
     "11_gestionnaire_outils_ia": TOUS_LES_OUTILS
