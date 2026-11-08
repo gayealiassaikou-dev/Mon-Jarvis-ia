@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from core.ai_router import AIRouter
 from core.tools import definir_projet_actif, obtenir_projet_actif, executer_tests_python, executer_programme_python, reparer_syntaxe_python, diagnostiquer_code_python, analyser_erreur_python, corriger_code_python, lire_fichier, ecrire_fichier, creer_parent_manquant_pour_ecriture, supprimer_fichier, supprimer_dossier, lister_fichiers, creer_dossier, rechercher_web, creer_projet, ajouter_tache, lister_projets, lister_taches, terminer_tache, supprimer_tache, supprimer_projet, modifier_statut_projet, github_lister_repos, github_lire_fichier, github_ecrire_fichier, github_creer_repo, lire_etat_projets_taches
 from core.music_manager import gerer_musique
+from core.outils_telephone import SCHEMAS_TELEPHONE, FONCTIONS_TELEPHONE, verifier_action_telephone
 
 load_dotenv()
 
@@ -471,6 +472,8 @@ FONCTIONS_DISPONIBLES = {
     "executer_programme_python": executer_programme_python,
     "gerer_musique": gerer_musique
 }
+OUTILS.extend(SCHEMAS_TELEPHONE)
+FONCTIONS_DISPONIBLES.update(FONCTIONS_TELEPHONE)
 
 
 def _convertir_outils_gemini(outils):
@@ -1313,6 +1316,9 @@ class AIEngine:
         verification specifique.
         Les autres outils restent inchanges jusqu'a leur audit individuel.
         """
+
+        if nom_fonction in FONCTIONS_TELEPHONE:
+            return verifier_action_telephone(nom_fonction, resultat)
 
         if nom_fonction == "gerer_musique":
             if not isinstance(resultat, str):
