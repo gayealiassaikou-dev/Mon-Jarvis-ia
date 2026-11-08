@@ -30,8 +30,8 @@ def lire_batterie():
     try:
         data = json.loads(output)
         percent = data.get("percentage")
-        status = data.get("status", "").lower()
-        branchee = "branchee" if "charging" in status else "sur batterie"
+        plugged = data.get("plugged", "")
+        branchee = "sur batterie" if plugged == "UNPLUGGED" else "branchee"
         return f"Batterie : {percent} % {branchee}"
     except (json.JSONDecodeError, TypeError):
         return "Erreur : impossible d'analyser la réponse de la batterie."
@@ -43,15 +43,16 @@ def regler_volume(niveau):
         return "Erreur : le niveau doit être un entier."
 
     # Obtenir le volume actuel et le maximum
-    max_output = _run_command(["termux-volume", "music"])
-    if isinstance(max_output, tuple):
-        return max_output[1]
+    info_output = _run_command(["termux-volume"])
+    if isinstance(info_output, tuple):
+        return info_output[1]
 
     try:
-        # termux-volume renvoie quelque chose comme "volume: X/Y"
-        parts = max_output.split()
-        cur_max = parts[-1]            # "X/Y"
-        _, max_vol = map(int, cur_max.split("/"))
+        info = json.loads(info_output)
+        music_info = next((item for item in info if item.get("stream") == "music"), None)
+        if not music_info:
+            return "Erreur : impossible d'obtenir le volume du flux music."
+        max_vol = music_info.get("max_volume")
     except Exception:
         return "Erreur : impossible d'obtenir le volume maximal."
 
@@ -64,14 +65,17 @@ def regler_volume(niveau):
         return set_result[1]
 
     # Vérifier la valeur réglée
-    verify_output = _run_command(["termux-volume", "music"])
+    verify_output = _run_command(["termux-volume"])
     if isinstance(verify_output, tuple):
         return verify_output[1]
 
     try:
-        parts = verify_output.split()
-        cur_max = parts[-1]
-        cur, max_vol_check = map(int, cur_max.split("/"))
+        verify_info = json.loads(verify_output)
+        music_verify = next((item for item in verify_info if item.get("stream") == "music"), None)
+        if not music_verify:
+            return "Erreur : impossible de vérifier le volume."
+        cur = music_verify.get("volume")
+        max_vol_check = music_verify.get("max_volume")
     except Exception:
         return "Erreur : impossible de vérifier le volume."
 
