@@ -2153,10 +2153,10 @@ class AIEngine:
         if contexte:
             payload["systemInstruction"] = {"parts": [{"text": contexte}]}
 
-        url = self.gemini_url + "?key=" + self.gemini_key
+        url = self.gemini_url
 
         for _ in range(5):
-            reponse = requests.post(url, json=payload, timeout=30)
+            reponse = requests.post(url, headers={"x-goog-api-key": self.gemini_key}, json=payload, timeout=30)
             reponse.raise_for_status()
             data = reponse.json()
             candidat = data["candidates"][0]["content"]
