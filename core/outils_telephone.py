@@ -5,6 +5,9 @@ from core.actions_telephone import (
     lampe_torche,
     envoyer_notification,
     lire_presse_papiers,
+    regler_luminosite,
+    lire_wifi,
+    lire_notifications,
 )
 
 # Schémas OpenAI pour les fonctions téléphoniques
@@ -89,6 +92,47 @@ SCHEMAS_TELEPHONE = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "regler_luminosite",
+            "description": "Règle la luminosité de l'écran entre 0 et 255.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "niveau": {
+                        "type": "integer",
+                        "description": "Niveau de luminosité (0-255).",
+                    },
+                },
+                "required": ["niveau"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "lire_wifi",
+            "description": "Lit les informations de connexion Wi‑Fi du téléphone.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "lire_notifications",
+            "description": "Liste les notifications récentes du téléphone.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
 ]
 
 # Mapping des noms de fonctions vers leurs implémentations réelles
@@ -98,6 +142,9 @@ FONCTIONS_TELEPHONE = {
     "lampe_torche": lampe_torche,
     "envoyer_notification": envoyer_notification,
     "lire_presse_papiers": lire_presse_papiers,
+    "regler_luminosite": regler_luminosite,
+    "lire_wifi": lire_wifi,
+    "lire_notifications": lire_notifications,
 }
 
 
@@ -118,6 +165,9 @@ def verifier_action_telephone(nom_fonction, resultat):
         "lampe_torche": "Lampe torche :",
         "envoyer_notification": "Notification envoyee :",
         "lire_presse_papiers": "Presse-papiers :",
+        "regler_luminosite": "Luminosite regle :",
+        "lire_wifi": "Wi-Fi :",
+        "lire_notifications": "Notifications :",
     }
 
     expected = prefixes.get(nom_fonction)
