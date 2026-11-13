@@ -647,7 +647,7 @@ class Jarvis:
             reponse = self.coordination_manager.livrer(reponse, mission_id)
 
             print(reponse)
-            if isinstance(reponse, str) and not reponse.startswith("Erreur IA") and not reponse.startswith("Toutes les IA sont indisponibles"):
+            if isinstance(reponse, str) and not reponse.startswith("Erreur IA") and not reponse.startswith("Toutes les IA sont indisponibles") and validation.get("valide") is True and not validation.get("avertissement"):
                 reponse_a_memoriser = reponse.replace("[Secours Gemini] ", "").strip()
                 self.memory_manager.ajouter_echange(commande, reponse_a_memoriser)
 

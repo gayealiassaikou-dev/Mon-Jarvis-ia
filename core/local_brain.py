@@ -288,6 +288,30 @@ class LocalBrain:
 
         demande = _normaliser(commande)
 
+        # Les questions ouvertes doivent être traitées par le moteur IA.
+        question_ouverte = re.search(
+            r"\b(pourquoi|comment|explique|expliquer|analyse|analyser|"
+            r"compare|comparer|conseil|recommande|recommander|"
+            r"penses-tu|selon toi|est-ce que|difference|avantage|"
+            r"inconvenient)\b",
+            demande,
+        )
+        demande_documentaire = any(
+            terme in demande
+            for terme in (
+                "dans tes documents", "selon tes documents",
+                "dans tes fiches", "liste tes agents",
+                "quels sont tes agents",
+            )
+        )
+        outils_ou_capacites = re.search(
+            r"\b(outil|outils|capacite|capacites|fonctionnalite|"
+            r"fonctionnalites|telephone|permissions?)\b",
+            demande,
+        )
+        if (question_ouverte or outils_ou_capacites) and not demande_documentaire:
+            return None
+
         # Répondre directement depuis la fiche de l'agent concerné.
         cible = None
         if any(mot in demande for mot in ("qualite", "realisations", "livraison")):
@@ -740,6 +764,16 @@ class LocalBrain:
                         f"({u.used / go:.1f} Go utilisés).")
             except Exception:
                 return None
+
+        question_ouverte = re.search(
+            r"\b(pourquoi|comment|explique|expliquer|analyse|analyser|"
+            r"compare|comparer|conseil|recommande|recommander|"
+            r"penses-tu|selon toi|est-ce que|difference|avantage|"
+            r"inconvenient)\b",
+            sans_ponct,
+        )
+        if question_ouverte:
+            return None
 
         reponse_memoire = self._repondre_memoire(sans_ponct)
         if reponse_memoire is not None:

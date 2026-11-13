@@ -801,7 +801,7 @@ class AIEngine:
         if inconnus:
             return False, (
                 f"Erreur validation : argument(s) non autorise(s) pour {nom_fonction} : "
-                + ", ".join(inconnus)
+                + ", ".join(repr(nom) for nom in inconnus)
             )
 
         types = {

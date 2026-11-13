@@ -136,6 +136,8 @@ def regler_luminosite(niveau):
     result = _run_command(["termux-brightness", str(niveau)])
     if isinstance(result, tuple):
         return result[1]
+    if isinstance(result, str) and "error" in result.lower():
+        return "Erreur : " + " ".join(result.split())
     return f"Luminosite regle : {niveau}"
 
 

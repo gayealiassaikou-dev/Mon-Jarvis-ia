@@ -193,8 +193,10 @@ class DecisionEngine:
             "et problèmes de sécurité."
         ),
         "10_assistant_vocal_ia": (
-            "Travaille sur la voix, la reconnaissance vocale, la synthèse "
-            "vocale et les interactions vocales."
+            "Gère la voix et le contrôle du téléphone Android : batterie, "
+            "volume, luminosité, Wi-Fi, lampe torche, notifications et "
+            "presse-papiers, avec les outils réellement disponibles et "
+            "autorisés."
         ),
         "11_gestionnaire_outils_ia": (
             "Sélectionne les outils et ressources les plus adaptés "
@@ -223,6 +225,14 @@ class DecisionEngine:
         "supprimer_tache": "07_automatisation_ia",
         "supprimer_projet": "07_automatisation_ia",
         "modifier_statut_projet": "07_automatisation_ia",
+        "lire_batterie": "10_assistant_vocal_ia",
+        "regler_volume": "10_assistant_vocal_ia",
+        "lampe_torche": "10_assistant_vocal_ia",
+        "envoyer_notification": "10_assistant_vocal_ia",
+        "lire_presse_papiers": "10_assistant_vocal_ia",
+        "regler_luminosite": "10_assistant_vocal_ia",
+        "lire_wifi": "10_assistant_vocal_ia",
+        "lire_notifications": "10_assistant_vocal_ia",
     }
 
     def _construire_catalogue_outils(self):
@@ -326,6 +336,60 @@ class DecisionEngine:
         texte = unicodedata.normalize("NFKD", demande.casefold())
         texte = "".join(c for c in texte if not unicodedata.combining(c))
         mots = re.findall(r"\w+", texte)
+
+        # Routage local prioritaire des commandes de contrôle Android.
+        agent_telephone = "10_assistant_vocal_ia"
+        outil_telephone = None
+        mots_action = {
+            "regle", "regler", "mets", "met", "augmente", "augmenter",
+            "baisse", "baisser", "diminue", "diminuer", "monte",
+            "allume", "eteins", "active", "desactive", "change", "fixe",
+        }
+        mots_lecture = {
+            "lis", "lire", "lecture", "consulte", "affiche",
+            "montre", "voir", "verifie", "donne",
+        }
+
+        if "notification" in mots or "notifications" in mots:
+            if mots_lecture.intersection(mots):
+                outil_telephone = "lire_notifications"
+            elif {"envoie", "envoyer", "envoi", "notifie", "notifier"}.intersection(mots):
+                outil_telephone = "envoyer_notification"
+        elif "batterie" in mots:
+            outil_telephone = "lire_batterie"
+        elif "luminosite" in mots and mots_action.intersection(mots):
+            outil_telephone = "regler_luminosite"
+        elif "volume" in mots and mots_action.intersection(mots):
+            outil_telephone = "regler_volume"
+        elif {"lampe", "torche", "flash"}.intersection(mots) and mots_action.intersection(mots):
+            outil_telephone = "lampe_torche"
+        elif {"wifi", "wi"}.intersection(mots) and ("wifi" in mots or "fi" in mots):
+            outil_telephone = "lire_wifi"
+        elif ("papiers" in mots and "presse" in mots) or "clipboard" in mots:
+            if mots_lecture.intersection(mots):
+                outil_telephone = "lire_presse_papiers"
+
+        if (
+            outil_telephone
+            and agent_telephone in liste_agents
+            and outil_telephone in self.outils_disponibles
+        ):
+            outils_autorises = filtrer_outils(
+                agent_telephone, [outil_telephone]
+            )
+            if outil_telephone in outils_autorises:
+                return {
+                    "agent": agent_telephone,
+                    "complexite": "simple",
+                    "analyse": {
+                        "difficulte": "faible",
+                        "risques": "faible",
+                        "validation_requise": False,
+                        "resume": demande,
+                    },
+                    "outils_suggeres": outils_autorises,
+                }
+
         racines_action = (
             "supprim", "efface", "cre", "ecri", "modifi", "install", "deploi",
             "lance", "execut", "lis", "ouvr", "ajout", "renomm", "deplac",
