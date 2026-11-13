@@ -126,3 +126,50 @@ def lire_presse_papiers():
 
 if __name__ == "__main__":
     print(lire_batterie())
+
+def regler_luminosite(niveau):
+    """Règle la luminosité de l'écran entre 0 et 255 via termux-brightness."""
+    if not isinstance(niveau, int):
+        return "Erreur : le niveau doit être un entier."
+    if not (0 <= niveau <= 255):
+        return f"Erreur : le niveau doit être entre 0 et 255."
+    result = _run_command(["termux-brightness", str(niveau)])
+    if isinstance(result, tuple):
+        return result[1]
+    return f"Luminosite regle : {niveau}"
+
+
+def lire_wifi():
+    """Lit les informations de connexion Wi‑Fi via termux-wifi-connectioninfo."""
+    output = _run_command(["termux-wifi-connectioninfo"])
+    if isinstance(output, tuple):
+        return output[1]
+    try:
+        data = json.loads(output)
+        ssid = data.get("ssid", "Inconnu")
+        bssid = data.get("bssid", "")
+        ip = data.get("ip", "")
+        return f"Wi-Fi : SSID={ssid}, BSSID={bssid}, IP={ip}"
+    except (json.JSONDecodeError, TypeError):
+        return "Erreur : impossible d'analyser les informations Wi‑Fi."
+
+
+def lire_notifications():
+    """Liste les notifications récentes via termux-notification-list (max 10)."""
+    output = _run_command(["termux-notification-list"])
+    if isinstance(output, tuple):
+        return output[1]
+    try:
+        data = json.loads(output)
+        if not isinstance(data, list):
+            return "Erreur : format de réponse inattendu."
+        lines = []
+        for i, notif in enumerate(data[:10], 1):
+            title = notif.get("title", "")
+            text = notif.get("text", "")
+            lines.append(f"{i}. {title}: {text}")
+        if not lines:
+            return "Notifications : aucune."
+        return "Notifications : " + " | ".join(lines)
+    except (json.JSONDecodeError, TypeError):
+        return "Erreur : impossible d'analyser la liste des notifications."
