@@ -115,6 +115,21 @@ class AIRouter:
                     and reponse.strip().casefold() == "erreur ia"
                 ):
                     if getattr(self.ai_engine, "action_engagee", False):
+                        # Vérifier les résultats des outils
+                        resultats = getattr(self.ai_engine, "derniers_resultats_outils", [])
+                        if resultats and all(r.get("statut") == "succes" and r.get("execute") for r in resultats):
+                            details = []
+                            for r in resultats:
+                                outil = r.get("outil", "inconnu")
+                                resultat = str(r.get("resultat", ""))
+                                if len(resultat) > 300:
+                                    resultat = resultat[:300] + "..."
+                                details.append(f"{outil} : {resultat}")
+                            details_str = "; ".join(details)
+                            return (
+                                f"Actions exécutées, mais la réponse finale a échoué chez {fournisseur} (ErreurIA). "
+                                f"Résultats des outils : {details_str}"
+                            )
                         return (
                             "Erreur IA après exécution d'une action avec "
                             f"{fournisseur}. Fallback automatique annulé "
@@ -146,6 +161,21 @@ class AIRouter:
                 # survenue après une action réelle. Ne pas relancer
                 # automatiquement la même demande avec un autre fournisseur.
                 if getattr(self.ai_engine, "action_engagee", False):
+                    # Vérifier les résultats des outils
+                    resultats = getattr(self.ai_engine, "derniers_resultats_outils", [])
+                    if resultats and all(r.get("statut") == "succes" and r.get("execute") for r in resultats):
+                        details = []
+                        for r in resultats:
+                            outil = r.get("outil", "inconnu")
+                            resultat = str(r.get("resultat", ""))
+                            if len(resultat) > 300:
+                                resultat = resultat[:300] + "..."
+                            details.append(f"{outil} : {resultat}")
+                        details_str = "; ".join(details)
+                        return (
+                            f"Actions exécutées, mais la réponse finale a échoué chez {fournisseur} ({type(e).__name__}). "
+                            f"Résultats des outils : {details_str}"
+                        )
                     return (
                         "Erreur IA après exécution d'une action avec "
                         f"{fournisseur} : "
