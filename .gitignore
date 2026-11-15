@@ -98,3 +98,7 @@ backups/
 # donnees volatiles
 *.log
 None
+
+# Sandbox Jarvis
+espace_travail/*
+!espace_travail/.gitkeep

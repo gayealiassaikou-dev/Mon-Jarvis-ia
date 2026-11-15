@@ -156,11 +156,46 @@
             "agents": [
                 "01_developpeur"
             ],
-            "sous_taches": [],
+            "sous_taches": [
+                {
+                    "id": "8ce62e42",
+                    "agent": "01_developpeur",
+                    "objectif": "Exécuter le script fourni et récupérer sa sortie.",
+                    "statut": "en_cours",
+                    "dependances": [],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:12:36",
+                    "date_maj": "2026-11-15T14:12:36"
+                },
+                {
+                    "id": "aba0efa3",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Comparer la sortie du script à la valeur attendue (10) et signaler toute différence.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "8ce62e42"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:12:36",
+                    "date_maj": "2026-11-15T14:12:36"
+                },
+                {
+                    "id": "9fd46e21",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Valider le bon fonctionnement du script sur la base du résultat du test et approuver la mise en production.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "aba0efa3"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:12:36",
+                    "date_maj": "2026-11-15T14:12:36"
+                }
+            ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T00:44:17",
-            "date_maj": "2026-11-15T00:45:05"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "b2018244",
@@ -204,9 +239,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "en_cours",
+            "statut": "annulee",
             "date_creation": "2026-11-15T00:51:35",
-            "date_maj": "2026-11-15T00:51:35"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "b952f5ab",
@@ -296,9 +331,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T00:54:52",
-            "date_maj": "2026-11-15T00:54:55"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "d5f392c9",
@@ -399,9 +434,9 @@
             "agents": [],
             "sous_taches": [],
             "priorite": "normale",
-            "statut": "en_cours",
+            "statut": "annulee",
             "date_creation": "2026-11-15T01:00:50",
-            "date_maj": "2026-11-15T01:00:50"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "62359e71",
@@ -445,9 +480,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T01:01:57",
-            "date_maj": "2026-11-15T01:02:06"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "7d033720",
@@ -491,9 +526,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T01:04:24",
-            "date_maj": "2026-11-15T01:04:55"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "9d5d38b1",
@@ -537,9 +572,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T01:05:34",
-            "date_maj": "2026-11-15T01:05:58"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "9997eb56",
@@ -571,9 +606,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T01:09:06",
-            "date_maj": "2026-11-15T01:09:24"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "1c74ce9c",
@@ -617,9 +652,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T01:14:11",
-            "date_maj": "2026-11-15T01:15:13"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "1bdbad50",
@@ -663,9 +698,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T01:15:54",
-            "date_maj": "2026-11-15T01:16:17"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "c785a9ed",
@@ -709,9 +744,9 @@
                 }
             ],
             "priorite": "normale",
-            "statut": "bloquee",
+            "statut": "annulee",
             "date_creation": "2026-11-15T01:16:45",
-            "date_maj": "2026-11-15T01:17:05"
+            "date_maj": "2026-11-15T14:26:47"
         },
         {
             "id": "8686c5a7",
@@ -738,6 +773,556 @@
             "statut": "terminee",
             "date_creation": "2026-11-15T01:20:29",
             "date_maj": "2026-11-15T01:20:53"
+        },
+        {
+            "id": "8396024f",
+            "nom": "Calcule 2+2",
+            "objectif": "Declenche par trigger ced3cfa1 (timer)",
+            "agents": [],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:11:45",
+            "date_maj": "2026-11-15T14:26:47"
+        },
+        {
+            "id": "3ddb2773",
+            "nom": "Ecris le fichier espace_travail/rapport.txt contenant AutoTriggerOK",
+            "objectif": "Declenche par trigger 2000169b (timer)",
+            "agents": [],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:25:07",
+            "date_maj": "2026-11-15T14:26:47"
+        },
+        {
+            "id": "7f2e0ea3",
+            "nom": "Ecris le fichier espace_travail/rapport.txt contenant AutoTriggerOK",
+            "objectif": "Declenche par trigger 2000169b (timer)",
+            "agents": [],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:26:14",
+            "date_maj": "2026-11-15T14:26:47"
+        },
+        {
+            "id": "bfe2df27",
+            "nom": "Ecris le fichier espace_travail/rapport.txt contenant AutoTriggerOK",
+            "objectif": "Declenche par trigger 2000169b (timer)",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "092b547c",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer un script (ex: Python ou Bash) qui écrit la chaîne 'AutoTriggerOK' dans le fichier espace_travail/rapport.txt",
+                    "statut": "en_cours",
+                    "dependances": [],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:27:20",
+                    "date_maj": "2026-11-15T14:27:20"
+                },
+                {
+                    "id": "f1003598",
+                    "agent": "07_automatisation_ia",
+                    "objectif": "Configurer le trigger timer 2000169b pour exécuter automatiquement le script créé par le développeur",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "092b547c"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:27:20",
+                    "date_maj": "2026-11-15T14:27:20"
+                },
+                {
+                    "id": "2db3b85f",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Après le déclenchement du trigger, vérifier que le fichier espace_travail/rapport.txt existe et contient exactement 'AutoTriggerOK'",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "f1003598"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:27:20",
+                    "date_maj": "2026-11-15T14:27:20"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:27:16",
+            "date_maj": "2026-11-15T14:29:28"
+        },
+        {
+            "id": "9dd0ec40",
+            "nom": "Ecris le fichier espace_travail/rapport.txt contenant AutoTriggerOK",
+            "objectif": "Declenche par trigger 2000169b (timer)",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "7ea4d6aa",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer un script qui écrit le texte \"AutoTriggerOK\" dans le fichier espace_travail/rapport.txt",
+                    "statut": "en_cours",
+                    "dependances": [],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:29:31",
+                    "date_maj": "2026-11-15T14:29:31"
+                },
+                {
+                    "id": "b027966a",
+                    "agent": "07_automatisation_ia",
+                    "objectif": "Configurer le trigger timer 2000169b pour exécuter le script créé par le développeur",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "7ea4d6aa"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:29:31",
+                    "date_maj": "2026-11-15T14:29:31"
+                },
+                {
+                    "id": "1b80cd65",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Vérifier que, après le déclenchement du timer, le fichier espace_travail/rapport.txt contient bien \"AutoTriggerOK\"",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "b027966a"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:29:31",
+                    "date_maj": "2026-11-15T14:29:31"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:29:28",
+            "date_maj": "2026-11-15T14:30:10"
+        },
+        {
+            "id": "240d0e2e",
+            "nom": "Ecris le fichier espace_travail/test_watch.txt contenant WatchOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "c9f943f8",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer un script qui écrit le texte 'WatchOK' dans le fichier espace_travail/test_watch.txt",
+                    "statut": "en_cours",
+                    "dependances": [],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:45:18",
+                    "date_maj": "2026-11-15T14:45:19"
+                },
+                {
+                    "id": "176cdf59",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Vérifier que le fichier espace_travail/test_watch.txt existe et contient exactement la chaîne 'WatchOK'",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "c9f943f8"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:45:18",
+                    "date_maj": "2026-11-15T14:45:18"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:44:48",
+            "date_maj": "2026-11-15T14:44:48",
+            "tentatives": 3,
+            "abandonnee": true
+        },
+        {
+            "id": "d56831d2",
+            "nom": "Ecris le fichier espace_travail/test_watch.txt contenant WatchOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:45:31",
+            "date_maj": "2026-11-15T14:47:27"
+        },
+        {
+            "id": "5f75bdba",
+            "nom": "Calcule 8+8 en Python et affiche le resultat",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "173ddc47",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script Python qui calcule 8+8 et affiche le résultat",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "```python\nresultat = 8 + 8\nprint(resultat)\n```",
+                    "date_creation": "2026-11-15T14:49:06",
+                    "date_maj": "2026-11-15T14:49:16"
+                },
+                {
+                    "id": "5dd63549",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script Python et vérifier que le résultat affiché est 16",
+                    "statut": "bloquee",
+                    "dependances": [
+                        "173ddc47"
+                    ],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Aucun outil execute alors que la mission en attendait : reussite non prouvee.",
+                    "date_creation": "2026-11-15T14:49:06",
+                    "date_maj": "2026-11-15T14:49:28"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:48:57",
+            "date_maj": "2026-11-15T14:49:29",
+            "tentatives": 3,
+            "abandonnee": true
+        },
+        {
+            "id": "d8b4e22c",
+            "nom": "Ecris le fichier espace_travail/final_test.txt contenant FinalOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "4fbbc150",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer le fichier espace_travail/final_test.txt contenant la chaîne \"FinalOK\"",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Aucun outil execute alors que la mission en attendait : reussite non prouvee.",
+                    "date_creation": "2026-11-15T14:51:31",
+                    "date_maj": "2026-11-15T14:51:38"
+                },
+                {
+                    "id": "805a9a2a",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Vérifier que le fichier espace_travail/final_test.txt existe et contient exactement \"FinalOK\"",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "4fbbc150"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:51:31",
+                    "date_maj": "2026-11-15T14:51:31"
+                },
+                {
+                    "id": "d5ee2afb",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Valider que la mission est accomplie et clôturer le processus",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "805a9a2a"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:51:31",
+                    "date_maj": "2026-11-15T14:51:31"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:51:17",
+            "date_maj": "2026-11-15T14:51:38",
+            "tentatives": 3,
+            "abandonnee": true
+        },
+        {
+            "id": "da320b08",
+            "nom": "Ecris le fichier espace_travail/det_final.txt contenant DeterministicOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "4f6dcfc0",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer le fichier espace_travail/det_final.txt contenant exactement la chaîne \"DeterministicOK\"",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Reponse vide",
+                    "date_creation": "2026-11-15T14:58:09",
+                    "date_maj": "2026-11-15T14:58:28"
+                },
+                {
+                    "id": "4e312d47",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Vérifier que le fichier espace_travail/det_final.txt existe et que son contenu est exactement \"DeterministicOK\"",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "4f6dcfc0"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:58:09",
+                    "date_maj": "2026-11-15T14:58:09"
+                },
+                {
+                    "id": "f978a7b4",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Confirmer la réussite de la mission, archiver le fichier et notifier les parties prenantes",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "4e312d47"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T14:58:09",
+                    "date_maj": "2026-11-15T14:58:09"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T14:58:01",
+            "date_maj": "2026-11-15T14:58:28",
+            "tentatives": 3,
+            "abandonnee": true
+        },
+        {
+            "id": "c9632122",
+            "nom": "Ecris le fichier espace_travail/det_final.txt contenant DeterministicOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "cabd45a8",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer le fichier 'espace_travail/det_final.txt' contenant exactement la chaîne 'DeterministicOK'",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/det_final.txt ecrit (15 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T15:10:52",
+                    "date_maj": "2026-11-15T15:10:52"
+                },
+                {
+                    "id": "6b51d8fb",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Vérifier que le fichier 'espace_travail/det_final.txt' existe et que son contenu est exactement 'DeterministicOK'",
+                    "statut": "terminee",
+                    "dependances": [
+                        "cabd45a8"
+                    ],
+                    "resultat": "Le fichier `espace_travail/det_final.txt` existe et son contenu est bien exactement `DeterministicOK`.",
+                    "date_creation": "2026-11-15T15:10:52",
+                    "date_maj": "2026-11-15T15:11:01"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T15:10:44",
+            "date_maj": "2026-11-15T15:11:01"
+        },
+        {
+            "id": "56a54812",
+            "nom": "...",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "f5ade418",
+                    "agent": "03_recherche",
+                    "objectif": "Analyser les besoins, les exigences fonctionnelles et les contraintes techniques de la mission.",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "## Analyse de la mission  \n\n### 1. Contexte général  \nVous avez demandé :  \n\n1. **Créer** deux fichiers dans le répertoire `espace_travail`  \n   - `final_test.txt` contenant la chaîne `\"FinalOK\"`  \n   - `det_final.txt` contenant la chaîne `\"DeterministicOK\"`  \n2. **Vérifier** que le fichier `espace_travail/det_final.txt` existe bien et que son contenu est exactement `DeterministicOK`.  \n\nCette suite d’actions constitue la **mission** actuelle.  \n\n---\n\n### 2. Objectif principal  \n**Assurer la cré",
+                    "date_creation": "2026-11-15T15:38:43",
+                    "date_maj": "2026-11-15T15:38:50"
+                },
+                {
+                    "id": "baa1e4b2",
+                    "agent": "01_developpeur",
+                    "objectif": "Développer la solution logicielle conformément aux spécifications définies lors de la phase de recherche.",
+                    "statut": "terminee",
+                    "dependances": [
+                        "f5ade418"
+                    ],
+                    "resultat": "```python\nfrom pathlib import Path\n\n# Création du répertoire de travail si nécessaire\nworkspace = Path(\"espace_travail\")\nworkspace.mkdir(exist_ok=True)\n\n# Écriture des fichiers conformément aux spécifications\n(workspace / \"final_test.txt\").write_text(\"FinalOK\", encoding=\"utf-8\")\n(workspace / \"det_final.txt\").write_text(\"DeterministicOK\", encoding=\"utf-8\")\n\nprint(\"Solution logicielle déployée avec succès :\")\nprint(\"- espace_travail/final_test.txt créé\")\nprint(\"- espace_travail/det_final.txt créé\"",
+                    "date_creation": "2026-11-15T15:38:43",
+                    "date_maj": "2026-11-15T15:39:25"
+                },
+                {
+                    "id": "833dcc10",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Effectuer les tests fonctionnels, de performance et de sécurité pour garantir la conformité et la qualité de la solution.",
+                    "statut": "terminee",
+                    "dependances": [
+                        "f5ade418",
+                        "baa1e4b2"
+                    ],
+                    "resultat": "Testeur IA : Vérifier la qualité de toutes les réalisations avant leur livraison.",
+                    "date_creation": "2026-11-15T15:38:43",
+                    "date_maj": "2026-11-15T15:39:25"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T15:15:42",
+            "date_maj": "2026-11-15T15:39:25"
+        },
+        {
+            "id": "2da2ddc0",
+            "nom": "Developpe un script Python qui ecrit espace_travail/learn_test.txt contenant LearningOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "002637dd",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire le script Python `create_learn_test.py` qui crée le répertoire `espace_travail` (s'il n'existe pas) et écrit la chaîne `LearningOK` dans le fichier `espace_travail/learn_test.txt`.",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Aucun outil execute alors que la mission en attendait : reussite non prouvee.",
+                    "date_creation": "2026-11-15T15:47:49",
+                    "date_maj": "2026-11-15T15:48:38"
+                },
+                {
+                    "id": "9ff53503",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script, vérifier que le fichier `espace_travail/learn_test.txt` est créé et que son contenu est exactement `LearningOK`.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "002637dd"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T15:47:49",
+                    "date_maj": "2026-11-15T15:47:49"
+                },
+                {
+                    "id": "d606273e",
+                    "agent": "09_securite_ia",
+                    "objectif": "Auditer le script pour s'assurer qu'il ne crée pas de vulnérabilités (ex. chemins relatifs, permissions de fichiers) et valider que les droits d'écriture sont appropriés.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "002637dd",
+                        "9ff53503"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T15:47:49",
+                    "date_maj": "2026-11-15T15:47:49"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T15:47:38",
+            "date_maj": "2026-11-15T15:48:38",
+            "tentatives": 3,
+            "abandonnee": true
+        },
+        {
+            "id": "734836f4",
+            "nom": "Developpe un script Python qui ecrit espace_travail/learn_test.txt contenant LearningOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "672cbebd",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer un script Python nommé generate_learning_ok.py qui crée le répertoire 'espace_travail' s'il n'existe pas, puis écrit le texte 'LearningOK' dans le fichier 'espace_travail/learn_test.txt'.",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_672cbebd.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nLe fichier 'espace_travail/learn_test.txt' a été créé avec succès et contient 'LearningOK'.\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T15:50:33",
+                    "date_maj": "2026-11-15T15:51:13"
+                },
+                {
+                    "id": "a36fa67b",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script generate_learning_ok.py, vérifier que le fichier 'espace_travail/learn_test.txt' est bien créé et contient exactement la chaîne 'LearningOK'.",
+                    "statut": "terminee",
+                    "dependances": [
+                        "672cbebd"
+                    ],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_a36fa67b.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\n\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T15:50:33",
+                    "date_maj": "2026-11-15T15:52:10"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T15:50:24",
+            "date_maj": "2026-11-15T15:52:11"
+        },
+        {
+            "id": "c0c30c69",
+            "nom": "Developpe un script Python qui ecrit espace_travail/fix_ok.txt contenant FixOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "fe0149e9",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script Python nommé create_fix_ok.py qui crée le répertoire 'espace_travail' s'il n'existe pas, puis crée le fichier 'fix_ok.txt' contenant la chaîne 'FixOK'.",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier fix_ok.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T15:56:44",
+                    "date_maj": "2026-11-15T15:56:45"
+                },
+                {
+                    "id": "cd043bd6",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script create_fix_ok.py, vérifier que le fichier 'espace_travail/fix_ok.txt' a bien été créé et qu'il contient exactement la chaîne 'FixOK'.",
+                    "statut": "bloquee",
+                    "dependances": [
+                        "fe0149e9"
+                    ],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Aucun outil execute alors que la mission en attendait : reussite non prouvee.",
+                    "date_creation": "2026-11-15T15:56:45",
+                    "date_maj": "2026-11-15T15:57:00"
+                },
+                {
+                    "id": "ab312f23",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Valider que la tâche a été remplie conformément aux exigences et approuver la livraison du script et du fichier généré.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "cd043bd6"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T15:56:45",
+                    "date_maj": "2026-11-15T15:56:45"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T15:56:39",
+            "date_maj": "2026-11-15T15:57:00",
+            "tentatives": 3,
+            "abandonnee": true
+        },
+        {
+            "id": "4a6b0356",
+            "nom": "Developpe un script Python qui ecrit espace_travail/fix_ok.txt contenant FixOK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "3968807e",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer un script Python nommé generate_fix_ok.py qui crée le répertoire 'espace_travail' si nécessaire et écrit le texte 'FixOK' dans le fichier 'espace_travail/fix_ok.txt'.",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_3968807e.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nLe fichier 'fix_ok.txt' a été créé avec succès et contient 'FixOK'.\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T15:58:58",
+                    "date_maj": "2026-11-15T15:59:10"
+                },
+                {
+                    "id": "bc1df04c",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script, vérifier que le fichier 'espace_travail/fix_ok.txt' existe et contient exactement le texte 'FixOK'. Signaler tout échec ou proposer des corrections.",
+                    "statut": "terminee",
+                    "dependances": [
+                        "3968807e"
+                    ],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_bc1df04c.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nSUCCÈS : Le fichier 'fix_ok.txt' existe et contient exactement 'FixOK'.\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T15:58:58",
+                    "date_maj": "2026-11-15T15:59:35"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T15:58:19",
+            "date_maj": "2026-11-15T15:59:35"
         }
     ]
 }
