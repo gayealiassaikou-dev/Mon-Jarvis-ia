@@ -31,10 +31,23 @@ def _sauvegarder(data):
 
 def autorise():
     data = _charger()
+    restant = LIMITE_APPELS_DEFAUT - data["appels"]
     if data["appels"] >= LIMITE_APPELS_DEFAUT:
+        try:
+            from core import notifications
+            notifications.budget_alerte(0, LIMITE_APPELS_DEFAUT)
+        except Exception:
+            pass
         return False, f"Limite appels atteinte ({data['appels']}/{LIMITE_APPELS_DEFAUT})"
     if data["tokens_estimes"] >= LIMITE_TOKENS_DEFAUT:
         return False, f"Limite tokens atteinte ({data['tokens_estimes']}/{LIMITE_TOKENS_DEFAUT})"
+    # Alerte a 50 appels restants
+    if restant == 50:
+        try:
+            from core import notifications
+            notifications.budget_alerte(restant, LIMITE_APPELS_DEFAUT)
+        except Exception:
+            pass
     return True, "OK"
 
 

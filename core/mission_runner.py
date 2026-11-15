@@ -48,7 +48,18 @@ def executer(max_missions=1, dry_run=False):
             sous_taches = mm.obtenir_sous_taches(mid)
             if sous_taches:
                 from core.subtask_executor import executer_mission
+                import time as _t_notif
+                _t0_notif = _t_notif.time()
                 res = executer_mission(mid)
+                _duree = _t_notif.time() - _t0_notif
+                try:
+                    from core import notifications
+                    if res.get("ok"):
+                        notifications.mission_terminee(mid, nom, _duree)
+                    else:
+                        notifications.mission_echouee(mid, nom, res.get("statut", ""))
+                except Exception:
+                    pass
                 if res.get("ok"):
                     print(f"[OK] Mission {mid} terminee via sous-taches ({res.get('etapes')} etapes).")
                     traitees += 1
