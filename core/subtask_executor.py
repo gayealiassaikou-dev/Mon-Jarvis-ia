@@ -46,6 +46,18 @@ def executer_mission(mission_id, max_etapes=10):
         mm.mettre_a_jour_sous_tache(mission_id, st["id"], "en_cours")
 
         try:
+            # 1. Tentative deterministe (sans LLM) pour actions simples
+            from core import deterministic_actions
+            det = deterministic_actions.tenter(st["objectif"])
+            if det and det.get("ok"):
+                reponse = det.get("message", "OK")
+                nouveaux_outils = [{"outil": det.get("outil"), "statut": "succes", "execute": True}]
+                print(f"[Deterministe] {det.get('outil')} execute sans LLM")
+                mm.mettre_a_jour_sous_tache(mission_id, st["id"], "terminee", resultat=reponse[:500])
+                print(f"[OK] {st['id']} (deterministe)")
+                etapes += 1
+                continue
+            # 2. Sinon, pipeline LLM classique
             resultats_avant = len(jarvis.ai_engine.derniers_resultats_outils)
             reponse = jarvis.traiter_commande(st["objectif"], retourner_reponse=True, agent_force=st["agent"])
             nouveaux_outils = jarvis.ai_engine.derniers_resultats_outils[resultats_avant:]
