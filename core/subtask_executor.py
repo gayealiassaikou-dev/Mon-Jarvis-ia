@@ -66,13 +66,12 @@ def executer_mission(mission_id, max_etapes=10):
             objectif_norm = _norm(st["objectif"])
             # Actions concretes qui exigent OBLIGATOIREMENT un outil
             MOTS_ACTION_CONCRETE = [
-                "ecris le fichier", "ecrire le fichier", "cree le fichier", "creer le fichier",
-                "cree un fichier", "creer un fichier", "modifie le fichier", "modifier le fichier",
-                "supprime le fichier", "supprimer le fichier", "cree le dossier", "creer le dossier",
-                "cree un dossier", "creer un dossier", "cree le depot", "creer le depot",
-                "cree un depot", "creer un depot", "cree le repo", "push", "commit",
-                "execute le script", "executer le script", "lance le script", "lancer le script",
-                "installe ", "telecharge ", "supprime le dossier", "supprimer le dossier",
+                # Fichiers
+                "ecri", "cree", "creer", "modifie", "supprime",
+                # Execution
+                "execute", "executer", "lance", "lancer", "run",
+                # Depot / installation
+                "depot", "repo", "push", "commit", "installe", "telecharge",
             ]
             MOTS_RESPONSE_INFO = [
                 "calcule", "calculer", "combien", "quel est", "quelle est",
