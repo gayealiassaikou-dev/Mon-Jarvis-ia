@@ -599,77 +599,99 @@ async function envoyer(texte) {
     const zone = ajouterAssistant();
     reflechir(zone);
 
-    let id = null;
-    let surveillance = null;
+    let reponseFinale = "";
+    let convId = null;
+    let ouvrirUrlFinal = null;
+    let erreurStream = null;
 
     try {
-        const depart = await fetch('/activite/demarrer', {
-            method: 'POST'
-        });
+        const body = { message: texte };
+        if (conversationActive) body.conversation_id = conversationActive;
 
-        if (depart.ok) {
-            const donneesDepart = await depart.json();
-            id = donneesDepart.demande_id;
-
-            if (typeof id === 'string' && id.length > 0) {
-                const interfaceActivite = creerPanneauActivite(zone);
-                surveillance = surveillerActivite(id, interfaceActivite);
-            } else {
-                id = null;
-            }
-        }
-    } catch (e) {
-        // Le chat reste utilisable même si le suivi est indisponible.
-    }
-
-    try {
-        const r = await fetch('/chat', {
+        const r = await fetch('/chat/stream', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify((function () {
-                const donnees = { message: texte };
-                if (id) donnees.demande_id = id;
-                if (conversationActive) {
-                    donnees.conversation_id = conversationActive;
-                }
-                return donnees;
-            })())
+            body: JSON.stringify(body),
         });
 
-        const d = await r.json();
-
-        if (!r.ok) {
-            throw new Error(d.reponse || 'Erreur pendant la demande.');
+        if (!r.ok || !r.body) {
+            throw new Error('Erreur reseau pendant la demande.');
         }
 
-        if (d.conversation_id) {
-            conversationActive = d.conversation_id;
+        // Affiche les etapes au fil de l'eau
+        const zoneEtapes = document.createElement('div');
+        zoneEtapes.style.cssText = 'font-size:12px;opacity:0.7;margin-bottom:8px;';
+        zone.innerHTML = '';
+        zone.appendChild(zoneEtapes);
+
+        const reader = r.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        let etapesAffichees = [];
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            let idx;
+            while ((idx = buffer.indexOf('\n\n')) !== -1) {
+                const bloc = buffer.slice(0, idx).trim();
+                buffer = buffer.slice(idx + 2);
+                if (!bloc.startsWith('data:')) continue;
+                let payload;
+                try {
+                    payload = JSON.parse(bloc.slice(5).trim());
+                } catch (e) { continue; }
+
+                if (payload.type === 'init') {
+                    if (payload.conversation_id) convId = payload.conversation_id;
+                } else if (payload.type === 'etape') {
+                    const msg = payload.message || '';
+                    if (msg) {
+                        etapesAffichees.push(msg);
+                        zoneEtapes.innerHTML = etapesAffichees
+                            .map(m => '· ' + escapeHtml(m))
+                            .join('<br>');
+                    }
+                } else if (payload.type === 'final') {
+                    reponseFinale = payload.reponse || '';
+                    ouvrirUrlFinal = payload.ouvrir_url || null;
+                }
+            }
+        }
+
+        if (convId) {
+            conversationActive = convId;
             try {
-                localStorage.setItem(
-                    'sam_sarr_conversation_id', conversationActive
-                );
+                localStorage.setItem('sam_sarr_conversation_id', convId);
             } catch (e) {}
             await chargerListeConversations();
         }
 
-        await ecrire(zone, d.reponse || 'Réponse vide.');
+        zone.innerHTML = '';
+        await ecrire(zone, reponseFinale || 'Reponse vide.');
         if (lectureVocaleActivee) {
-            await lireReponseAudio(d.reponse || 'Réponse vide.', zone);
+            await lireReponseAudio(reponseFinale || 'Reponse vide.', zone);
         }
-        if (d.ouvrir_url) {
-            ouvrirMusique(d.ouvrir_url, zone);
+        if (ouvrirUrlFinal) {
+            ouvrirMusique(ouvrirUrlFinal, zone);
         }
     } catch (e) {
-        zone.textContent = 'Erreur de connexion. Réessaie.';
+        erreurStream = e;
+        zone.textContent = 'Erreur de connexion. Reessaie.';
     } finally {
-        if (surveillance) {
-            await surveillance;
-        }
-
         occupe = false;
         envoi.disabled = false;
         champ.focus();
     }
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 
 function ouvrirMusique(url, zone) {
