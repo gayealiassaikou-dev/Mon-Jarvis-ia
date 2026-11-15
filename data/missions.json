@@ -10,6 +10,28 @@
             "statut": "terminee",
             "date_creation": "2026-11-15T00:33:11",
             "date_maj": "2026-11-15T00:34:05"
+        },
+        {
+            "id": "565c1e62",
+            "nom": "Calcule 3*3 en Python",
+            "objectif": "test watch",
+            "agents": [],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T00:36:04",
+            "date_maj": "2026-11-15T00:36:24"
+        },
+        {
+            "id": "d65b7660",
+            "nom": "Calcule 5+5 en Python",
+            "objectif": "test watch",
+            "agents": [],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "en_cours",
+            "date_creation": "2026-11-15T00:36:04",
+            "date_maj": "2026-11-15T00:36:04"
         }
     ]
 }

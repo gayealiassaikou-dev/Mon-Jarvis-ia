@@ -55,9 +55,34 @@ def executer(max_missions=1, dry_run=False):
     return traitees
 
 
+def boucle_watch(intervalle=60, max_par_cycle=3):
+    """Boucle de fond : traite les missions, dort, recommence."""
+    import time
+    cycle = 0
+    try:
+        while True:
+            cycle += 1
+            print(f"\n[Cycle {cycle}] {time.strftime('%H:%M:%S')}")
+            try:
+                n = executer(max_missions=max_par_cycle, dry_run=False)
+                if n == 0:
+                    print(f"Rien a faire. Sommeil {intervalle}s...")
+            except Exception as e:
+                print(f"[ERREUR CYCLE] {type(e).__name__}: {e}")
+            time.sleep(intervalle)
+    except KeyboardInterrupt:
+        print("\n[Arret propre] Boucle terminee.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--max", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--watch", action="store_true", help="Boucle de fond")
+    parser.add_argument("--intervalle", type=int, default=60, help="Secondes entre cycles")
     args = parser.parse_args()
-    executer(max_missions=args.max, dry_run=args.dry_run)
+
+    if args.watch:
+        boucle_watch(intervalle=args.intervalle, max_par_cycle=args.max)
+    else:
+        executer(max_missions=args.max, dry_run=args.dry_run)
