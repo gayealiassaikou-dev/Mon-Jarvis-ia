@@ -90,6 +90,9 @@ def executer_mission(mission_id, max_etapes=10):
                 "execute", "executer", "lance", "lancer", "run",
                 # Depot / installation
                 "depot", "repo", "push", "commit", "installe", "telecharge",
+                # Dev / implementation
+                "developp", "implement", "programme", "realise", "construi",
+                "genere", "produis", "code", "script",
             ]
             MOTS_RESPONSE_INFO = [
                 "calcule", "calculer", "combien", "quel est", "quelle est",
@@ -107,10 +110,16 @@ def executer_mission(mission_id, max_etapes=10):
             theorique_sans_action = demande_action and a_repondu_texte_long and not any(
                 signe in rep_str for signe in ["fichier", "cree", "ecrit", "termine avec", "succes"]
             )
+            # Reponse qui ne fait que repeter le system prompt ou le nom de l'agent
+            repete_prompt = (
+                len(rep_str) < 150
+                and any(x in rep_str for x in ["testeur ia :", "developpeur ia :", "recherche ia :", "verifier la qualite"])
+            )
             est_echec = (
                 not reponse
                 or not isinstance(reponse, str)
                 or len(reponse.strip()) < 5
+                or repete_prompt
                 or any(sig in rep_str for sig in SIGNES_ECHEC)
                 or theorique_sans_action
                 or (demande_action and not nouveaux_outils)
@@ -139,6 +148,24 @@ def executer_mission(mission_id, max_etapes=10):
                     print(f"[Retry force] outils appeles: {len(nouveaux_outils)}, echec={est_echec}")
                 except Exception as e2:
                     print(f"[Retry force ERREUR] {e2}")
+
+            # Fallback final : extraire code Python de la reponse et l'executer
+            if est_echec and demande_action and isinstance(reponse, str):
+                import re as _re
+                blocs = _re.findall(r"```(?:python)?\s*\n(.+?)```", reponse, _re.DOTALL)
+                if blocs:
+                    code = max(blocs, key=len).strip()
+                    from core.tools import ecrire_fichier as _ecrire, executer_programme_python as _exec
+                    chemin = f"espace_travail/sous_tache_{st['id']}.py"
+                    try:
+                        _ecrire(chemin, code + "\n")
+                        print(f"[Fallback] Code extrait dans {chemin}")
+                        sortie = _exec(chemin)
+                        print(f"[Fallback] Execution: {str(sortie)[:200]}")
+                        est_echec = False
+                        reponse = f"Code ecrit dans {chemin} et execute. Sortie: {str(sortie)[:300]}"
+                    except Exception as e3:
+                        print(f"[Fallback ERREUR] {e3}")
 
             if not est_echec:
                 mm.mettre_a_jour_sous_tache(mission_id, st["id"], "terminee", resultat=reponse[:500])
