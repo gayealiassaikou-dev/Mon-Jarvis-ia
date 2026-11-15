@@ -149,8 +149,17 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
             # Sauvegarde reponse originale (peut contenir du code a extraire)
             reponse_originale = reponse
 
-            # Retry force si aucun outil n'a ete appele
-            if est_echec and demande_action and not nouveaux_outils:
+            # Detecter JSON action ou bloc code AVANT retry (economie quota)
+            _reponse_a_code = False
+            _rep_pre = str(reponse or "")
+            if _rep_pre:
+                if '"action"' in _rep_pre and '"parameters"' in _rep_pre:
+                    _reponse_a_code = True
+                elif "```python" in _rep_pre or "```" in _rep_pre:
+                    _reponse_a_code = True
+
+            # Retry force uniquement si pas de code/JSON exploitable
+            if est_echec and demande_action and not nouveaux_outils and not _reponse_a_code:
                 print(f"[Retry force] {st['id']} : aucun outil, on force")
                 message_force = (
                     f"APPEL D'OUTIL OBLIGATOIRE. Tu dois appeler l'outil adapte pour : "
@@ -238,9 +247,9 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                     except Exception:
                         pass
 
+                blocs = []
                 if est_echec:
                     # 2. Fallback classique : extraire code Python
-                    blocs = []
                     for src in sources:
                         blocs.extend(_re.findall(r"```(?:python)?\s*\n(.+?)```", src, _re.DOTALL))
                 if blocs:
