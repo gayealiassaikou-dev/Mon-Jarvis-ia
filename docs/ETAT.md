@@ -26,11 +26,11 @@ Utilises : 01_dev (43%), 08_testeur (38%), 00_directeur (8%), autres rares
 
 | Provider | Priorite | Statut | Latence |
 |---|---|---|---|
-| groq | 1 | actif | ~15-20s |
-| mistral | 2 | pret | jamais appele |
-| openrouter | 3 | pret | jamais appele |
-| gemini | 5 | actif | ~2-5s |
-| nvidia | 6 | actif | lent |
+| gemini | 1 | actif | ~1.9-5s |
+| groq | 2 | actif | ~15-20s (retrograde) |
+| mistral | 3 | pret | jamais appele |
+| openrouter | 4 | pret | jamais appele |
+| nvidia | 5 | actif | lent |
 
 Tri dynamique : skipe apres 3 echecs, trie par latence.
 
