@@ -91,6 +91,7 @@ class Jarvis:
         self.task_manager.afficher_taches()
         self.project_manager.afficher_projets()
         self.knowledge_manager.afficher_connaissances()
+        self.mission_manager.purger()
         self.mission_manager.afficher_missions()
         print("Système prêt.")
 

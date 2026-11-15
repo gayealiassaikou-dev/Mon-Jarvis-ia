@@ -214,6 +214,37 @@ class MissionManager:
 
         return f"Mission {mission_id} introuvable."
 
+    def purger(self, jours=7):
+        """Archive les missions terminees/annulees de plus de N jours."""
+        from datetime import datetime, timedelta
+        seuil = datetime.now() - timedelta(days=jours)
+        chemin_archive = os.path.join(os.path.dirname(self.chemin), "missions_archive.json")
+
+        donnees = self._charger()
+        actives, archivees = [], []
+        for m in donnees["missions"]:
+            date = m.get("date_maj", m.get("date_creation", ""))
+            try:
+                d = datetime.fromisoformat(date)
+            except Exception:
+                actives.append(m); continue
+            if m.get("statut") in {"terminee", "annulee"} and d < seuil:
+                archivees.append(m)
+            else:
+                actives.append(m)
+
+        if archivees:
+            arch = {"missions": []}
+            if os.path.exists(chemin_archive):
+                with open(chemin_archive, "r", encoding="utf-8") as f:
+                    arch = json.load(f)
+            arch.setdefault("missions", []).extend(archivees)
+            with open(chemin_archive, "w", encoding="utf-8") as f:
+                json.dump(arch, f, indent=4, ensure_ascii=False)
+            donnees["missions"] = actives
+            self._sauvegarder(donnees)
+        return {"actives": len(actives), "archivees": len(archivees)}
+
     def afficher_missions(self):
         missions = self.lister_missions()
         if not missions:
