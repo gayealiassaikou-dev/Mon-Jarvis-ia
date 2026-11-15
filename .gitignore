@@ -102,3 +102,4 @@ None
 # Sandbox Jarvis
 espace_travail/*
 !espace_travail/.gitkeep
+requirements.lock
