@@ -407,7 +407,8 @@ class Jarvis:
                 return
             # Interception planification : "planifie X en N etapes"
             import re as _re_plan
-            m_plan = _re_plan.match(r"^\s*(?:planifie|planifier|organise|decompose)\s+(.+?)(?:\s+en\s+(\d+)\s+(?:etapes?|taches?|sous-taches?))?\s*$", commande, _re_plan.IGNORECASE)
+            m_plan = _re_plan.match(r"^\s*(?:planifie|planifier|organise|decompose)(?:\s+et\s+(?:execute|executer|lance|lance))?\s+(.+?)(?:\s+en\s+(\d+)\s+(?:etapes?|taches?|sous-taches?))?\s*$", commande, _re_plan.IGNORECASE)
+            _do_execute = bool(_re_plan.search(r"\bet\s+(?:execute|executer|lance|lance)\b", commande, _re_plan.IGNORECASE))
             if m_plan and not agent_force:
                 objectif = m_plan.group(1).strip()
                 try:
@@ -418,8 +419,18 @@ class Jarvis:
                     from core.mission_planner import planifier as _planifier
                     _plan = _planifier(_mission["id"])
                     if _plan.get("ok"):
-                        msg = f"Mission {_mission['id']} planifiee en {_plan['nb']} sous-taches. Lance `python -m core.mission_runner --max 1` pour executer."
+                        msg = f"Mission {_mission['id']} planifiee en {_plan['nb']} sous-taches."
+                        if _do_execute:
+                            from core.subtask_executor import executer_mission as _exec
+                            _res = _exec(_mission["id"])
+                            if _res.get("ok"):
+                                msg += f" Execution OK ({_res.get('etapes')} etapes, statut {_res.get('statut')})."
+                            else:
+                                msg += f" Execution echouee : {_res.get('statut')}."
+                        else:
+                            msg += " Lance `python -m core.mission_runner --max 1` pour executer."
                     else:
+                        _mm.mettre_a_jour_statut(_mission["id"], "bloquee")
                         msg = f"Mission {_mission['id']} creee mais planification echouee : {_plan.get('erreur')}"
                 except Exception as _e:
                     msg = f"Erreur planification : {type(_e).__name__}: {_e}"

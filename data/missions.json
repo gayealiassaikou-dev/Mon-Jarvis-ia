@@ -207,6 +207,524 @@
             "statut": "en_cours",
             "date_creation": "2026-11-15T00:51:35",
             "date_maj": "2026-11-15T00:51:35"
+        },
+        {
+            "id": "b952f5ab",
+            "nom": "un script qui calcule 7 fois 6",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "e3c8091f",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script simple (ex. Python) qui calcule 7 × 6 et affiche le résultat.",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Voici un script Python très simple qui calcule \\(7 \\times 6\\) et affiche le résultat :\n\n```python\n# calcul_7x6.py\ndef main():\n    a = 7\n    b = 6\n    produit = a * b\n    print(f\"{a} × {b} = {produit}\")\n\nif __name__ == \"__main__\":\n    main()\n```\n\n**Comment l’utiliser :**\n\n1. Enregistrez le code dans un fichier nommé `calcul_7x6.py`.\n2. Ouvrez un terminal (ou un environnement Python) et exécutez :\n\n```bash\npython calcul_7x6.py\n```\n\nVous verrez alors :\n\n```\n7 × 6 = 42\n```\n\nLe script se limite à tro",
+                    "date_creation": "2026-11-15T00:53:10",
+                    "date_maj": "2026-11-15T00:53:15"
+                },
+                {
+                    "id": "1260cc1f",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Vérifier que le script renvoie bien 42, gérer les cas d’erreur éventuels et valider la sortie.",
+                    "statut": "terminee",
+                    "dependances": [
+                        "e3c8091f"
+                    ],
+                    "resultat": "**Étape 1 : création du script**  \nLe fichier **calcul_7x6.py** a été créé avec le contenu suivant :\n\n```python\n# calcul_7x6.py\ndef main():\n    a = 7\n    b = 6\n    produit = a * b\n    print(f\"{a} × {b} = {produit}\")\n\nif __name__ == \"__main__\":\n    main()\n```\n\n**Étape 2 : exécution et capture du résultat**  \n\n```bash\npython calcul_7x6.py\n```\n\n**Sortie obtenue :**  \n\n```\n7 × 6 = 42\n```\n\n**Étape 3 : validation**  \n\n| Critère                         | Résultat | Commentaire                          ",
+                    "date_creation": "2026-11-15T00:53:10",
+                    "date_maj": "2026-11-15T00:53:19"
+                },
+                {
+                    "id": "e97ad6b3",
+                    "agent": "07_automatisation_ia",
+                    "objectif": "Planifier l'exécution automatisée du script et consigner le résultat dans le journal de missions.",
+                    "statut": "terminee",
+                    "dependances": [
+                        "1260cc1f"
+                    ],
+                    "resultat": "### 🎯 Objectif\nMettre en place une exécution automatisée du script **`calcul_7x6.py`**, récupérer sa sortie et l’enregistrer dans le **journal de missions** (par ex. `espace_travail/journal_missions.txt`).\n\n---\n\n## 1️⃣ Choix de la méthode d’automatisation  \nVoici trois options simples, toutes gratuites et compatibles avec un environnement de développement standard :\n\n| Option | Description | Avantages | Inconvénients |\n|--------|-------------|-----------|---------------|\n| **Cron (Linux/macOS)**",
+                    "date_creation": "2026-11-15T00:53:10",
+                    "date_maj": "2026-11-15T00:53:27"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T00:53:09",
+            "date_maj": "2026-11-15T00:53:27"
+        },
+        {
+            "id": "a004c7bf",
+            "nom": "une fonction qui calcule 3+3",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "f17b71f8",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire une fonction en Python nommée add_three_plus_three qui retourne la somme de 3 et 3.",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "cannot access local variable 'rep_str' where it is not associated with a value",
+                    "date_creation": "2026-11-15T00:54:54",
+                    "date_maj": "2026-11-15T00:54:55"
+                },
+                {
+                    "id": "b6036e9b",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Écrire et exécuter des tests unitaires pour vérifier que la fonction retourne 6.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "f17b71f8"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T00:54:54",
+                    "date_maj": "2026-11-15T00:54:54"
+                },
+                {
+                    "id": "7b6776b7",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Valider la conformité du code et des tests avec les standards internes.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "b6036e9b"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T00:54:54",
+                    "date_maj": "2026-11-15T00:54:54"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T00:54:52",
+            "date_maj": "2026-11-15T00:54:55"
+        },
+        {
+            "id": "d5f392c9",
+            "nom": "une fonction qui calcule 4+4",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "f3861fa0",
+                    "agent": "03_recherche",
+                    "objectif": "Analyser les exigences pour créer une fonction simple qui retourne le résultat de 4+4 et définir les contraintes de codage",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "**Analyse des exigences**\n\n| Point | Détail |\n|-------|--------|\n| **Objectif fonctionnel** | Créer une fonction qui, lorsqu’elle est appelée, renvoie le résultat de l’opération arithmétique : **4 + 4**. |\n| **Entrées** | Aucun paramètre d’entrée n’est nécessaire ; le calcul est constant. |\n| **Sortie** | Un entier : **8**. |\n| **Comportement attendu** | La fonction doit être pure (sans effets de bord) et toujours retourner 8. |\n| **Environnement d’exécution** | Python 3.x (compatible avec les v",
+                    "date_creation": "2026-11-15T00:56:22",
+                    "date_maj": "2026-11-15T00:56:26"
+                },
+                {
+                    "id": "f2ddea6f",
+                    "agent": "01_developpeur",
+                    "objectif": "Implémenter la fonction en code (ex : def addition(): return 4+4) selon les spécifications définies",
+                    "statut": "terminee",
+                    "dependances": [
+                        "f3861fa0"
+                    ],
+                    "resultat": "Voici une implémentation minimale qui répond à toutes les contraintes décrites :\n\n```python\n# src/math_utils.py\ndef addition() -> int:\n    \"\"\"\n    Retourne la somme de 4 + 4.\n\n    Cette fonction est pure : elle ne dépend d’aucune donnée externe et n’a\n    aucun effet de bord. Elle renvoie toujours l’entier 8.\n    \"\"\"\n    return 4 + 4\n\n\n# -------------------------------------------------\n# Exemple d’utilisation rapide (optionnel) :\nif __name__ == \"__main__\":\n    print(\"4 + 4 =\", addition())\n```\n\n",
+                    "date_creation": "2026-11-15T00:56:22",
+                    "date_maj": "2026-11-15T00:56:31"
+                },
+                {
+                    "id": "4393ec0c",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Écrire et exécuter des tests unitaires pour vérifier que la fonction retourne 8 dans tous les cas",
+                    "statut": "terminee",
+                    "dependances": [
+                        "f2ddea6f"
+                    ],
+                    "resultat": "### 1️⃣ Code de la fonction (déjà fourni)\n\n```python\n# src/math_utils.py\ndef addition() -> int:\n    \"\"\"\n    Retourne la somme de 4 + 4.\n\n    La fonction est pure : elle ne dépend d’aucune donnée externe et n’a\n    aucun effet de bord. Elle renvoie toujours l’entier 8.\n    \"\"\"\n    return 4 + 4\n```\n\n---\n\n### 2️⃣ Tests unitaires avec **pytest**\n\n```python\n# tests/test_math_utils.py\nimport pytest\nfrom src.math_utils import addition\n\ndef test_addition_returns_8():\n    \"\"\"La fonction doit toujours ret",
+                    "date_creation": "2026-11-15T00:56:22",
+                    "date_maj": "2026-11-15T00:57:10"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T00:56:19",
+            "date_maj": "2026-11-15T00:57:10"
+        },
+        {
+            "id": "abd6f9d7",
+            "nom": "un script qui calcule 6+6",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "358c025d",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Définir les exigences fonctionnelles du script : calculer 6+6 et afficher le résultat.",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "**Exigences fonctionnelles du script « calcul‑12 »**\n\n| # | Exigence | Description détaillée |\n|---|----------|-----------------------|\n| **1** | **Objet du script** | Le script doit réaliser l’opération arithmétique **6 + 6** et afficher le résultat à l’écran. |\n| **2** | **Environnement d’exécution** | Le script doit être exécutable avec **Python 3.8+** (ou tout autre interpréteur compatible). Aucun module externe n’est requis. |\n| **3** | **Entrées** | Aucun paramètre d’entrée n’est attendu. ",
+                    "date_creation": "2026-11-15T00:58:39",
+                    "date_maj": "2026-11-15T00:58:45"
+                },
+                {
+                    "id": "cf648775",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire le script (ex. en Python) qui calcule 6+6 et imprime le résultat.",
+                    "statut": "terminee",
+                    "dependances": [
+                        "358c025d"
+                    ],
+                    "resultat": "Voici le script Python 3 qui calcule **6 + 6** et affiche le résultat :\n\n```python\n#!/usr/bin/env python3\n\"\"\"calcul_12.py – Calcul de 6 + 6 et affichage du résultat.\"\"\"\n\ndef addition(a: int, b: int) -> int:\n    \"\"\"Retourne la somme de a et b.\"\"\"\n    return a + b\n\n\nif __name__ == \"__main__\":\n    try:\n        a, b = 6, 6                     # valeurs fixes\n        result = addition(a, b)          # calcul\n        print(f\"Le résultat de {a} + {b} est : {result}\")\n        # code de sortie 0 → succès",
+                    "date_creation": "2026-11-15T00:58:39",
+                    "date_maj": "2026-11-15T00:58:48"
+                },
+                {
+                    "id": "d02a2191",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script et vérifier que la sortie est bien 12.",
+                    "statut": "terminee",
+                    "dependances": [
+                        "cf648775"
+                    ],
+                    "resultat": "**Exécution du script**\n\n```python\n#!/usr/bin/env python3\n\"\"\"calcul_12.py – Calcul de 6 + 6 et affichage du résultat.\"\"\"\n\ndef addition(a: int, b: int) -> int:\n    \"\"\"Retourne la somme de a et b.\"\"\"\n    return a + b\n\n\nif __name__ == \"__main__\":\n    try:\n        a, b = 6, 6                     # valeurs fixes\n        result = addition(a, b)          # calcul\n        print(f\"Le résultat de {a} + {b} est : {result}\")\n        exit(0)\n    except Exception as e:               # gestion de toute excepti",
+                    "date_creation": "2026-11-15T00:58:39",
+                    "date_maj": "2026-11-15T00:58:51"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T00:58:34",
+            "date_maj": "2026-11-15T00:58:51"
+        },
+        {
+            "id": "7c7dd3c5",
+            "nom": "un script qui calcule 9+9",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "en_cours",
+            "date_creation": "2026-11-15T01:00:50",
+            "date_maj": "2026-11-15T01:00:50"
+        },
+        {
+            "id": "62359e71",
+            "nom": "un script qui calcule 9+9",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "58ed9f18",
+                    "agent": "05_architecte_ia",
+                    "objectif": "Définir l'architecture et les spécifications du script qui calcule 9+9.",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "## 1. Objectif du script  \nUn petit programme **stand‑alone** qui calcule la somme de deux nombres (dans ce cas : 9 + 9) et renvoie le résultat.  \nLe script doit être :  \n\n| Critère | Description |\n|---|---|\n| **Fonctionnel** | - Prendre deux entiers en entrée (par défaut : 9 et 9).<br>- Retourner la somme.<br>- Afficher le résultat de façon lisible. |\n| **Non fonctionnel** | - **Simplicité** : 1 à 2 fichiers seulement.<br>- **Portabilité** : fonctionne sous Windows, macOS, Linux (Python ≥ 3.8).",
+                    "date_creation": "2026-11-15T01:01:59",
+                    "date_maj": "2026-11-15T01:02:06"
+                },
+                {
+                    "id": "52750771",
+                    "agent": "01_developpeur",
+                    "objectif": "Implémenter le script selon les spécifications pour effectuer le calcul 9+9 et afficher le résultat.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "58ed9f18"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:01:59",
+                    "date_maj": "2026-11-15T01:01:59"
+                },
+                {
+                    "id": "fc0cc0ed",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Tester le script afin de vérifier qu'il renvoie bien 18 pour le calcul 9+9.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "52750771"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:01:59",
+                    "date_maj": "2026-11-15T01:01:59"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T01:01:57",
+            "date_maj": "2026-11-15T01:02:06"
+        },
+        {
+            "id": "7d033720",
+            "nom": "un script qui calcule 7+7",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "7e104c4f",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script (ex. Python) qui calcule 7+7 et affiche le résultat",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Utilise un outil seulement si la demande est explicite. Aucune demande d'utilisation d'outil n'a été formulée pour exécuter ou écrire ce script directement via un outil système dans ce message. \n\nVoici le script Python correspondant à votre demande :\n\n```python\nresultat = 7 + 7\nprint(resultat)\n```",
+                    "date_creation": "2026-11-15T01:04:27",
+                    "date_maj": "2026-11-15T01:04:55"
+                },
+                {
+                    "id": "77de6a91",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Vérifier que le script retourne 14 et qu’il n’y a pas d’erreurs d’exécution",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "7e104c4f"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:04:27",
+                    "date_maj": "2026-11-15T01:04:27"
+                },
+                {
+                    "id": "08071017",
+                    "agent": "07_automatisation_ia",
+                    "objectif": "Créer une tâche automatisée qui exécute le script et consigne le résultat dans le journal système",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "77de6a91"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:04:27",
+                    "date_maj": "2026-11-15T01:04:27"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T01:04:24",
+            "date_maj": "2026-11-15T01:04:55"
+        },
+        {
+            "id": "9d5d38b1",
+            "nom": "un script qui calcule 7+7",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "13ad06f2",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script simple en Python qui calcule et affiche le résultat de 7 + 7.",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "```python\nresultat = 7 + 7\nprint(resultat)\n```",
+                    "date_creation": "2026-11-15T01:05:36",
+                    "date_maj": "2026-11-15T01:05:58"
+                },
+                {
+                    "id": "81124d1e",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script, vérifier que la sortie est bien 14 et valider son bon fonctionnement.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "13ad06f2"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:05:36",
+                    "date_maj": "2026-11-15T01:05:36"
+                },
+                {
+                    "id": "67980d28",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Valider la conformité du script et son résultat, puis approuver la mise en production.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "81124d1e"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:05:36",
+                    "date_maj": "2026-11-15T01:05:36"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T01:05:34",
+            "date_maj": "2026-11-15T01:05:58"
+        },
+        {
+            "id": "9997eb56",
+            "nom": "un script qui calcule 8+8",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "506bd626",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script simple (ex. en Python) qui calcule 8+8 et affiche le résultat.",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "```python\nresultat = 8 + 8\nprint(f\"Le résultat de 8 + 8 est : {resultat}\")\n```",
+                    "date_creation": "2026-11-15T01:09:10",
+                    "date_maj": "2026-11-15T01:09:24"
+                },
+                {
+                    "id": "90ee985e",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script, vérifier que le résultat affiché est bien 16 et signaler tout bug.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "506bd626"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:09:10",
+                    "date_maj": "2026-11-15T01:09:10"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T01:09:06",
+            "date_maj": "2026-11-15T01:09:24"
+        },
+        {
+            "id": "1c74ce9c",
+            "nom": "un script qui calcule 11+11",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "77bc34dd",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script (ex: en Python) qui calcule 11+11 et affiche le résultat.",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Aucun outil execute alors que la mission en attendait : reussite non prouvee.",
+                    "date_creation": "2026-11-15T01:14:16",
+                    "date_maj": "2026-11-15T01:15:13"
+                },
+                {
+                    "id": "5b7bda1c",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script, vérifier que la sortie est bien 22 et s'assurer qu'il ne génère aucune erreur.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "77bc34dd"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:14:16",
+                    "date_maj": "2026-11-15T01:14:16"
+                },
+                {
+                    "id": "c9104de7",
+                    "agent": "09_securite_ia",
+                    "objectif": "Analyser le script pour confirmer qu'aucune vulnérabilité ou code malveillant n'est présent.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "77bc34dd"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:14:16",
+                    "date_maj": "2026-11-15T01:14:16"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T01:14:11",
+            "date_maj": "2026-11-15T01:15:13"
+        },
+        {
+            "id": "1bdbad50",
+            "nom": "un script qui calcule 11+11",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "d9638c73",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script simple (ex: en Python) qui calcule et affiche le résultat de 11 + 11.",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Reponse vide",
+                    "date_creation": "2026-11-15T01:15:58",
+                    "date_maj": "2026-11-15T01:16:17"
+                },
+                {
+                    "id": "690a866f",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script, vérifier que le résultat affiché est 22 et que le script ne génère aucune erreur.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "d9638c73"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:15:58",
+                    "date_maj": "2026-11-15T01:15:58"
+                },
+                {
+                    "id": "0e3eb78d",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Valider le livrable final, approuver le script et la procédure de test comme conformes à la mission.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "690a866f"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:15:58",
+                    "date_maj": "2026-11-15T01:15:58"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T01:15:54",
+            "date_maj": "2026-11-15T01:16:17"
+        },
+        {
+            "id": "c785a9ed",
+            "nom": "un script qui calcule 12+12",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "78062cd0",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script simple (ex: en Python) qui calcule 12+12 et affiche le résultat",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Aucun outil execute alors que la mission en attendait : reussite non prouvee.",
+                    "date_creation": "2026-11-15T01:16:47",
+                    "date_maj": "2026-11-15T01:17:05"
+                },
+                {
+                    "id": "d16bbf1b",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script, vérifier que la sortie est 24, et valider le bon fonctionnement",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "78062cd0"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:16:47",
+                    "date_maj": "2026-11-15T01:16:47"
+                },
+                {
+                    "id": "4e24a696",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Valider le script testé et approuver son déploiement ou son utilisation dans le système Jarvis",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "d16bbf1b"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T01:16:47",
+                    "date_maj": "2026-11-15T01:16:47"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T01:16:45",
+            "date_maj": "2026-11-15T01:17:05"
+        },
+        {
+            "id": "8686c5a7",
+            "nom": "Créer le fichier espace_travail/vraie_action.txt contenant \"Hello Jarvis\" et vérifier son contenu",
+            "objectif": "cree le fichier espace_travail/vraie_action.txt contenant Hello Jarvis et verifie son contenu",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T01:17:51",
+            "date_maj": "2026-11-15T01:18:33"
         }
     ]
 }

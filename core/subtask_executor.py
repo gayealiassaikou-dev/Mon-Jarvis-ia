@@ -46,25 +46,91 @@ def executer_mission(mission_id, max_etapes=10):
         mm.mettre_a_jour_sous_tache(mission_id, st["id"], "en_cours")
 
         try:
+            resultats_avant = len(jarvis.ai_engine.derniers_resultats_outils)
             reponse = jarvis.traiter_commande(st["objectif"], retourner_reponse=True, agent_force=st["agent"])
+            nouveaux_outils = jarvis.ai_engine.derniers_resultats_outils[resultats_avant:]
             SIGNES_ECHEC = [
                 "validation echouee", "je n'ai pas pu confirmer",
                 "erreur ia", "aucun outil execute",
                 "reussite non prouvee", "action(s) en echec",
+                "je ne peux pas", "je ne suis pas en mesure",
+                "que souhaitez-vous", "voulez-vous que je",
+                "a votre confirmation", "quel scenario",
+                "quelle option", "je ne lancerai aucune modification",
             ]
+            # Si l'objectif demande une action concrete, la reponse doit contenir
+            # une preuve d'action (pas juste du texte theorique)
+            import unicodedata as _uni
+            def _norm(t):
+                return "".join(c for c in _uni.normalize("NFKD", str(t).lower()) if not _uni.combining(c))
+            objectif_norm = _norm(st["objectif"])
+            # Actions concretes qui exigent OBLIGATOIREMENT un outil
+            MOTS_ACTION_CONCRETE = [
+                "ecris le fichier", "ecrire le fichier", "cree le fichier", "creer le fichier",
+                "cree un fichier", "creer un fichier", "modifie le fichier", "modifier le fichier",
+                "supprime le fichier", "supprimer le fichier", "cree le dossier", "creer le dossier",
+                "cree un dossier", "creer un dossier", "cree le depot", "creer le depot",
+                "cree un depot", "creer un depot", "cree le repo", "push", "commit",
+                "execute le script", "executer le script", "lance le script", "lancer le script",
+                "installe ", "telecharge ", "supprime le dossier", "supprimer le dossier",
+            ]
+            MOTS_RESPONSE_INFO = [
+                "calcule", "calculer", "combien", "quel est", "quelle est",
+                "explique", "explication", "analyse", "compare", "difference",
+                "resume", "decris", "liste", "donne moi le resultat", "theorique",
+            ]
+            est_action_concrete = any(w in objectif_norm for w in MOTS_ACTION_CONCRETE)
+            est_response_info = any(w in objectif_norm for w in MOTS_RESPONSE_INFO)
+            # Forcer outil UNIQUEMENT si action concrete ET pas une simple demande de calcul/expli
+            demande_action = est_action_concrete and not (
+                est_response_info and not any(w in objectif_norm for w in ["ecris", "ecrire", "cree le fichier", "creer le fichier", "cree un fichier"])
+            )
             rep_str = str(reponse or "").lower()
+            a_repondu_texte_long = rep_str.count("\n") > 15 or len(rep_str) > 2000
+            theorique_sans_action = demande_action and a_repondu_texte_long and not any(
+                signe in rep_str for signe in ["fichier", "cree", "ecrit", "termine avec", "succes"]
+            )
             est_echec = (
                 not reponse
                 or not isinstance(reponse, str)
                 or len(reponse.strip()) < 5
                 or any(sig in rep_str for sig in SIGNES_ECHEC)
+                or theorique_sans_action
+                or (demande_action and not nouveaux_outils)
             )
+            # Retry force si aucun outil n'a ete appele
+            if est_echec and demande_action and not nouveaux_outils:
+                print(f"[Retry force] {st['id']} : aucun outil, on force")
+                message_force = (
+                    f"APPEL D'OUTIL OBLIGATOIRE. Tu dois appeler l'outil adapte pour : "
+                    f"{st['objectif']}. Ne reponds pas en texte. Ne décris pas. "
+                    f"Appelle directement `ecrire_fichier` (chemin + contenu) ou "
+                    f"`executer_programme_python`. C'est la seule action acceptee."
+                )
+                try:
+                    avant2 = len(jarvis.ai_engine.derniers_resultats_outils)
+                    reponse = jarvis.traiter_commande(message_force, retourner_reponse=True, agent_force=st["agent"])
+                    nouveaux_outils = jarvis.ai_engine.derniers_resultats_outils[avant2:]
+                    rep_str = str(reponse or "").lower()
+                    est_echec = (
+                        not reponse
+                        or not isinstance(reponse, str)
+                        or len(reponse.strip()) < 5
+                        or any(sig in rep_str for sig in SIGNES_ECHEC)
+                        or (demande_action and not nouveaux_outils)
+                    )
+                    print(f"[Retry force] outils appeles: {len(nouveaux_outils)}, echec={est_echec}")
+                except Exception as e2:
+                    print(f"[Retry force ERREUR] {e2}")
+
             if not est_echec:
                 mm.mettre_a_jour_sous_tache(mission_id, st["id"], "terminee", resultat=reponse[:500])
                 print(f"[OK] {st['id']}")
             else:
                 mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(reponse)[:500])
                 print(f"[ECHEC] {st['id']} : validation reelle echouee")
+                mm.mettre_a_jour_statut(mission_id, "bloquee")
+                return {"ok": False, "statut": "bloquee", "etapes": etapes + 1, "echec_sur": st["id"]}
         except Exception as e:
             mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(e)[:200])
             print(f"[ERREUR] {st['id']}: {type(e).__name__}: {e}")

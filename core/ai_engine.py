@@ -2159,9 +2159,17 @@ class AIEngine:
         if contexte:
             payload["systemInstruction"] = {"parts": [{"text": contexte}]}
 
+        # Forcer l'appel d'outil au premier tour si mode_action
+        if self.mode_action:
+            payload["toolConfig"] = {
+                "functionCallingConfig": {"mode": "ANY"}
+            }
+
         url = self.gemini_url
 
-        for _ in range(5):
+        for iteration in range(5):
+            if iteration > 0 and "toolConfig" in payload:
+                payload["toolConfig"]["functionCallingConfig"]["mode"] = "AUTO"
             reponse = requests.post(url, headers={"x-goog-api-key": self.gemini_key}, json=payload, timeout=15)
             reponse.raise_for_status()
             data = reponse.json()

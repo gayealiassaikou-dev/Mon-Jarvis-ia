@@ -17,7 +17,7 @@ def charger_contexte():
             with open(chemin, "r", encoding="utf-8") as f:
                 contenu_total += f.read() + "\n\n"
 
-    regle = chr(10) + chr(10) + "REGLE IMPORTANTE : Utilise un outil seulement si la demande est explicite. Ne fais jamais une action non demandee, meme si elle semble utile. En cas de doute, demande confirmation avant agir."
+    regle = chr(10) + chr(10) + "REGLE IMPORTANTE : Si la demande implique une action concrete (creer, ecrire, modifier, executer, supprimer, lancer), tu DOIS appeler l outil approprie. Repondre avec du texte ou du code au lieu d agir est un echec. Ne fais jamais une action non demandee. En cas de doute sur une action destructive, demande confirmation."
     contenu_total += regle
 
     regles_fiabilite = """

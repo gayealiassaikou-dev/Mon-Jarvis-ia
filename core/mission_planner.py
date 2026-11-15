@@ -23,15 +23,34 @@ dependances = liste d'index (0-based) des sous-taches precedentes dont celle-ci 
 
 
 def _appeler_llm(prompt):
-    key = os.getenv("GROQ_API_KEY")
-    r = requests.post(
-        "https://api.groq.com/openai/v1/chat/completions",
-        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json={"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": prompt}]},
-        timeout=(3, 15)
-    )
-    r.raise_for_status()
-    return r.json()["choices"][0]["message"]["content"].strip()
+    providers = [
+        {"nom": "groq", "url": "https://api.groq.com/openai/v1/chat/completions", "model": "openai/gpt-oss-120b", "env": "GROQ_API_KEY", "type": "openai"},
+        {"nom": "mistral", "url": "https://api.mistral.ai/v1/chat/completions", "model": "mistral-small-latest", "env": "MISTRAL_API_KEY", "type": "openai"},
+        {"nom": "gemini", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent", "model": "gemini-flash-lite-latest", "env": "GEMINI_API_KEY", "type": "gemini"},
+    ]
+    erreurs = []
+    for p in providers:
+        key = os.getenv(p["env"])
+        if not key:
+            continue
+        try:
+            if p["type"] == "gemini":
+                r = requests.post(f"{p['url']}?key={key}",
+                                  json={"contents": [{"parts": [{"text": prompt}]}]},
+                                  timeout=(5, 30))
+                r.raise_for_status()
+                return r.json()["candidates"][0]["content"]["parts"][0]["text"].strip()
+            else:
+                r = requests.post(p["url"],
+                                  headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                                  json={"model": p["model"], "messages": [{"role": "user", "content": prompt}]},
+                                  timeout=(5, 30))
+                r.raise_for_status()
+                return r.json()["choices"][0]["message"]["content"].strip()
+        except Exception as e:
+            erreurs.append(f"{p['nom']}: {type(e).__name__}")
+            continue
+    raise RuntimeError("Planner: aucun provider. " + " | ".join(erreurs))
 
 
 def _nettoyer_json(t):

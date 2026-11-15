@@ -35,15 +35,35 @@ def executer(max_missions=1, dry_run=False):
             continue
 
         try:
-            from core.jarvis import Jarvis
-            j = Jarvis()
-            reponse = j.traiter_commande(nom, retourner_reponse=True)
-            if reponse and isinstance(reponse, str):
-                mm.mettre_a_jour_statut(mid, "terminee")
-                print(f"[OK] Mission {mid} terminee.")
-                traitees += 1
+            sous_taches = mm.obtenir_sous_taches(mid)
+            if not sous_taches:
+                print(f"[Planner] Decomposition de {mid}...")
+                from core.mission_planner import planifier
+                plan = planifier(mid)
+                if plan.get("ok"):
+                    print(f"[Planner] {plan['nb']} sous-taches creees.")
+                else:
+                    print(f"[Planner] Echec ({plan.get('erreur')}), execution directe.")
+
+            sous_taches = mm.obtenir_sous_taches(mid)
+            if sous_taches:
+                from core.subtask_executor import executer_mission
+                res = executer_mission(mid)
+                if res.get("ok"):
+                    print(f"[OK] Mission {mid} terminee via sous-taches ({res.get('etapes')} etapes).")
+                    traitees += 1
+                else:
+                    print(f"[ECHEC] Mission {mid} : {res.get('statut')}")
             else:
-                print(f"[ECHEC] Reponse vide pour {mid}.")
+                from core.jarvis import Jarvis
+                j = Jarvis()
+                reponse = j.traiter_commande(nom, retourner_reponse=True)
+                if reponse and isinstance(reponse, str):
+                    mm.mettre_a_jour_statut(mid, "terminee")
+                    print(f"[OK] Mission {mid} terminee (directe).")
+                    traitees += 1
+                else:
+                    print(f"[ECHEC] Reponse vide pour {mid}.")
         except Exception as e:
             print(f"[ERREUR] {mid} : {type(e).__name__}: {e}")
             try:
