@@ -13,8 +13,8 @@
       "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
       "erreur": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
       "agent": "01_developpeur",
-      "occurrences": 31,
-      "date": "2026-11-15T21:40:27"
+      "occurrences": 34,
+      "date": "2026-11-15T21:58:27"
     },
     {
       "signature": "crée python répertoire script écrire",
@@ -319,6 +319,27 @@
       "solution": "Code ecrit dans espace_travail/sous_tache_d5aef41b.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
       "agent": "01_developpeur",
       "date": "2026-11-15T21:40:26"
+    },
+    {
+      "signature": "cree developpe e2e_py espace_travail script",
+      "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+      "solution": "Code ecrit dans espace_travail/sous_tache_4e85bba3.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+      "agent": "01_developpeur",
+      "date": "2026-11-15T21:42:22"
+    },
+    {
+      "signature": "cree developpe e2e_py espace_travail script",
+      "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+      "solution": "Code ecrit dans espace_travail/sous_tache_d1ac8ae2.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+      "agent": "01_developpeur",
+      "date": "2026-11-15T21:44:52"
+    },
+    {
+      "signature": "cree developpe e2e_py espace_travail script",
+      "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+      "solution": "Code ecrit dans espace_travail/sous_tache_9eb3c72a.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+      "agent": "01_developpeur",
+      "date": "2026-11-15T21:58:26"
     }
   ]
 }
