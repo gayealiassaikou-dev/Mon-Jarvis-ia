@@ -5,16 +5,20 @@ import re
 def _extraire_chemin_et_contenu(objectif):
     """Detecte 'cree le fichier X contenant Y' -> (X, Y)."""
     patterns = [
-        r"(?:cree|créé|creer|créer|ecris|écris|ecrire|écrire)\s+le\s+fichier\s+([^\s]+)\s+contenant\s+(.+)",
-        r"(?:cree|créé|creer|créer|ecris|écris|ecrire|écrire)\s+le\s+fichier\s+([^\s]+)\s+avec\s+(?:le\s+)?(?:contenu|texte)\s+(.+)",
+        # "creer le fichier X contenant [exactement la chaine] Y"
+        r"(?:cree|créé|creer|créer|ecris|écris|ecrire|écrire|crée|cree)\s+(?:un\s+|le\s+)?fichier\s+([^\s]+)\s+contenant\s+(?:exactement\s+)?(?:la\s+)?(?:chaine|chaîne|texte|contenu\s+)?\s*(.+)",
+        # "... avec le contenu/texte Y"
+        r"(?:cree|créé|creer|créer|ecris|écris|ecrire|écrire|crée|cree)\s+(?:un\s+|le\s+)?fichier\s+([^\s]+)\s+avec\s+(?:le\s+)?(?:contenu|texte)\s+(.+)",
     ]
     for pat in patterns:
         m = re.search(pat, objectif, re.IGNORECASE)
         if m:
             chemin = m.group(1).strip("'\",.;")
-            contenu = m.group(2).strip().strip("'\",.;")
-            # Enlever guillemets autour du contenu
-            contenu = contenu.strip('"').strip("'")
+            contenu = m.group(2).strip()
+            # Enlever guillemets et texte parasite
+            contenu = contenu.strip('"').strip("'").strip()
+            contenu = re.sub(r'^(?:exactement\s+)?(?:la\s+)?(?:chaine|chaîne)\s+', '', contenu, flags=re.IGNORECASE)
+            contenu = contenu.strip('"').strip("'").strip()
             return chemin, contenu
     return None, None
 
