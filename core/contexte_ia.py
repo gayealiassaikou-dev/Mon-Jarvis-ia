@@ -2,10 +2,10 @@ import os
 
 def charger_contexte():
     fichiers = [
-        "partenaire/brain/identity.md",
-        "partenaire/brain/mission.md",
-        "partenaire/brain/personality.md",
-        "partenaire/brain/rules.md"
+        "brain/identity.md",
+        "brain/objectifs.md",
+        "brain/regles.md",
+        "brain/profil_global_jarvis.md"
     ]
 
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
