@@ -580,12 +580,26 @@ class AIEngine:
             else message_utilisateur_origine
         )
 
+        from core import budget_guard
+        ok, raison = budget_guard.autorise()
+        if not ok:
+            if self.logger:
+                self.logger.enregistrer(f"[BUDGET] Bloque : {raison}")
+            return f"Budget IA epuise pour aujourd'hui : {raison}. Reessaie demain ou augmente JARVIS_MAX_APPELS_JOUR."
+
         try:
-            return self.router.demander(
+            reponse = self.router.demander(
                 message,
                 contexte,
                 historique,
             )
+            try:
+                budget_guard.enregistrer_appel(
+                    tokens_estimes=max(200, (len(str(message)) + len(str(reponse))) // 4)
+                )
+            except Exception:
+                pass
+            return reponse
         finally:
             self.outils_autorises = ancien_outils_autorises
             self.mode_action = ancien_mode_action
