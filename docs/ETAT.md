@@ -10,7 +10,7 @@
 
 ### Autres modules
 - **Orchestration** : jarvis.py (723L), mission_manager.py (301L), mission_runner.py, subtask_executor.py (217L), mission_planner.py
-- **IA** : ai_engine.py (679L), ai_router.py (200L), ai_providers.py (311L), decision_engine.py (710L), tools_schema.py (498L), verifiers.py (775L)
+- **IA** : ai_engine.py (679L), ai_router.py (200L), ai_providers.py (311L), decision_engine.py (710L), tools_schema.py (498L), verifiers.py (605L) + verifiers_github.py (184L)
 - **Outils** : tools.py (46L reexports), tools_fichiers.py (354L), tools_python.py (318L), tools_github.py (406L), tools_projets.py (225L), tools_web.py (40L)
 - **Memoire** : memory_manager.py (237L), memory_index.py (126L FTS5), learning.py (104L), supabase_*.py
 - **Systeme** : budget_guard.py, notifications.py, triggers.py, trigger_engine.py
@@ -146,10 +146,10 @@ python -c "from interface.app import app; app.run(host='127.0.0.1', port=5001)"
 
 ## Prochaines priorites
 
-1. Split verifiers.py (775L) - 2h
-2. Test charge prod Velixir (script `scripts/test_charge_velixir.py`) - 30 min
-3. Migrer Velixir vers Render/Fly.io si prod reelle (latence free tier)
+1. Refactor `_verifier_resultat_outil` (590L monolithique) - 2-3h, risque
+2. Streaming Gemini mot par mot (actuellement phrase par phrase) - 30 min
+3. Migrer Velixir vers Render/Fly.io si prod reelle (latence free tier) - decision
 
 ## Historique
 
-- 15/11/2026 : ~50 commits, 94% (vs 72% matin). Streaming LLM natif (Gemini + Groq/Mistral/OpenRouter mot par mot), split tools/jarvis/decision_engine, SSE, notifications, kill switches, apprentissage actif, 26 tests offline, 10 bugs fixes
+- 15/11/2026 : ~54 commits, 94% (vs 72% matin). Streaming LLM natif (Gemini + Groq/Mistral/OpenRouter mot par mot), split tools/jarvis/decision_engine, SSE, notifications, kill switches, apprentissage actif, 26 tests offline, 10 bugs fixes
