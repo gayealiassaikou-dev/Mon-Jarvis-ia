@@ -127,7 +127,7 @@ class AIRouter:
                                 details.append(f"{outil} : {resultat}")
                             details_str = "; ".join(details)
                             return (
-                                f"Actions exécutées, mais la réponse finale a échoué chez {fournisseur} (ErreurIA). "
+                                f"Erreur IA — Actions exécutées, mais la réponse finale a échoué chez {fournisseur} (ErreurIA). "
                                 f"Résultats des outils : {details_str}"
                             )
                         return (
@@ -173,7 +173,7 @@ class AIRouter:
                             details.append(f"{outil} : {resultat}")
                         details_str = "; ".join(details)
                         return (
-                            f"Actions exécutées, mais la réponse finale a échoué chez {fournisseur} ({type(e).__name__}). "
+                            f"Erreur IA — Actions exécutées, mais la réponse finale a échoué chez {fournisseur} ({type(e).__name__}). "
                             f"Résultats des outils : {details_str}"
                         )
                     return (

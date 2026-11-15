@@ -1,8 +1,7 @@
-Flask
-requests
-python-dotenv
-gunicorn
-
-gTTS
-
-yt-dlp
+# Dependances Jarvis - versions figees dans requirements.lock
+Flask>=3.0,<4
+requests>=2.31,<3
+python-dotenv>=1.0,<2
+gTTS>=2.5,<3
+yt-dlp>=2024.1
+pytest>=8,<9
