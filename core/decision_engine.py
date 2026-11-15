@@ -149,58 +149,18 @@ class DecisionEngine:
         return texte.strip()
 
     DESCRIPTIONS_AGENTS = {
-        "00_directeur_ia": (
-            "Coordonne les missions complexes, décompose les objectifs "
-            "et orchestre les autres agents. À privilégier lorsqu'aucun "
-            "spécialiste unique ne correspond clairement à la demande."
-        ),
-        "01_developpeur": (
-            "Développe et corrige du code, manipule les fichiers du projet, "
-            "travaille sur les applications et utilise GitHub pour les "
-            "actions techniques."
-        ),
-        "02_designer": (
-            "Conçoit les interfaces, l'UX, l'UI, les maquettes et "
-            "l'identité visuelle des produits numériques."
-        ),
-        "03_recherche": (
-            "Effectue des recherches, compare des solutions et vérifie "
-            "des informations et des sources."
-        ),
-        "04_business": (
-            "Analyse le marché, les utilisateurs, la concurrence, la "
-            "monétisation, le marketing et les modèles économiques."
-        ),
-        "05_architecte_ia": (
-            "Conçoit l'architecture logicielle et IA, les composants, "
-            "les technologies et la structure globale d'un système."
-        ),
-        "06_memoire_ia": (
-            "Gère la mémorisation, l'organisation et la récupération "
-            "des informations importantes."
-        ),
-        "07_automatisation_ia": (
-            "Conçoit et exécute des automatisations, workflows, "
-            "intégrations et tâches répétitives."
-        ),
-        "08_testeur_ia": (
-            "Teste les logiciels, détecte les bugs et vérifie la qualité "
-            "et la stabilité des réalisations."
-        ),
-        "09_securite_ia": (
-            "Analyse les risques, permissions, secrets, dépendances "
-            "et problèmes de sécurité."
-        ),
-        "10_assistant_vocal_ia": (
-            "Gère la voix et le contrôle du téléphone Android : batterie, "
-            "volume, luminosité, Wi-Fi, lampe torche, notifications et "
-            "presse-papiers, avec les outils réellement disponibles et "
-            "autorisés."
-        ),
-        "11_gestionnaire_outils_ia": (
-            "Sélectionne les outils et ressources les plus adaptés "
-            "à une mission et organise leur utilisation."
-        ),
+        "00_directeur_ia": "Coordonne missions complexes, decompose objectifs, orchestre agents.",
+        "01_developpeur": "Code, fichiers, GitHub, applications, corrections techniques.",
+        "02_designer": "UI, UX, maquettes, identite visuelle.",
+        "03_recherche": "Recherches web, comparaisons, verification de sources.",
+        "04_business": "Marche, concurrence, monétisation, marketing, modeles economiques.",
+        "05_architecte_ia": "Architecture logicielle et IA, composants, technologies.",
+        "06_memoire_ia": "Memorisation, organisation, recuperation d'informations.",
+        "07_automatisation_ia": "Automatisations, workflows, integrations, taches repetitives.",
+        "08_testeur_ia": "Tests logiciels, detection de bugs, qualite et stabilite.",
+        "09_securite_ia": "Risques, permissions, secrets, dependances, securite.",
+        "10_assistant_vocal_ia": "Voix et controle Android : batterie, volume, luminosite, wifi, notifications, presse-papiers.",
+        "11_gestionnaire_outils_ia": "Gere et selectionne les outils disponibles selon la demande.",
     }
 
     OUTILS_AGENTS_SPECIALISES = {
