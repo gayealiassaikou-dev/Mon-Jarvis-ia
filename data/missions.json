@@ -32,6 +32,40 @@
             "statut": "en_cours",
             "date_creation": "2026-11-15T00:36:04",
             "date_maj": "2026-11-15T00:36:04"
+        },
+        {
+            "id": "a23bf509",
+            "nom": "Ecris le fichier espace_travail/demo.txt contenant Bonjour Jarvis puis lis-le pour verifier",
+            "objectif": "Tester la decomposition",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "1639b518",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer le fichier 'espace_travail/demo.txt' contenant le texte 'Bonjour Jarvis'.",
+                    "statut": "nouvelle",
+                    "dependances": [],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T00:39:10",
+                    "date_maj": "2026-11-15T00:39:10"
+                },
+                {
+                    "id": "08ab2615",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Lire le fichier 'espace_travail/demo.txt' et vérifier que son contenu est exactement 'Bonjour Jarvis'.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "1639b518"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T00:39:10",
+                    "date_maj": "2026-11-15T00:39:10"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "en_cours",
+            "date_creation": "2026-11-15T00:38:28",
+            "date_maj": "2026-11-15T00:38:28"
         }
     ]
 }
