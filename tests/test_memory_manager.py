@@ -33,7 +33,7 @@ class TestRechercheSouvenirs(unittest.TestCase):
         self.assertIn("Sam Sarr", resultat)
 
     def test_recherche_sans_resultat(self):
-        resultat = self.manager.rechercher_souvenir("astronomie")
+        resultat = self.manager.rechercher_souvenir("xylophonemotclebidon")
         self.assertIn("Aucune information", resultat)
 
 
