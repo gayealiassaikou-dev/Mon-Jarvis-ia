@@ -116,10 +116,10 @@ input -> jarvis.traiter_commande(on_chunk=...)
 ## Limites connues
 
 1. Velixir prod : P50 1.2s (free tier lent, pas le code)
-3. Groq lent (~15-20s) - retrogade apres Gemini
-4. verifiers.py 775L - dernier gros module
-5. Supabase dependance critique (fallback local si down)
-6. Test E2E reel manuel (`pytest -m llm` a lancer explicitement)
+2. Groq lent (~15-20s) - retrogade apres Gemini
+3. verifiers.py 775L - dernier gros module
+4. Supabase dependance critique (fallback local si down)
+5. Test E2E reel manuel (`pytest -m llm` a lancer explicitement)
 
 ## Commandes utiles
 
