@@ -2,7 +2,7 @@ name: Deploy to Velixir
 
 on:
   push:
-    branches: [fiabilite-coeur]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
