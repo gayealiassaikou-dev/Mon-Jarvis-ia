@@ -91,6 +91,26 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                 print(f"[OK] {st['id']} (deterministe)")
                 etapes += 1
                 continue
+            # 1.5. Rejeu cristallisation : sequence d'outils deja connue ?
+            try:
+                from core import crystallization as _cristal
+                _seq_entry = _cristal.trouver_sequence(st["objectif"])
+                if _seq_entry:
+                    print(f"[Cristallisation] Sequence connue ({_seq_entry.get('occurrences', 1)}x), rejeu sans LLM")
+                    _rejeu = _cristal.rejouer_sequence(_seq_entry.get("sequence", []))
+                    if _rejeu.get("ok"):
+                        _msg_rejeu = "Sequence rejouee : " + " -> ".join(
+                            [r["outil"] for r in _rejeu.get("resultats", [])]
+                        )
+                        mm.mettre_a_jour_sous_tache(mission_id, st["id"], "terminee", resultat=_msg_rejeu[:500])
+                        print(f"[OK] {st['id']} (cristallisation)")
+                        etapes += 1
+                        continue
+                    else:
+                        print(f"[Cristallisation] Rejeu echoue ({_rejeu.get('erreur')}), passage au LLM")
+            except Exception as _e_cristal:
+                print(f"[Cristallisation ERREUR] {_e_cristal}")
+
             # 2. Sinon, pipeline LLM classique (avec conseils d'apprentissage)
             from core import learning as _learning
             objectif_enrichi = st["objectif"]
@@ -353,6 +373,23 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                 try:
                     from core import learning as _learning
                     _learning.enregistrer_solution(st["objectif"], reponse[:300], st["agent"])
+                except Exception:
+                    pass
+                # Enregistrer la sequence cristallisee pour rejeu futur
+                try:
+                    from core import crystallization as _cristal_save
+                    _res_a_enregistrer = []
+                    for _r in (nouveaux_outils or []):
+                        if isinstance(_r, dict):
+                            _res_a_enregistrer.append({
+                                "outil": _r.get("outil"),
+                                "arguments": _r.get("arguments", {}),
+                                "statut": _r.get("statut"),
+                                "execute": _r.get("execute"),
+                            })
+                    if _res_a_enregistrer:
+                        _cristal_save.enregistrer_sequence(st["objectif"], _res_a_enregistrer)
+                        print(f"[Cristallisation] Sequence enregistree ({len(_res_a_enregistrer)} outil(s))")
                 except Exception:
                     pass
                 print(f"[OK] {st['id']}")
