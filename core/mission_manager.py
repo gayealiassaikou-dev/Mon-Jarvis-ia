@@ -245,6 +245,25 @@ class MissionManager:
             self._sauvegarder(donnees)
         return {"actives": len(actives), "archivees": len(archivees)}
 
+    def missions_a_reprendre(self):
+        """Retourne les missions en_cours ou bloquee, triees par priorite.
+        Exclut les missions dangereuses (suppression core, .env, etc.)."""
+        ordre = {"critique": 0, "haute": 1, "normale": 2, "faible": 3}
+        MOTS_DANGEREUX = [
+            "supprimer le dossier core", "supprimer core",
+            "supprimer le fichier .env", "supprimer .env",
+            "supprimer le dossier .git", "rm -rf", "format",
+        ]
+        a_reprendre = []
+        for m in self.lister_missions():
+            if m.get("statut") not in {"en_cours", "bloquee"}:
+                continue
+            nom = str(m.get("nom", "")).lower()
+            if any(d in nom for d in MOTS_DANGEREUX):
+                continue
+            a_reprendre.append(m)
+        return sorted(a_reprendre, key=lambda m: ordre.get(m.get("priorite", "normale"), 2))
+
     def afficher_missions(self):
         missions = self.lister_missions()
         if not missions:

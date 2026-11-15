@@ -93,6 +93,13 @@ class Jarvis:
         self.knowledge_manager.afficher_connaissances()
         self.mission_manager.purger()
         self.mission_manager.afficher_missions()
+        missions_reprise = self.mission_manager.missions_a_reprendre()
+        if missions_reprise:
+            print(f"\n{len(missions_reprise)} mission(s) a reprendre :")
+            for m in missions_reprise:
+                print(f"  - [{m['id']}] {m['nom']} ({m['statut']}, {m['priorite']})")
+        else:
+            print("\nAucune mission a reprendre.")
         print("Système prêt.")
 
         mots_declencheurs_vocal = [
