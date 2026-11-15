@@ -85,12 +85,30 @@ def conseils_pour(objectif):
     if not sig:
         return ""
     lignes = []
+    # Correspondance exacte (signature identique)
     for e in d["echecs"]:
         if e.get("signature") == sig:
             lignes.append(f"- ECHEC passe ({e.get('occurrences', 1)}x) : {e['erreur']}")
     for s in d["solutions"]:
         if s.get("signature") == sig:
             lignes.append(f"- SOLUTION passee : {s['solution'][:200]}")
+
+    # Correspondance partielle (50% des mots en commun)
+    if not lignes and sig:
+        mots_cible = set(sig.split())
+        for e in d["echecs"]:
+            sig_e = e.get("signature", "")
+            if not sig_e:
+                continue
+            mots_e = set(sig_e.split())
+            if not mots_e:
+                continue
+            communs = len(mots_cible & mots_e)
+            if communs >= max(2, len(mots_cible) // 2):
+                lignes.append(
+                    f"- ECHEC similaire ({e.get('occurrences', 1)}x) : {e['erreur']}"
+                )
+
     if not lignes:
         return ""
     return "\n\nAPPRENTISSAGES PASSES (evite ces erreurs) :\n" + "\n".join(lignes[:5])

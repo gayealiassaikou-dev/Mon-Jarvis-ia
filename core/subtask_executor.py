@@ -161,11 +161,23 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
             # Retry force uniquement si pas de code/JSON exploitable
             if est_echec and demande_action and not nouveaux_outils and not _reponse_a_code:
                 print(f"[Retry force] {st['id']} : aucun outil, on force")
+                # Enrichir le retry avec les conseils d'apprentissage
+                conseils_retry = ""
+                try:
+                    from core import learning as _learning_retry
+                    _c = _learning_retry.conseils_pour(st["objectif"])
+                    if _c:
+                        conseils_retry = _c
+                        print(f"[Retry force] + conseils d'apprentissage injectes")
+                except Exception:
+                    pass
+
                 message_force = (
                     f"APPEL D'OUTIL OBLIGATOIRE. Tu dois appeler l'outil adapte pour : "
                     f"{st['objectif']}. Ne reponds pas en texte. Ne décris pas. "
                     f"Appelle directement `ecrire_fichier` (chemin + contenu) ou "
                     f"`executer_programme_python`. C'est la seule action acceptee."
+                    + conseils_retry
                 )
                 try:
                     avant2 = len(jarvis.ai_engine.derniers_resultats_outils)
