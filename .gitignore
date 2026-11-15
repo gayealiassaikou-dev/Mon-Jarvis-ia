@@ -103,3 +103,5 @@ None
 espace_travail/*
 !espace_travail/.gitkeep
 requirements.lock
+
+generate_*.py
