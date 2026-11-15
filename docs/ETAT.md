@@ -1,10 +1,14 @@
 # Etat de Jarvis - 15 novembre 2026
 
-## Note globale : 84%
+## Note globale : 92%
 
 ## Architecture
 
 ### Modules core/ (54 fichiers)
+
+**Streaming LLM** : `ai_providers._demander_gemini(on_chunk)` -> `ai_router.demander(on_chunk)` -> `ai_engine.demander(on_chunk)` -> `jarvis.traiter_commande(on_chunk)` -> `/chat/stream` SSE chunks
+
+### Autres modules
 - **Orchestration** : jarvis.py (723L), mission_manager.py (301L), mission_runner.py, subtask_executor.py (217L), mission_planner.py
 - **IA** : ai_engine.py (679L), ai_router.py (200L), ai_providers.py (311L), decision_engine.py (710L), tools_schema.py (498L), verifiers.py (775L)
 - **Outils** : tools.py (46L reexports), tools_fichiers.py (354L), tools_python.py (318L), tools_github.py (406L), tools_projets.py (225L), tools_web.py (40L)
@@ -32,8 +36,8 @@ Tri dynamique : skipe apres 3 echecs, trie par latence.
 
 ## Pipeline mission
 
-input -> jarvis.traiter_commande()
-  -> DecisionEngine (choix agent)
+input -> jarvis.traiter_commande(on_chunk=...)
+  -> DecisionEngine (choix agent, tri dynamique providers)
   -> mission_planner (decomposition LLM)
   -> subtask_executor :
     1. Deterministe (fichiers/dossiers/projets/taches) = 0 LLM
@@ -62,10 +66,12 @@ input -> jarvis.traiter_commande()
 ### Features
 - SSE backend /chat/stream
 - SSE frontend interface web
+- **Streaming LLM natif Gemini** (chunks phrase par phrase)
 - Notifications Android
 - Sync auto FTS5
-- Retry + conseils apprentissage
+- Retry + conseils apprentissage actif
 - Kill switch session (100 appels/process)
+- Kill switch mission (15 appels/mission)
 
 ### Performance
 - Tri providers dynamique
@@ -74,15 +80,21 @@ input -> jarvis.traiter_commande()
 
 ### Structure
 - Split tools.py : 1273 -> 46 lignes + 6 modules
+- Split jarvis.py : 723 -> 432 lignes (startup.py, voice_loop.py)
+- Split decision_engine.py : 710 -> 215 lignes (decision_config, decision_local, decision_core)
 - Archivage orchestrator.py (267L code mort)
 
 ## Tests
 
-- 180 tests (dont 13 offline sans LLM)
+- **188 tests** (dont 26 offline sans LLM)
 - test_deterministic_offline.py - 5 tests
 - test_faux_succes.py - 5 tests
 - test_quota_guard.py - 2 tests
-- conftest.py - patch auto budget
+- test_espace_travail_double.py - 3 tests
+- test_e2e_pipeline.py - 5 tests (mockes)
+- test_e2e_reel.py - 1 test (@pytest.mark.llm, protege par marker)
+- conftest.py - patch budget sauf pour @llm
+- pytest.ini - marker `llm` exclu par defaut
 
 ## Budget
 
@@ -95,18 +107,19 @@ input -> jarvis.traiter_commande()
 | Scenario | Avant | Apres |
 |---|---|---|
 | Choix agent | 12s | 4.4s |
-| Moteur complexe | 44s | 9.3s |
+| Moteur simple (Gemini 1er) | 15-20s | **1.9s** |
+| Pipeline complet 3 sous-taches | 30-44s | **12-13s** |
 | Deterministe | 20-40s | 0-0.8s |
-| Pipeline 2 sous-taches | 30s+ | 13.7s |
+| Streaming premiere phrase | N/A | ~1s (au lieu de 3s+) |
 
 ## Limites connues
 
-1. Streaming etapes, pas mot-par-mot
-2. Apprentissage passif (conseils injectes, retry auto pas boucle)
-3. Groq lent (~15-20s/appel)
-4. jarvis.py 723L - dernier monolithe
-5. Tests E2E non automatises
-6. Supabase dependance critique
+1. **Streaming Gemini uniquement** (Groq/Mistral/OpenRouter pas encore streames)
+2. Velixir prod : P50 1.2s (free tier lent, pas le code)
+3. Groq lent (~15-20s) - retrogade apres Gemini
+4. verifiers.py 775L - dernier gros module
+5. Supabase dependance critique (fallback local si down)
+6. Test E2E reel manuel (`pytest -m llm` a lancer explicitement)
 
 ## Commandes utiles
 
@@ -133,12 +146,12 @@ python -c "from interface.app import app; app.run(host='127.0.0.1', port=5001)"
 
 ## Prochaines priorites
 
-1. Split jarvis.py (723L) -> 4-5 modules
-2. Streaming mot-par-mot
-3. Boucle apprentissage active
-4. Test E2E automatise (1 LLM controle)
-5. Kill switch par mission
+1. Streaming OpenAI-compatibles (Groq/Mistral) - 1h
+2. Split verifiers.py (775L) - 2h
+3. Test charge prod Velixir (script `scripts/test_charge_velixir.py`) - 30 min
+4. Fix residus E2E (`.github/workflows` genere par LLM pendant tests)
+5. Migrer Velixir vers Render/Fly.io si prod reelle (latence free tier)
 
 ## Historique
 
-- 15/11/2026 : 25 commits, 84% (vs 72% matin). Split tools, SSE, notifications, kill switch, 10 bugs fixes
+- 15/11/2026 : ~44 commits, 92% (vs 72% matin). Streaming LLM natif, split tools/jarvis/decision_engine, SSE, notifications, kill switches, apprentissage actif, 26 tests offline, 10 bugs fixes
