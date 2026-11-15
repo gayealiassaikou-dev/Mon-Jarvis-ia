@@ -41,8 +41,8 @@
       "priorite": 5,
       "statut": "actif",
       "api_key_env": "GEMINI_API_KEY",
-      "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
-      "model": "gemini-flash-latest",
+      "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent",
+      "model": "gemini-flash-lite-latest",
       "type": "gemini"
     }
   ]

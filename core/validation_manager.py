@@ -51,7 +51,7 @@ class ValidationManager:
 
         # Une mission qui attendait des outils ne peut pas etre validee
         # sans aucun resultat d'outil : le texte du modele n'est pas une preuve.
-        if outils_attendus and mission_id and not resultats_outils:
+        if outils_attendus and not resultats_outils:
             return self._rejeter(
                 "Aucun outil execute alors que la mission en attendait : "
                 "reussite non prouvee.",

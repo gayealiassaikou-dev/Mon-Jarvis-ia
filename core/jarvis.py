@@ -47,7 +47,15 @@ class Jarvis:
         self.knowledge_manager = KnowledgeManager()
 
         self.ai_engine = AIEngine(memory_manager=self.memory_manager, logger=self.logger)
-        self.contexte = charger_contexte()
+        _ctx = charger_contexte()
+        _i = _ctx.find("FAITS VERIFIES SUR SAM SARR")
+        _j = _ctx.find("PROFIL_PROGRAMMATION_SAMBA_SARR")
+        if 0 <= _i < _j:
+            self.contexte = _ctx[:_i] + _ctx[_j:]
+            self.contexte_faits = _ctx[_i:_j].strip()
+        else:
+            self.contexte = _ctx
+            self.contexte_faits = ""
         self.decision_engine = DecisionEngine(
             self.brain_manager,
             self.agent_manager,
@@ -428,7 +436,7 @@ class Jarvis:
                 "la demande n'est pas explicite."
             )
             contexte_complet = (
-                self.contexte + "\n\n" + contexte_agent + "\n\n" + regle_securite
+                self.contexte + (("\n\n" + self.contexte_faits) if self.contexte_faits and any(m in str(commande).casefold() for m in ("sam", "sarr", "outils", "agent", "internet", "web", "modele", "modèle", "memoire", "mémoire", "historique", "capacite", "capacité", "acces", "accès", "connaissance", "peux-tu", "peux tu", "que sais")) else "") + "\n\n" + contexte_agent + "\n\n" + regle_securite
             )
             # Projets et tâches : transmettre l'état actuel au moteur IA.
             try:
@@ -484,7 +492,10 @@ class Jarvis:
             suivre("Validation de la réponse", "en_cours")
             validation = self.validation_manager.valider(
                 reponse, mission_id, self.ai_engine.derniers_resultats_outils,
-                outils_attendus=bool(outils_autorises),
+                outils_attendus=bool(outils_autorises) or any(
+                    isinstance(o, str) and o in str(commande)
+                    for o in self.decision_engine.outils_disponibles
+                ),
             )
 
             # Le CoordinationManager décide de la suite à donner.

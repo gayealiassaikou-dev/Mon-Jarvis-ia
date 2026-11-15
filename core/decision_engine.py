@@ -323,6 +323,8 @@ class DecisionEngine:
             agent_attendu = self.OUTILS_AGENTS_SPECIALISES.get(outil)
 
             if agent_attendu and agent != agent_attendu:
+                if agent == "08_testeur_ia" and outil == "executer_programme_python":
+                    continue
                 return False
 
         return True
@@ -564,6 +566,8 @@ class DecisionEngine:
             "- Si la demande consiste à trouver un dossier puis lire ses instructions, suggère les outils nécessaires pour localiser puis lire le fichier.\n"
             "- Ne prétends jamais avoir lu un fichier sans résultat de lire_fichier.\n"
             "- Pour créer un dépôt GitHub, utilise github_creer_repo.\n"
+            "- Pour une demande explicite de calcul, lancement, exécution ou test Python, sélectionne 01_developpeur et executer_programme_python.\n"
+            "- Une explication ou un simple exemple de code Python ne nécessite pas son exécution.\n"
             "- Pour lister des dépôts GitHub, utilise github_lister_repos.\n"
             "- Pour lire un fichier GitHub, utilise github_lire_fichier.\n"
             "- Pour créer ou modifier un fichier GitHub, utilise github_ecrire_fichier.\n"
@@ -671,6 +675,25 @@ class DecisionEngine:
             # Barrière de sécurité : les outils proposés par le LLM
             # sont toujours filtrés par les permissions de l'agent.
             outils = filtrer_outils(agent, outils)
+
+            # Exécution Python uniquement sur demande explicite.
+            import unicodedata
+            texte_execution = unicodedata.normalize("NFKD", str(demande).casefold())
+            texte_execution = "".join(c for c in texte_execution if not unicodedata.combining(c))
+            contexte_python = any(x in texte_execution for x in ("python", "script", "programme"))
+            action_execution = any(x in texte_execution for x in (
+                "execute", "executer", "execution", "lance", "lancer",
+                "teste", "tester", "calcule", "calculer", "effectue",
+                "effectuer", "fais le calcul", "faire le calcul"
+            )) or (
+                "cree" in texte_execution and "calcul" in texte_execution
+                and "resultat" in texte_execution
+            )
+            if contexte_python and action_execution and "01_developpeur" in liste_agents:
+                agent = "01_developpeur"
+                outils = filtrer_outils(agent, outils)
+                requis = filtrer_outils(agent, ["executer_programme_python"])
+                outils = list(dict.fromkeys(outils + requis))
 
             # Une demande explicite GitHub doit au minimum pouvoir lister
             # les dépôts ; l'outil reste soumis aux permissions de l'agent.

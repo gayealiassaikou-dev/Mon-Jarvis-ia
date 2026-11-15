@@ -38,9 +38,9 @@ class TestOutilsAttendus(unittest.TestCase):
         v = self.vm.valider(REPONSE, "m1", [], outils_attendus=False)
         self.assertTrue(v["valide"])
 
-    def test_conversation_sans_mission_inchangee(self):
+    def test_conversation_sans_mission_outils_attendus_rejetee(self):
         v = self.vm.valider(REPONSE, None, [], outils_attendus=True)
-        self.assertTrue(v["valide"])
+        self.assertFalse(v["valide"])
 
     def test_appel_ancien_sans_parametre_inchange(self):
         v = self.vm.valider(REPONSE, "m1", [])

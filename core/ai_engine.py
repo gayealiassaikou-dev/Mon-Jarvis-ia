@@ -1945,6 +1945,7 @@ class AIEngine:
     outils=None,
     mode_action=False,
     timeout=30,
+    parametres_supplementaires=None,
 ):
         messages = []
         if contexte:
@@ -1961,6 +1962,8 @@ class AIEngine:
         # a relancer un outil.
         for iteration in range(5):
             payload = {"model": model, "messages": messages}
+            if parametres_supplementaires:
+                payload.update(parametres_supplementaires)
 
             if outils:
                 payload["tools"] = outils
@@ -2137,6 +2140,9 @@ class AIEngine:
             outils=self._obtenir_outils_autorises(),
             mode_action=self.mode_action,
             timeout=90,
+            parametres_supplementaires={
+                "chat_template_kwargs": {"enable_thinking": False}
+            },
         )
 
     def _demander_gemini(self, message, contexte="", historique=None):
