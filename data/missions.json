@@ -43,29 +43,42 @@
                     "id": "1639b518",
                     "agent": "01_developpeur",
                     "objectif": "Créer le fichier 'espace_travail/demo.txt' contenant le texte 'Bonjour Jarvis'.",
-                    "statut": "nouvelle",
+                    "statut": "terminee",
                     "dependances": [],
-                    "resultat": null,
+                    "resultat": "Le fichier **espace_travail/demo.txt** a été créé avec le texte :\n\n```\nBonjour Jarvis\n```",
                     "date_creation": "2026-11-15T00:39:10",
-                    "date_maj": "2026-11-15T00:39:10"
+                    "date_maj": "2026-11-15T00:40:53"
                 },
                 {
                     "id": "08ab2615",
                     "agent": "08_testeur_ia",
                     "objectif": "Lire le fichier 'espace_travail/demo.txt' et vérifier que son contenu est exactement 'Bonjour Jarvis'.",
-                    "statut": "nouvelle",
+                    "statut": "terminee",
                     "dependances": [
                         "1639b518"
                     ],
-                    "resultat": null,
+                    "resultat": "Le contenu du fichier **espace_travail/demo.txt** a bien été lu et correspond exactement à :\n\n```\nBonjour Jarvis\n```",
                     "date_creation": "2026-11-15T00:39:10",
-                    "date_maj": "2026-11-15T00:39:10"
+                    "date_maj": "2026-11-15T00:41:39"
                 }
             ],
             "priorite": "normale",
-            "statut": "en_cours",
+            "statut": "terminee",
             "date_creation": "2026-11-15T00:38:28",
-            "date_maj": "2026-11-15T00:38:28"
+            "date_maj": "2026-11-15T00:41:39"
+        },
+        {
+            "id": "0e327958",
+            "nom": "Créer le fichier espace_travail/demo.txt contenant le texte 'Bonjour Jarvis'.",
+            "objectif": "Créer le fichier 'espace_travail/demo.txt' contenant le texte 'Bonjour Jarvis'.",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T00:40:35",
+            "date_maj": "2026-11-15T00:40:53"
         }
     ]
 }
