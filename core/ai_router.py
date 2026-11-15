@@ -107,7 +107,7 @@ class AIRouter:
         return sorted(self.fournisseurs, key=cle)
 
 
-    def demander(self, message, contexte="", historique=None):
+    def demander(self, message, contexte="", historique=None, on_chunk=None):
 
         erreurs = []
 
@@ -138,7 +138,7 @@ class AIRouter:
 
                 elif fournisseur == "gemini":
                     reponse = self.ai_engine._demander_gemini(
-                        message, contexte, historique
+                        message, contexte, historique, on_chunk=on_chunk
                     )
 
                 elif fournisseur == "openrouter":

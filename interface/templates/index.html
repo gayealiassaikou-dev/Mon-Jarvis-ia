@@ -624,6 +624,10 @@ async function envoyer(texte) {
         zone.innerHTML = '';
         zone.appendChild(zoneEtapes);
 
+        // Zone pour le streaming des chunks LLM
+        let zoneStream = null;
+        let bufferChunks = '';
+
         const reader = r.body.getReader();
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
@@ -654,6 +658,19 @@ async function envoyer(texte) {
                             .map(m => '· ' + escapeHtml(m))
                             .join('<br>');
                     }
+                } else if (payload.type === 'chunk') {
+                    const texte = payload.texte || '';
+                    if (texte) {
+                        bufferChunks += texte;
+                        if (!zoneStream) {
+                            // Cacher les etapes des qu'on a un chunk
+                            zoneEtapes.style.display = 'none';
+                            zoneStream = document.createElement('div');
+                            zone.appendChild(zoneStream);
+                        }
+                        zoneStream.textContent = bufferChunks;
+                        defiler();
+                    }
                 } else if (payload.type === 'final') {
                     reponseFinale = payload.reponse || '';
                     ouvrirUrlFinal = payload.ouvrir_url || null;
@@ -670,7 +687,14 @@ async function envoyer(texte) {
         }
 
         zone.innerHTML = '';
-        await ecrire(zone, reponseFinale || 'Reponse vide.');
+        if (zoneStream && bufferChunks) {
+            // Chunks deja affiches - juste rendre le markdown final
+            zone.innerHTML = markdown(reponseFinale || bufferChunks);
+            defiler();
+        } else {
+            // Pas de streaming : utiliser l'animation typing classique
+            await ecrire(zone, reponseFinale || 'Reponse vide.');
+        }
         if (lectureVocaleActivee) {
             await lireReponseAudio(reponseFinale || 'Reponse vide.', zone);
         }

@@ -23,20 +23,20 @@ class TestRouteurDoubleExecution(unittest.TestCase):
         return "Dossier cree : " + chemin
 
     def agit_puis_plante(self, nom, erreur):
-        def faux(message, contexte="", historique=None):
+        def faux(message, contexte="", historique=None, **kwargs):
             self.appels_fournisseurs.append(nom)
             self.moteur._executer_outil("creer_dossier", {"chemin": self.chemin})
             raise Exception(erreur)
         return faux
 
     def plante(self, nom, erreur):
-        def faux(message, contexte="", historique=None):
+        def faux(message, contexte="", historique=None, **kwargs):
             self.appels_fournisseurs.append(nom)
             raise Exception(erreur)
         return faux
 
     def repond(self, nom, texte):
-        def faux(message, contexte="", historique=None):
+        def faux(message, contexte="", historique=None, **kwargs):
             self.appels_fournisseurs.append(nom)
             return texte
         return faux

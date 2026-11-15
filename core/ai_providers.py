@@ -257,7 +257,7 @@ class AIProvidersMixin:
             },
         )
 
-    def _demander_gemini(self, message, contexte="", historique=None):
+    def _demander_gemini(self, message, contexte="", historique=None, on_chunk=None):
         contents = []
 
         if historique:
@@ -282,6 +282,51 @@ class AIProvidersMixin:
         for iteration in range(5):
             if iteration > 0 and "toolConfig" in payload:
                 payload["toolConfig"]["functionCallingConfig"]["mode"] = "AUTO"
+
+            # Streaming uniquement si on_chunk fourni ET pas d'outils forces
+            # (sinon on garde le mode classique pour detecter les functionCall)
+            use_stream = on_chunk is not None and not self.mode_action and iteration == 0
+
+            if use_stream:
+                stream_url = url.replace(":generateContent", ":streamGenerateContent") + "?alt=sse"
+                textes_stream = []
+                try:
+                    with requests.post(
+                        stream_url,
+                        headers={"x-goog-api-key": self.gemini_key},
+                        json=payload,
+                        timeout=60,
+                        stream=True,
+                    ) as r:
+                        r.raise_for_status()
+                        for ligne in r.iter_lines():
+                            if not ligne:
+                                continue
+                            ligne_str = ligne.decode("utf-8") if isinstance(ligne, bytes) else ligne
+                            if ligne_str.startswith("data: "):
+                                ligne_str = ligne_str[6:]
+                            if ligne_str.strip() == "[DONE]":
+                                break
+                            try:
+                                import json as _json_s
+                                chunk = _json_s.loads(ligne_str)
+                                parts = chunk.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                                for p in parts:
+                                    t = p.get("text", "")
+                                    if t:
+                                        textes_stream.append(t)
+                                        try:
+                                            on_chunk(t)
+                                        except Exception:
+                                            pass
+                            except Exception:
+                                continue
+                    if textes_stream:
+                        return "".join(textes_stream)
+                except Exception:
+                    # Fallback : revenir au mode classique
+                    pass
+
             reponse = requests.post(url, headers={"x-goog-api-key": self.gemini_key}, json=payload, timeout=15)
             reponse.raise_for_status()
             data = reponse.json()

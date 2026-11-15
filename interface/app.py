@@ -265,11 +265,19 @@ def chat_stream():
                 resultat_final["reponse"] = "Je lance : " + titre + "."
                 resultat_final["ouvrir_url"] = ouvrir_url
             else:
+                # Callback qui pousse les chunks LLM dans la queue
+                def _on_chunk(texte_chunk):
+                    try:
+                        q.put({"type": "chunk", "texte": texte_chunk})
+                    except Exception:
+                        pass
+
                 resultat_final["reponse"] = jarvis.traiter_commande(
                     message,
                     retourner_reponse=True,
                     activity_tracker=activity_tracker,
                     demande_id=demande_id,
+                    on_chunk=_on_chunk,
                 )
             resultat_final["succes"] = True
         except Exception as e:
@@ -294,6 +302,14 @@ def chat_stream():
                 signal = q.get(timeout=0.5)
                 if signal is None:
                     break
+                # Chunk LLM recu : envoyer immediatement en SSE
+                if isinstance(signal, dict) and signal.get("type") == "chunk":
+                    payload = {
+                        "type": "chunk",
+                        "texte": signal.get("texte", ""),
+                    }
+                    yield f"data: {_json.dumps(payload)}\n\n"
+                    continue
             except queue.Empty:
                 pass
 

@@ -10,7 +10,7 @@ class TestAIEngineOrigine(unittest.TestCase):
         moteur = AIEngine.__new__(AIEngine)
         moteur.router = Mock()
         moteur.router.demander.side_effect = (
-            lambda *args: moteur._message_utilisateur_courant
+            lambda *args, **kwargs: moteur._message_utilisateur_courant
         )
         moteur.outils_autorises = ["ancien_outil"]
         moteur.mode_action = True

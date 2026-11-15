@@ -17,20 +17,20 @@ class TestRouteurLectureSeule(unittest.TestCase):
         return "contenu liste"
 
     def lit_puis_plante(self, nom, erreur):
-        def faux(message, contexte="", historique=None):
+        def faux(message, contexte="", historique=None, **kwargs):
             self.appels_fournisseurs.append(nom)
             self.moteur._executer_outil("lister_fichiers", {"dossier": "."})
             raise Exception(erreur)
         return faux
 
     def repond(self, nom, texte):
-        def faux(message, contexte="", historique=None):
+        def faux(message, contexte="", historique=None, **kwargs):
             self.appels_fournisseurs.append(nom)
             return texte
         return faux
 
     def plante(self, nom, erreur):
-        def faux(message, contexte="", historique=None):
+        def faux(message, contexte="", historique=None, **kwargs):
             self.appels_fournisseurs.append(nom)
             raise Exception(erreur)
         return faux

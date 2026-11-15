@@ -81,6 +81,7 @@ class AIEngine(AIProvidersMixin, VerifiersMixin):
         outils_autorises=None,
         mode_action=False,
         message_utilisateur_origine=None,
+        on_chunk=None,
     ):
         # Nouvelle demande : aucune action n'est encore engagée.
         self.action_engagee = False
@@ -117,6 +118,7 @@ class AIEngine(AIProvidersMixin, VerifiersMixin):
                 message,
                 contexte,
                 historique,
+                on_chunk=on_chunk,
             )
             try:
                 budget_guard.enregistrer_appel(
