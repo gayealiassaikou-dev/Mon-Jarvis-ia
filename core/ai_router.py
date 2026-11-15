@@ -40,6 +40,9 @@ class AIRouter:
         )
 
         self.indisponibles = {}
+        # Trackers de latence et echecs consecutifs par provider
+        self.latences = {}  # {nom: [sec, sec, ...]} - 10 dernieres
+        self.echecs_consecutifs = {}  # {nom: count}
         self._persister("restaurer_blocages", self)
 
     def disponible(self, fournisseur):
@@ -68,17 +71,65 @@ class AIRouter:
         self.indisponibles[fournisseur] = time.time() + secondes
         self._persister("marquer_bloque", fournisseur, erreur, secondes)
 
+    def _enregistrer_latence(self, fournisseur, secondes):
+        """Garde les 10 dernieres latences par provider."""
+        lst = self.latences.setdefault(fournisseur, [])
+        lst.append(secondes)
+        if len(lst) > 10:
+            del lst[0]
+        # Succes = reset echecs consecutifs
+        self.echecs_consecutifs[fournisseur] = 0
+
+    def _enregistrer_echec(self, fournisseur):
+        """Incremente les echecs consecutifs."""
+        self.echecs_consecutifs[fournisseur] = self.echecs_consecutifs.get(fournisseur, 0) + 1
+
+    def _latence_moyenne(self, fournisseur):
+        """Latence moyenne (None si jamais appele)."""
+        lst = self.latences.get(fournisseur, [])
+        if not lst:
+            return None
+        return sum(lst) / len(lst)
+
+    def _fournisseurs_ordonnes(self):
+        """Trie les providers par : echecs consecutifs, puis latence moyenne."""
+        def cle(nom):
+            echecs = self.echecs_consecutifs.get(nom, 0)
+            lat = self._latence_moyenne(nom)
+            # Echecs consecutifs = priorite haute (mauvaise)
+            # Latence moyenne = plus c'est rapide mieux c'est
+            # Jamais appele (lat=None) = neutre
+            if lat is None:
+                lat_rank = 999  # entre rapide (0-15) et lent (>15)
+            else:
+                lat_rank = lat
+            return (echecs, lat_rank)
+        return sorted(self.fournisseurs, key=cle)
+
+
     def demander(self, message, contexte="", historique=None):
 
         erreurs = []
 
-        for fournisseur in self.fournisseurs:
+        # Court-circuit : si 2 providers consecutifs ont echoue 3+ fois,
+        # on les skip pour aller plus vite au provider sain
+        ordre = self._fournisseurs_ordonnes()
+        echecs_rapides = 0
+
+        for fournisseur in ordre:
 
             if not self.disponible(fournisseur):
                 continue
 
+            # Skip si ce provider a 3+ echecs consecutifs ET on a deja 2 skips
+            if self.echecs_consecutifs.get(fournisseur, 0) >= 3 and echecs_rapides < 2:
+                echecs_rapides += 1
+                erreurs.append(f"{fournisseur}: skip (3+ echecs consecutifs)")
+                continue
+
             try:
                 print(f"[AI Router] Tentative : {fournisseur}")
+                _t_debut = time.time()
 
                 if fournisseur == "groq":
                     reponse = self.ai_engine._demander_groq(
@@ -141,9 +192,13 @@ class AIRouter:
                     )
                     continue
 
+                # Succes : enregistrer latence
+                self._enregistrer_latence(fournisseur, time.time() - _t_debut)
                 return reponse
 
             except Exception as e:
+                # Echec : incrementer compteur
+                self._enregistrer_echec(fournisseur)
                 erreurs.append(
                     f"{fournisseur}: {masquer_secrets(str(e))}"
                 )
