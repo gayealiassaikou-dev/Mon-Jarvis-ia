@@ -87,4 +87,84 @@ def tenter(objectif):
         except Exception as e:
             return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
 
+    # 4. Creer un dossier
+    m = re.search(r"(?:cree|creer|créé|créer)\s+(?:le\s+|un\s+)?dossier\s+([^\s]+)", obj, re.IGNORECASE)
+    if m:
+        chemin = m.group(1).strip("'\",.;")
+        try:
+            from core.tools import creer_dossier
+            r = creer_dossier(chemin)
+            return {"ok": True, "outil": "creer_dossier", "chemin": chemin,
+                    "message": f"Dossier {chemin} cree. {str(r)[:200]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 5. Supprimer un dossier
+    m = re.search(r"supprime(?:r)?\s+(?:le\s+|un\s+)?dossier\s+([^\s]+)", obj, re.IGNORECASE)
+    if m:
+        chemin = m.group(1).strip("'\",.;")
+        try:
+            from core.tools import supprimer_dossier
+            r = supprimer_dossier(chemin)
+            return {"ok": True, "outil": "supprimer_dossier", "chemin": chemin,
+                    "message": f"Dossier {chemin} supprime. {str(r)[:200]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 6. Lister un dossier
+    m = re.search(r"(?:liste|affiche|montre)\s+(?:les\s+)?(?:fichiers?|contenu)\s+(?:de\s+|du\s+|dans\s+)?([^\s]*)", obj, re.IGNORECASE)
+    if m:
+        dossier = (m.group(1) or ".").strip("'\",.;") or "."
+        try:
+            from core.tools import lister_fichiers
+            r = lister_fichiers(dossier)
+            return {"ok": True, "outil": "lister_fichiers", "dossier": dossier,
+                    "message": f"Contenu de {dossier} :\n{str(r)[:500]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 7. Creer un projet
+    m = re.search(r"(?:cree|creer|créé|créer)\s+(?:le\s+|un\s+)?projet\s+(.+)", obj, re.IGNORECASE)
+    if m:
+        nom = m.group(1).strip("'\",.;")
+        try:
+            from core.tools import creer_projet
+            r = creer_projet(nom)
+            return {"ok": True, "outil": "creer_projet", "nom": nom,
+                    "message": f"Projet '{nom}' cree. {str(r)[:200]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 8. Lister projets
+    if re.search(r"(?:liste|affiche|montre)\s+(?:les\s+|mes\s+)?projets", obj, re.IGNORECASE):
+        try:
+            from core.tools import lister_projets
+            r = lister_projets()
+            return {"ok": True, "outil": "lister_projets",
+                    "message": f"Projets :\n{str(r)[:800]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 9. Lister taches
+    if re.search(r"(?:liste|affiche|montre)\s+(?:les\s+|mes\s+)?taches", obj, re.IGNORECASE):
+        try:
+            from core.tools import lister_taches
+            r = lister_taches()
+            return {"ok": True, "outil": "lister_taches",
+                    "message": f"Taches :\n{str(r)[:800]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 10. Terminer une tache
+    m = re.search(r"(?:termine|terminer|finis|finir)\s+(?:la\s+)?tache\s+(.+)", obj, re.IGNORECASE)
+    if m:
+        nom = m.group(1).strip("'\",.;")
+        try:
+            from core.tools import terminer_tache
+            r = terminer_tache(nom)
+            return {"ok": True, "outil": "terminer_tache", "nom": nom,
+                    "message": f"Tache '{nom}' terminee. {str(r)[:200]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
     return None
