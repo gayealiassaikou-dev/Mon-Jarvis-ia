@@ -1944,7 +1944,7 @@ class AIEngine:
     historique=None,
     outils=None,
     mode_action=False,
-    timeout=30,
+    timeout=15,
     parametres_supplementaires=None,
 ):
         messages = []
@@ -2139,7 +2139,7 @@ class AIEngine:
             historique,
             outils=self._obtenir_outils_autorises(),
             mode_action=self.mode_action,
-            timeout=90,
+            timeout=20,
             parametres_supplementaires={
                 "chat_template_kwargs": {"enable_thinking": False}
             },
@@ -2162,7 +2162,7 @@ class AIEngine:
         url = self.gemini_url
 
         for _ in range(5):
-            reponse = requests.post(url, headers={"x-goog-api-key": self.gemini_key}, json=payload, timeout=30)
+            reponse = requests.post(url, headers={"x-goog-api-key": self.gemini_key}, json=payload, timeout=15)
             reponse.raise_for_status()
             data = reponse.json()
             candidat = data["candidates"][0]["content"]
