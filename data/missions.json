@@ -3936,6 +3936,1104 @@
             "statut": "annulee",
             "date_creation": "2026-11-15T21:24:35",
             "date_maj": "2026-11-15T21:24:35"
+        },
+        {
+            "id": "bf3027d3",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "a696c0bd",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:29:40",
+                    "date_maj": "2026-11-15T21:29:41"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:29:40",
+            "date_maj": "2026-11-15T21:29:41"
+        },
+        {
+            "id": "ba2cd326",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "1b50f71d",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:29:41",
+                    "date_maj": "2026-11-15T21:29:41"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:29:41",
+            "date_maj": "2026-11-15T21:29:41"
+        },
+        {
+            "id": "e77a8b30",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "97cecb58",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_97cecb58.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:29:41",
+                    "date_maj": "2026-11-15T21:29:41"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:29:41",
+            "date_maj": "2026-11-15T21:29:41"
+        },
+        {
+            "id": "a3808f26",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "428674a1",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:29:42",
+                    "date_maj": "2026-11-15T21:29:42"
+                },
+                {
+                    "id": "e1ce1aaa",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "428674a1"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:29:42",
+                    "date_maj": "2026-11-15T21:29:42"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:29:42",
+            "date_maj": "2026-11-15T21:29:42"
+        },
+        {
+            "id": "8c539608",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "d50d771e",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:29:42",
+                    "date_maj": "2026-11-15T21:29:42"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:29:42",
+            "date_maj": "2026-11-15T21:29:42"
+        },
+        {
+            "id": "68c5e353",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "f5294887",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:31:53",
+                    "date_maj": "2026-11-15T21:31:53"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:31:53",
+            "date_maj": "2026-11-15T21:31:53"
+        },
+        {
+            "id": "6d28fa8e",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "7171fad2",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:31:53",
+                    "date_maj": "2026-11-15T21:31:53"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:31:53",
+            "date_maj": "2026-11-15T21:31:53"
+        },
+        {
+            "id": "e4055d9e",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "fe44563a",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_fe44563a.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:31:53",
+                    "date_maj": "2026-11-15T21:31:54"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:31:53",
+            "date_maj": "2026-11-15T21:31:54"
+        },
+        {
+            "id": "98ef8f60",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "46826b8a",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:31:54",
+                    "date_maj": "2026-11-15T21:31:54"
+                },
+                {
+                    "id": "f5e6b8c2",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "46826b8a"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:31:54",
+                    "date_maj": "2026-11-15T21:31:54"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:31:54",
+            "date_maj": "2026-11-15T21:31:54"
+        },
+        {
+            "id": "29710060",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "cc1d708a",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:31:54",
+                    "date_maj": "2026-11-15T21:31:55"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:31:54",
+            "date_maj": "2026-11-15T21:31:55"
+        },
+        {
+            "id": "f0ea447d",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "a475fbee",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:32:33",
+                    "date_maj": "2026-11-15T21:32:33"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:32:32",
+            "date_maj": "2026-11-15T21:32:33"
+        },
+        {
+            "id": "bce0c6f0",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "7a9d57c3",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:32:33",
+                    "date_maj": "2026-11-15T21:32:33"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:32:33",
+            "date_maj": "2026-11-15T21:32:33"
+        },
+        {
+            "id": "6a35683d",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "bf284c3e",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_bf284c3e.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:32:33",
+                    "date_maj": "2026-11-15T21:32:33"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:32:33",
+            "date_maj": "2026-11-15T21:32:33"
+        },
+        {
+            "id": "908d9598",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "dcbc72cb",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:32:34",
+                    "date_maj": "2026-11-15T21:32:34"
+                },
+                {
+                    "id": "d988b295",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "dcbc72cb"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:32:34",
+                    "date_maj": "2026-11-15T21:32:34"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:32:34",
+            "date_maj": "2026-11-15T21:32:34"
+        },
+        {
+            "id": "1ea57f25",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "84639097",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:32:34",
+                    "date_maj": "2026-11-15T21:32:34"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:32:34",
+            "date_maj": "2026-11-15T21:32:34"
+        },
+        {
+            "id": "c6b8419d",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "e3d4d0a8",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:33:15",
+                    "date_maj": "2026-11-15T21:33:15"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:33:15",
+            "date_maj": "2026-11-15T21:33:15"
+        },
+        {
+            "id": "b0e384ea",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "3d85c7f7",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:33:16",
+                    "date_maj": "2026-11-15T21:33:16"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:33:15",
+            "date_maj": "2026-11-15T21:33:16"
+        },
+        {
+            "id": "7670270a",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "d475b3a3",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_d475b3a3.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:33:16",
+                    "date_maj": "2026-11-15T21:33:16"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:33:16",
+            "date_maj": "2026-11-15T21:33:16"
+        },
+        {
+            "id": "f9ae700b",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "d50ddb50",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:33:16",
+                    "date_maj": "2026-11-15T21:33:17"
+                },
+                {
+                    "id": "f6c6da08",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "d50ddb50"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:33:16",
+                    "date_maj": "2026-11-15T21:33:17"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:33:16",
+            "date_maj": "2026-11-15T21:33:17"
+        },
+        {
+            "id": "122b588b",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "eb77df44",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:33:17",
+                    "date_maj": "2026-11-15T21:33:17"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:33:17",
+            "date_maj": "2026-11-15T21:33:17"
+        },
+        {
+            "id": "e28f8bc3",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "b758b061",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:34:21",
+                    "date_maj": "2026-11-15T21:34:21"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:34:21",
+            "date_maj": "2026-11-15T21:34:21"
+        },
+        {
+            "id": "aa43e688",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "e2030f21",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:34:21",
+                    "date_maj": "2026-11-15T21:34:21"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:34:21",
+            "date_maj": "2026-11-15T21:34:21"
+        },
+        {
+            "id": "e51474c2",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "d1844dd6",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_d1844dd6.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:34:21",
+                    "date_maj": "2026-11-15T21:34:22"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:34:21",
+            "date_maj": "2026-11-15T21:34:22"
+        },
+        {
+            "id": "ca7050dd",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "29dbe68e",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:34:22",
+                    "date_maj": "2026-11-15T21:34:22"
+                },
+                {
+                    "id": "88c259a4",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "29dbe68e"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:34:22",
+                    "date_maj": "2026-11-15T21:34:22"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:34:22",
+            "date_maj": "2026-11-15T21:34:22"
+        },
+        {
+            "id": "06b2f5d4",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "eaf140f9",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:34:22",
+                    "date_maj": "2026-11-15T21:34:23"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:34:22",
+            "date_maj": "2026-11-15T21:34:23"
+        },
+        {
+            "id": "e5f992a1",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "475e23a6",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:36:23",
+                    "date_maj": "2026-11-15T21:36:23"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:36:23",
+            "date_maj": "2026-11-15T21:36:23"
+        },
+        {
+            "id": "e8fb7ea2",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "c1a62066",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:36:24",
+                    "date_maj": "2026-11-15T21:36:24"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:36:24",
+            "date_maj": "2026-11-15T21:36:24"
+        },
+        {
+            "id": "964cc691",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "5774ed37",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_5774ed37.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:36:24",
+                    "date_maj": "2026-11-15T21:36:24"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:36:24",
+            "date_maj": "2026-11-15T21:36:24"
+        },
+        {
+            "id": "9caa9ea2",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "21d64dd9",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:36:24",
+                    "date_maj": "2026-11-15T21:36:25"
+                },
+                {
+                    "id": "919fc7af",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "21d64dd9"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:36:25",
+                    "date_maj": "2026-11-15T21:36:25"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:36:24",
+            "date_maj": "2026-11-15T21:36:25"
+        },
+        {
+            "id": "7f5f6b3c",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "82c343c5",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:36:25",
+                    "date_maj": "2026-11-15T21:36:25"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:36:25",
+            "date_maj": "2026-11-15T21:36:25"
+        },
+        {
+            "id": "9caaca05",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "98127b56",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:38:22",
+                    "date_maj": "2026-11-15T21:38:22"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:38:22",
+            "date_maj": "2026-11-15T21:38:22"
+        },
+        {
+            "id": "ad38eda6",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "b1120bd2",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:38:23",
+                    "date_maj": "2026-11-15T21:38:23"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:38:22",
+            "date_maj": "2026-11-15T21:38:23"
+        },
+        {
+            "id": "00cccd2b",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "514b8e9a",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_514b8e9a.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:38:23",
+                    "date_maj": "2026-11-15T21:38:23"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:38:23",
+            "date_maj": "2026-11-15T21:38:23"
+        },
+        {
+            "id": "3f75b75f",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "f6fc901f",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:38:23",
+                    "date_maj": "2026-11-15T21:38:24"
+                },
+                {
+                    "id": "fde0751c",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "f6fc901f"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:38:24",
+                    "date_maj": "2026-11-15T21:38:24"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:38:23",
+            "date_maj": "2026-11-15T21:38:24"
+        },
+        {
+            "id": "0ad61d15",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "40eae42b",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:38:24",
+                    "date_maj": "2026-11-15T21:38:24"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:38:24",
+            "date_maj": "2026-11-15T21:38:24"
+        },
+        {
+            "id": "16ca662b",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "f6437739",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:39:33",
+                    "date_maj": "2026-11-15T21:39:33"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:39:33",
+            "date_maj": "2026-11-15T21:39:33"
+        },
+        {
+            "id": "786e0c98",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "d331af44",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:39:33",
+                    "date_maj": "2026-11-15T21:39:33"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:39:33",
+            "date_maj": "2026-11-15T21:39:34"
+        },
+        {
+            "id": "9c9e3ff1",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "2ef9e60f",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_2ef9e60f.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:39:34",
+                    "date_maj": "2026-11-15T21:39:34"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:39:34",
+            "date_maj": "2026-11-15T21:39:34"
+        },
+        {
+            "id": "c6432daf",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "41528d5b",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:39:34",
+                    "date_maj": "2026-11-15T21:39:34"
+                },
+                {
+                    "id": "f880944a",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "41528d5b"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:39:34",
+                    "date_maj": "2026-11-15T21:39:35"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:39:34",
+            "date_maj": "2026-11-15T21:39:35"
+        },
+        {
+            "id": "c16a6181",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "9697b96d",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:39:35",
+                    "date_maj": "2026-11-15T21:39:35"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:39:35",
+            "date_maj": "2026-11-15T21:39:35"
+        },
+        {
+            "id": "79b888bb",
+            "nom": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "1e67ad09",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/e2e_det.txt contenant DET_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_det.txt ecrit (6 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:40:25",
+                    "date_maj": "2026-11-15T21:40:25"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:40:25",
+            "date_maj": "2026-11-15T21:40:25"
+        },
+        {
+            "id": "73d8b857",
+            "nom": "Cree un fichier via JSON",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "5728266b",
+                    "agent": "01_developpeur",
+                    "objectif": "Cree un fichier espace_travail/e2e_json.txt contenant JSON_OK",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/e2e_json.txt ecrit (7 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:40:25",
+                    "date_maj": "2026-11-15T21:40:25"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:40:25",
+            "date_maj": "2026-11-15T21:40:25"
+        },
+        {
+            "id": "918d8348",
+            "nom": "Cree fichier via python",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "d5aef41b",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script qui cree espace_travail/e2e_py.txt",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Code ecrit dans espace_travail/sous_tache_d5aef41b.py et execute. Sortie: SUCCES : le programme s'est termine avec le code 0.\n--- sortie ---\nOK\n--- erreurs ---\n",
+                    "date_creation": "2026-11-15T21:40:26",
+                    "date_maj": "2026-11-15T21:40:26"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:40:26",
+            "date_maj": "2026-11-15T21:40:26"
+        },
+        {
+            "id": "9de05ee5",
+            "nom": "Test dependances",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "9c5e79be",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step1.txt contenant STEP1",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Fichier espace_travail/step1.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:40:26",
+                    "date_maj": "2026-11-15T21:40:26"
+                },
+                {
+                    "id": "1a08d9dd",
+                    "agent": "01_developpeur",
+                    "objectif": "Ecris le fichier espace_travail/step2.txt contenant STEP2",
+                    "statut": "terminee",
+                    "dependances": [
+                        "9c5e79be"
+                    ],
+                    "resultat": "Fichier espace_travail/step2.txt ecrit (5 chars) via execution deterministe.",
+                    "date_creation": "2026-11-15T21:40:26",
+                    "date_maj": "2026-11-15T21:40:26"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T21:40:26",
+            "date_maj": "2026-11-15T21:40:26"
+        },
+        {
+            "id": "424bd0c2",
+            "nom": "Test bavard",
+            "objectif": "",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "b5c93cbe",
+                    "agent": "01_developpeur",
+                    "objectif": "Developpe un script Python qui cree espace_travail/faux.txt",
+                    "statut": "bloquee",
+                    "dependances": [],
+                    "resultat": "Voulez-vous que je cree ce fichier ? Confirmez avant d'agir.",
+                    "date_creation": "2026-11-15T21:40:26",
+                    "date_maj": "2026-11-15T21:40:27"
+                }
+            ],
+            "priorite": "haute",
+            "statut": "annulee",
+            "date_creation": "2026-11-15T21:40:26",
+            "date_maj": "2026-11-15T21:40:27"
         }
     ]
 }

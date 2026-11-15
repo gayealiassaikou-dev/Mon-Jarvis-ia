@@ -1,12 +1,12 @@
 # Etat de Jarvis - 15 novembre 2026
 
-## Note globale : 92%
+## Note globale : 94%
 
 ## Architecture
 
 ### Modules core/ (54 fichiers)
 
-**Streaming LLM** : `ai_providers._demander_gemini(on_chunk)` -> `ai_router.demander(on_chunk)` -> `ai_engine.demander(on_chunk)` -> `jarvis.traiter_commande(on_chunk)` -> `/chat/stream` SSE chunks
+**Streaming LLM** : Gemini (phrase par phrase) + Groq/Mistral/OpenRouter (mot par mot) -> `ai_router.demander(on_chunk)` -> `ai_engine.demander(on_chunk)` -> `jarvis.traiter_commande(on_chunk)` -> `/chat/stream` SSE chunks
 
 ### Autres modules
 - **Orchestration** : jarvis.py (723L), mission_manager.py (301L), mission_runner.py, subtask_executor.py (217L), mission_planner.py
@@ -67,6 +67,7 @@ input -> jarvis.traiter_commande(on_chunk=...)
 - SSE backend /chat/stream
 - SSE frontend interface web
 - **Streaming LLM natif Gemini** (chunks phrase par phrase)
+- **Streaming OpenAI-compatibles** (Groq/Mistral/OpenRouter mot par mot)
 - Notifications Android
 - Sync auto FTS5
 - Retry + conseils apprentissage actif
@@ -114,8 +115,7 @@ input -> jarvis.traiter_commande(on_chunk=...)
 
 ## Limites connues
 
-1. **Streaming Gemini uniquement** (Groq/Mistral/OpenRouter pas encore streames)
-2. Velixir prod : P50 1.2s (free tier lent, pas le code)
+1. Velixir prod : P50 1.2s (free tier lent, pas le code)
 3. Groq lent (~15-20s) - retrogade apres Gemini
 4. verifiers.py 775L - dernier gros module
 5. Supabase dependance critique (fallback local si down)
@@ -146,12 +146,10 @@ python -c "from interface.app import app; app.run(host='127.0.0.1', port=5001)"
 
 ## Prochaines priorites
 
-1. Streaming OpenAI-compatibles (Groq/Mistral) - 1h
-2. Split verifiers.py (775L) - 2h
-3. Test charge prod Velixir (script `scripts/test_charge_velixir.py`) - 30 min
-4. Fix residus E2E (`.github/workflows` genere par LLM pendant tests)
-5. Migrer Velixir vers Render/Fly.io si prod reelle (latence free tier)
+1. Split verifiers.py (775L) - 2h
+2. Test charge prod Velixir (script `scripts/test_charge_velixir.py`) - 30 min
+3. Migrer Velixir vers Render/Fly.io si prod reelle (latence free tier)
 
 ## Historique
 
-- 15/11/2026 : ~44 commits, 92% (vs 72% matin). Streaming LLM natif, split tools/jarvis/decision_engine, SSE, notifications, kill switches, apprentissage actif, 26 tests offline, 10 bugs fixes
+- 15/11/2026 : ~50 commits, 94% (vs 72% matin). Streaming LLM natif (Gemini + Groq/Mistral/OpenRouter mot par mot), split tools/jarvis/decision_engine, SSE, notifications, kill switches, apprentissage actif, 26 tests offline, 10 bugs fixes
