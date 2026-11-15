@@ -57,9 +57,15 @@ def executer_mission(mission_id, max_etapes=10):
                 print(f"[OK] {st['id']} (deterministe)")
                 etapes += 1
                 continue
-            # 2. Sinon, pipeline LLM classique
+            # 2. Sinon, pipeline LLM classique (avec conseils d'apprentissage)
+            from core import learning as _learning
+            objectif_enrichi = st["objectif"]
+            conseils = _learning.conseils_pour(st["objectif"])
+            if conseils:
+                objectif_enrichi = st["objectif"] + conseils
+                print(f"[Apprentissage] {conseils.count(chr(10)) - 2} conseil(s) injecte(s)")
             resultats_avant = len(jarvis.ai_engine.derniers_resultats_outils)
-            reponse = jarvis.traiter_commande(st["objectif"], retourner_reponse=True, agent_force=st["agent"])
+            reponse = jarvis.traiter_commande(objectif_enrichi, retourner_reponse=True, agent_force=st["agent"])
             nouveaux_outils = jarvis.ai_engine.derniers_resultats_outils[resultats_avant:]
             SIGNES_ECHEC = [
                 "validation echouee", "je n'ai pas pu confirmer",
@@ -136,9 +142,19 @@ def executer_mission(mission_id, max_etapes=10):
 
             if not est_echec:
                 mm.mettre_a_jour_sous_tache(mission_id, st["id"], "terminee", resultat=reponse[:500])
+                try:
+                    from core import learning as _learning
+                    _learning.enregistrer_solution(st["objectif"], reponse[:300], st["agent"])
+                except Exception:
+                    pass
                 print(f"[OK] {st['id']}")
             else:
                 mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(reponse)[:500])
+                try:
+                    from core import learning as _learning
+                    _learning.enregistrer_echec(st["objectif"], str(reponse)[:200], st["agent"])
+                except Exception:
+                    pass
                 print(f"[ECHEC] {st['id']} : validation reelle echouee")
                 mm.mettre_a_jour_statut(mission_id, "bloquee")
                 return {"ok": False, "statut": "bloquee", "etapes": etapes + 1, "echec_sur": st["id"]}
