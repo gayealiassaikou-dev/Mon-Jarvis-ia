@@ -13,12 +13,28 @@ def _pretes(sous_taches, statut_map):
     return pretes
 
 
-def executer_mission(mission_id, max_etapes=10):
+def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
     from core.jarvis import Jarvis
     mm = MissionManager()
     mission = mm.obtenir_mission(mission_id)
     if not mission:
         return {"erreur": "mission introuvable"}
+
+    # Auto-planification : si la mission n'a aucune sous-tache,
+    # on la decompose automatiquement avant execution.
+    if auto_planifier and not mm.obtenir_sous_taches(mission_id):
+        print(f"[Auto-planner] Decomposition de {mission_id}...")
+        try:
+            from core.mission_planner import planifier
+            plan = planifier(mission_id)
+            if not plan.get("ok"):
+                return {
+                    "erreur": f"planification echouee: {plan.get('erreur', 'inconnue')}",
+                    "statut": "planification_echouee",
+                }
+            print(f"[Auto-planner] {plan.get('nb', 0)} sous-tache(s) creee(s).")
+        except Exception as e:
+            return {"erreur": f"planner exception: {type(e).__name__}: {e}"}
 
     jarvis = Jarvis()
     etapes = 0
@@ -26,7 +42,7 @@ def executer_mission(mission_id, max_etapes=10):
     for _ in range(max_etapes):
         sous_taches = mm.obtenir_sous_taches(mission_id)
         if not sous_taches:
-            return {"erreur": "aucune sous-tache"}
+            return {"erreur": "aucune sous-tache apres planification", "statut": "vide"}
 
         statut_map = {st["id"]: st["statut"] for st in sous_taches}
         if all(s == "terminee" for s in statut_map.values()):
@@ -75,6 +91,9 @@ def executer_mission(mission_id, max_etapes=10):
                 "que souhaitez-vous", "voulez-vous que je",
                 "a votre confirmation", "quel scenario",
                 "quelle option", "je ne lancerai aucune modification",
+                "voulez-vous", "souhaitez-vous", "voulez vous",
+                "confirmez", "attendez confirmation",
+                "je peux :", "je peux\u00a0:",
             ]
             # Si l'objectif demande une action concrete, la reponse doit contenir
             # une preuve d'action (pas juste du texte theorique)

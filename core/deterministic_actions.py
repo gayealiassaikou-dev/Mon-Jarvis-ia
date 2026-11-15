@@ -15,10 +15,14 @@ def _extraire_chemin_et_contenu(objectif):
         if m:
             chemin = m.group(1).strip("'\",.;")
             contenu = m.group(2).strip()
-            # Enlever guillemets et texte parasite
+            # Couper au premier " et " ou ", " ou "; " (fin de l'instruction de contenu)
+            for sep in [" et s", " et v", " et p", " et d", " puis ", ", puis", "; "]:
+                if sep in contenu.lower():
+                    contenu = contenu[:contenu.lower().index(sep)]
+            # Enlever guillemets et prefixes
             contenu = contenu.strip('"').strip("'").strip()
             contenu = re.sub(r'^(?:exactement\s+)?(?:la\s+)?(?:chaine|chaîne)\s+', '', contenu, flags=re.IGNORECASE)
-            contenu = contenu.strip('"').strip("'").strip()
+            contenu = contenu.strip('"').strip("'").strip().rstrip(".,;")
             return chemin, contenu
     return None, None
 

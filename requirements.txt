@@ -1,4 +1,4 @@
-# Dependances Jarvis - versions figees dans requirements.lock
+# Dependances Jarvis - versions figees dans requirements.txt
 Flask>=3.0,<4
 requests>=2.31,<3
 python-dotenv>=1.0,<2
