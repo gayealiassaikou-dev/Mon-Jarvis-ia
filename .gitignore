@@ -77,3 +77,24 @@ memory/historique_archive.json
 /data/reprise_en_attente.jsonl
 /data/projet_actif.json
 .env
+
+# Backups aider et patches
+*.bak
+*.bak-*
+*.sauvegarde*
+*.avant_*
+.patches/
+backups/
+
+# aider
+.aider.chat.history.md
+.aider.input.history
+
+# env locaux
+.env.bak*
+.env.*.bak
+.supabase_session*
+
+# donnees volatiles
+*.log
+None
