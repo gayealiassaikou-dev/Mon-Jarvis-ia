@@ -2,6 +2,9 @@ import sys
 import os
 import secrets
 import tempfile
+import queue
+import threading
+import json as _json
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "core"))
 
@@ -228,6 +231,111 @@ def chat():
         "conversation_id": conversation_id,
         "ouvrir_url": ouvrir_url,
     })
+
+
+@app.route("/chat/stream", methods=["POST"])
+def chat_stream():
+    """Version SSE de /chat qui stream les etapes en temps reel."""
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    if not message:
+        return jsonify({"erreur": "Message vide."}), 400
+
+    demande_id = secrets.token_urlsafe(24)
+    activity_tracker.demarrer(demande_id)
+
+    conversation_id = data.get("conversation_id")
+    try:
+        if conversation_id is None:
+            conversation = conversation_store.creer_conversation(message)
+            conversation_id = conversation["id"]
+        conversation_store.ajouter_message(conversation_id, "user", message)
+    except Exception:
+        app.logger.exception("Erreur sauvegarde conversation")
+        return jsonify({"erreur": "Impossible de sauvegarder."}), 500
+
+    q = queue.Queue()
+    resultat_final = {"reponse": "", "ouvrir_url": None, "succes": False}
+
+    def _executer():
+        try:
+            musique = _demande_musique(message)
+            if musique:
+                titre, ouvrir_url = musique
+                resultat_final["reponse"] = "Je lance : " + titre + "."
+                resultat_final["ouvrir_url"] = ouvrir_url
+            else:
+                resultat_final["reponse"] = jarvis.traiter_commande(
+                    message,
+                    retourner_reponse=True,
+                    activity_tracker=activity_tracker,
+                    demande_id=demande_id,
+                )
+            resultat_final["succes"] = True
+        except Exception as e:
+            app.logger.exception("Erreur /chat/stream")
+            resultat_final["reponse"] = f"Erreur interne : {e}"
+        finally:
+            try:
+                activity_tracker.terminer(demande_id, succes=resultat_final["succes"])
+            except Exception:
+                pass
+            q.put(None)
+
+    thread = threading.Thread(target=_executer, daemon=True)
+    thread.start()
+
+    def _generer():
+        etapes_vues = 0
+        yield f"data: {_json.dumps({'type': 'init', 'demande_id': demande_id, 'conversation_id': conversation_id})}\n\n"
+
+        while True:
+            try:
+                signal = q.get(timeout=0.5)
+                if signal is None:
+                    break
+            except queue.Empty:
+                pass
+
+            try:
+                act = activity_tracker.consulter(demande_id)
+                if act:
+                    etapes = act.get("etapes", [])
+                    for i, e in enumerate(etapes[etapes_vues:], start=etapes_vues):
+                        payload = {
+                            "type": "etape",
+                            "index": i,
+                            "message": e.get("message", ""),
+                            "statut": e.get("statut", "information"),
+                            "timestamp": e.get("timestamp", ""),
+                        }
+                        yield f"data: {_json.dumps(payload)}\n\n"
+                    etapes_vues = len(etapes)
+            except Exception:
+                pass
+
+        try:
+            conversation_store.ajouter_message(
+                conversation_id, "assistant", str(resultat_final["reponse"])
+            )
+        except Exception:
+            pass
+        payload_final = {
+            "type": "final",
+            "reponse": str(resultat_final["reponse"]),
+            "ouvrir_url": resultat_final["ouvrir_url"],
+            "succes": resultat_final["succes"],
+        }
+        yield f"data: {_json.dumps(payload_final)}\n\n"
+
+    return app.response_class(
+        _generer(),
+        mimetype="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.route("/conversations", methods=["GET"])
