@@ -725,6 +725,19 @@
             "statut": "terminee",
             "date_creation": "2026-11-15T01:17:51",
             "date_maj": "2026-11-15T01:18:33"
+        },
+        {
+            "id": "6ccbdc6f",
+            "nom": "Créer le fichier espace_travail/perf_test.txt contenant le texte 'PerfTest'",
+            "objectif": "cree le fichier espace_travail/perf_test.txt contenant PerfTest",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T01:20:29",
+            "date_maj": "2026-11-15T01:20:53"
         }
     ]
 }
