@@ -174,14 +174,75 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                 except Exception as e2:
                     print(f"[Retry force ERREUR] {e2}")
 
-            # Fallback final : extraire code Python (reponse courante OU originale)
+            # Fallback final : extraire code Python ou JSON d'action
             if est_echec and demande_action:
                 import re as _re
-                # Chercher le code dans la reponse courante ET dans l'originale
+                import json as _json
                 sources = [str(reponse or ""), str(reponse_originale or "")]
-                blocs = []
+
+                # 1. Detecter JSON {"action": "nom_outil", "parameters": {...}}
                 for src in sources:
-                    blocs.extend(_re.findall(r"```(?:python)?\s*\n(.+?)```", src, _re.DOTALL))
+                    try:
+                        m_json = _re.search(r'\{[^{}]*"action"\s*:\s*"([^"]+)"[^{}]*"parameters"\s*:\s*(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})[^{}]*\}', src, _re.DOTALL)
+                        if not m_json:
+                            # Variante : chercher le premier { ... } equilibre
+                            start = src.find('{')
+                            if start >= 0:
+                                depth = 0
+                                for i in range(start, len(src)):
+                                    if src[i] == '{': depth += 1
+                                    elif src[i] == '}':
+                                        depth -= 1
+                                        if depth == 0:
+                                            candidate = src[start:i+1]
+                                            try:
+                                                obj = _json.loads(candidate)
+                                                if isinstance(obj, dict) and "action" in obj:
+                                                    m_json = True
+                                                    nom_outil = obj.get("action")
+                                                    params = obj.get("parameters", {})
+                                                    from core.tools import (
+                                                        ecrire_fichier as _ef, lire_fichier as _lf,
+                                                        creer_dossier as _cd, supprimer_fichier as _sf,
+                                                    )
+                                                    mapping = {
+                                                        "ecrire_fichier": _ef, "lire_fichier": _lf,
+                                                        "creer_dossier": _cd, "supprimer_fichier": _sf,
+                                                    }
+                                                    if nom_outil in mapping:
+                                                        res = mapping[nom_outil](**params)
+                                                        print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
+                                                        est_echec = False
+                                                        reponse = f"Outil {nom_outil} execute: {str(res)[:300]}"
+                                                    break
+                                            except Exception:
+                                                pass
+                                    if m_json: break
+                        if m_json and isinstance(m_json, _re.Match):
+                            nom_outil = m_json.group(1)
+                            params = _json.loads(m_json.group(2))
+                            from core.tools import (
+                                ecrire_fichier as _ef, lire_fichier as _lf,
+                                creer_dossier as _cd, supprimer_fichier as _sf,
+                            )
+                            mapping = {
+                                "ecrire_fichier": _ef, "lire_fichier": _lf,
+                                "creer_dossier": _cd, "supprimer_fichier": _sf,
+                            }
+                            if nom_outil in mapping:
+                                res = mapping[nom_outil](**params)
+                                print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
+                                est_echec = False
+                                reponse = f"Outil {nom_outil} execute: {str(res)[:300]}"
+                                break
+                    except Exception:
+                        pass
+
+                if est_echec:
+                    # 2. Fallback classique : extraire code Python
+                    blocs = []
+                    for src in sources:
+                        blocs.extend(_re.findall(r"```(?:python)?\s*\n(.+?)```", src, _re.DOTALL))
                 if blocs:
                     code = max(blocs, key=len).strip()
                     # Le script tourne DEJA dans espace_travail/ (cwd).
