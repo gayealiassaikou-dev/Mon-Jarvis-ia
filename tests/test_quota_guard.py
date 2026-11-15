@@ -4,12 +4,14 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def test_budget_bas_avant_test_reel():
-    """Avant tout test reel, verifier qu'il reste du budget."""
+def test_budget_guard_structure():
+    """Verifie que budget_guard expose les bonnes cles (pas l'etat runtime)."""
     from core import budget_guard
     etat = budget_guard.etat()
-    restant = etat["restant_appels"]
-    assert restant > 50, f"Budget trop bas pour test reel: {restant} restants"
+    for cle in ["appels", "tokens_estimes", "limite_appels", "limite_tokens", "restant_appels", "restant_tokens"]:
+        assert cle in etat, f"Cle manquante: {cle}"
+    assert etat["limite_appels"] > 0
+    assert etat["limite_tokens"] > 0
 
 
 def test_retry_force_conditionne():
