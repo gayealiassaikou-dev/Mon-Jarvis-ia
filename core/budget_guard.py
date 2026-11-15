@@ -7,6 +7,10 @@ CHEMIN = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))
 
 LIMITE_APPELS_DEFAUT = int(os.getenv("JARVIS_MAX_APPELS_JOUR", "500"))
 LIMITE_TOKENS_DEFAUT = int(os.getenv("JARVIS_MAX_TOKENS_JOUR", "500000"))
+LIMITE_SESSION_DEFAUT = int(os.getenv("JARVIS_MAX_APPELS_SESSION", "100"))
+
+# Compteur de session (reset a chaque nouveau process Python)
+_session = {"appels": 0, "tokens": 0}
 
 
 def _charger():
@@ -32,6 +36,9 @@ def _sauvegarder(data):
 def autorise():
     data = _charger()
     restant = LIMITE_APPELS_DEFAUT - data["appels"]
+    # Verifier limite session d'abord
+    if _session["appels"] >= LIMITE_SESSION_DEFAUT:
+        return False, f"Limite session atteinte ({_session['appels']}/{LIMITE_SESSION_DEFAUT})"
     if data["appels"] >= LIMITE_APPELS_DEFAUT:
         try:
             from core import notifications
@@ -56,6 +63,8 @@ def enregistrer_appel(tokens_estimes=500):
     data["appels"] += 1
     data["tokens_estimes"] += tokens_estimes
     _sauvegarder(data)
+    _session["appels"] += 1
+    _session["tokens"] += tokens_estimes
 
 
 def etat():
@@ -68,4 +77,9 @@ def etat():
         "limite_tokens": LIMITE_TOKENS_DEFAUT,
         "restant_appels": max(0, LIMITE_APPELS_DEFAUT - data["appels"]),
         "restant_tokens": max(0, LIMITE_TOKENS_DEFAUT - data["tokens_estimes"]),
+        # Session (process actuel)
+        "session_appels": _session["appels"],
+        "session_tokens": _session["tokens"],
+        "session_limite": LIMITE_SESSION_DEFAUT,
+        "session_restant": max(0, LIMITE_SESSION_DEFAUT - _session["appels"]),
     }
