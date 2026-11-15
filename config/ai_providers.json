@@ -1,17 +1,26 @@
 {
   "providers": [
     {
-      "nom": "nvidia",
-      "priorite": 6,
+      "nom": "gemini",
+      "priorite": 1,
       "statut": "actif",
-      "api_key_env": "NVIDIA_API_KEY",
-      "url": "https://integrate.api.nvidia.com/v1/chat/completions",
-      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "api_key_env": "GEMINI_API_KEY",
+      "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent",
+      "model": "gemini-flash-lite-latest",
+      "type": "gemini"
+    },
+    {
+      "nom": "groq",
+      "priorite": 2,
+      "statut": "actif",
+      "api_key_env": "GROQ_API_KEY",
+      "url": "https://api.groq.com/openai/v1/chat/completions",
+      "model": "openai/gpt-oss-120b",
       "type": "openai_compatible"
     },
     {
       "nom": "mistral",
-      "priorite": 2,
+      "priorite": 3,
       "statut": "pret",
       "api_key_env": "MISTRAL_API_KEY",
       "url": "https://api.mistral.ai/v1/chat/completions",
@@ -20,7 +29,7 @@
     },
     {
       "nom": "openrouter",
-      "priorite": 3,
+      "priorite": 4,
       "statut": "pret",
       "api_key_env": "OPENROUTER_API_KEY",
       "url": "https://openrouter.ai/api/v1/chat/completions",
@@ -28,22 +37,13 @@
       "type": "openai_compatible"
     },
     {
-      "nom": "groq",
-      "priorite": 1,
-      "statut": "actif",
-      "api_key_env": "GROQ_API_KEY",
-      "url": "https://api.groq.com/openai/v1/chat/completions",
-      "model": "openai/gpt-oss-120b",
-      "type": "openai_compatible"
-    },
-    {
-      "nom": "gemini",
+      "nom": "nvidia",
       "priorite": 5,
       "statut": "actif",
-      "api_key_env": "GEMINI_API_KEY",
-      "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent",
-      "model": "gemini-flash-lite-latest",
-      "type": "gemini"
+      "api_key_env": "NVIDIA_API_KEY",
+      "url": "https://integrate.api.nvidia.com/v1/chat/completions",
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "type": "openai_compatible"
     }
   ]
 }
