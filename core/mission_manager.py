@@ -245,6 +245,31 @@ class MissionManager:
             self._sauvegarder(donnees)
         return {"actives": len(actives), "archivees": len(archivees)}
 
+    def nettoyer_sous_taches_orphelines(self, minutes_seuil=10):
+        """Detecte les sous-taches en_cours depuis trop longtemps (crash probable)
+        et les remet en nouvelle pour retry propre."""
+        from datetime import datetime, timedelta
+        seuil = datetime.now() - timedelta(minutes=minutes_seuil)
+        donnees = self._charger()
+        nettoyees = 0
+        for mission in donnees.get("missions", []):
+            if mission.get("statut") not in {"en_cours", "bloquee"}:
+                continue
+            for st in mission.get("sous_taches", []):
+                if st.get("statut") != "en_cours":
+                    continue
+                try:
+                    maj = datetime.fromisoformat(st.get("date_maj", ""))
+                except Exception:
+                    continue
+                if maj < seuil:
+                    st["statut"] = "nouvelle"
+                    st["date_maj"] = datetime.now().isoformat(timespec="seconds")
+                    nettoyees += 1
+        if nettoyees:
+            self._sauvegarder(donnees)
+        return nettoyees
+
     def missions_a_reprendre(self):
         """Retourne les missions en_cours ou bloquee, triees par priorite.
         Exclut les missions dangereuses (suppression core, .env, etc.)."""

@@ -92,6 +92,9 @@ class Jarvis:
         self.project_manager.afficher_projets()
         self.knowledge_manager.afficher_connaissances()
         self.mission_manager.purger()
+        _nettoyees = self.mission_manager.nettoyer_sous_taches_orphelines()
+        if _nettoyees:
+            print(f"[Reprise] {_nettoyees} sous-tache(s) orpheline(s) remise(s) en attente")
         self.mission_manager.afficher_missions()
         missions_reprise = self.mission_manager.missions_a_reprendre()
         if missions_reprise:
