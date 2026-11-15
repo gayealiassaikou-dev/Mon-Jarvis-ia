@@ -38,6 +38,12 @@ def tenter(objectif):
         return None
     obj = objectif.strip()
 
+    # Ne pas intercepter les demandes de SCRIPT/PROGRAMME
+    # (le LLM doit ecrire le code, puis le fallback l'execute)
+    import re as _re_skip
+    if _re_skip.search(r"\b(?:script|programme|code\s+python)\b", obj, _re_skip.IGNORECASE):
+        return None
+
     # 1. Creer fichier X contenant Y
     chemin, contenu = _extraire_chemin_et_contenu(obj)
     if chemin:
