@@ -154,6 +154,19 @@ class MemoryManager:
                     if resultat not in resultats:
                         resultats.append(resultat)
 
+        # Complement : recherche par pertinence dans l'historique (FTS5)
+        try:
+            from core import memory_index
+            historiques = memory_index.rechercher(mot_cle, limite=3)
+            for h in historiques:
+                q = h.get("question", "")
+                r = h.get("reponse", "")[:200]
+                ligne = f"[historique] Q: {q} | R: {r}"
+                if ligne not in resultats:
+                    resultats.append(ligne)
+        except Exception:
+            pass
+
         if not resultats:
             return "Aucune information trouvee pour ce mot-cle."
 
