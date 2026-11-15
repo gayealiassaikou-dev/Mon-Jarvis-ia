@@ -98,6 +98,13 @@ class MemoryManager:
                 self.sauvegarder()
         else:
             self.sauvegarder()
+        # Sync auto : indexer directement le nouvel echange
+        try:
+            from core import memory_index
+            memory_index.indexer_echange(question, reponse)
+        except Exception:
+            pass
+
 
     def obtenir_historique_recent(self, nombre=5):
         return self.memoire["historique"][-nombre:]

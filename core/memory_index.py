@@ -70,6 +70,26 @@ def indexer_tout(force=False):
     return {"total": len(echanges), "deja": deja, "ajoutes": ajoutes}
 
 
+def indexer_echange(question, reponse, categorie="conversation", timestamp=None):
+    """Indexe un seul echange (appele apres ajout dans memory.json)."""
+    if not question:
+        return False
+    conn = _connecter()
+    try:
+        from datetime import datetime
+        ts = timestamp or datetime.now().isoformat(timespec="seconds")
+        conn.execute(
+            "INSERT INTO echanges (question, reponse, categorie, timestamp) VALUES (?, ?, ?, ?)",
+            (str(question)[:2000], str(reponse)[:5000], str(categorie), str(ts)),
+        )
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+
 def rechercher(mot_cle, limite=5):
     """Recherche par pertinence (BM25). Retourne liste de dict."""
     if not mot_cle or len(str(mot_cle).strip()) < 2:
