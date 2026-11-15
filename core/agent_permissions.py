@@ -63,7 +63,11 @@ PERMISSIONS_AGENTS = {
         "lire_batterie", "regler_volume", "lampe_torche", "regler_luminosite", "lire_wifi", "lire_notifications", "envoyer_notification", "lire_presse_papiers"
     ],
 
-    "11_gestionnaire_outils_ia": TOUS_LES_OUTILS
+    "11_gestionnaire_outils_ia": [
+        "lister_projets", "lister_taches", "lire_fichier", "lister_fichiers",
+        "memoriser_info", "rechercher_souvenir",
+        "executer_tests_python", "diagnostiquer_code_python"
+    ]
 }
 
 
