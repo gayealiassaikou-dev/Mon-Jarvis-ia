@@ -133,7 +133,7 @@ class AIRouter:
 
                 if fournisseur == "groq":
                     reponse = self.ai_engine._demander_groq(
-                        message, contexte, historique
+                        message, contexte, historique, on_chunk=on_chunk
                     )
 
                 elif fournisseur == "gemini":
@@ -143,17 +143,17 @@ class AIRouter:
 
                 elif fournisseur == "openrouter":
                     reponse = self.ai_engine._demander_openrouter(
-                        message, contexte, historique
+                        message, contexte, historique, on_chunk=on_chunk
                     )
 
                 elif fournisseur == "mistral":
                     reponse = self.ai_engine._demander_mistral(
-                        message, contexte, historique
+                        message, contexte, historique, on_chunk=on_chunk
                     )
 
                 elif fournisseur == "nvidia":
                     reponse = self.ai_engine._demander_nvidia(
-                        message, contexte, historique
+                        message, contexte, historique, on_chunk=on_chunk
                     )
 
                 else:

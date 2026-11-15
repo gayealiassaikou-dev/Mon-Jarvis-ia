@@ -58,6 +58,7 @@ class AIProvidersMixin:
     mode_action=False,
     timeout=15,
     parametres_supplementaires=None,
+    on_chunk=None,
 ):
         messages = []
         if contexte:
@@ -67,6 +68,47 @@ class AIProvidersMixin:
                 messages.append({"role": "user", "content": echange["question"]})
                 messages.append({"role": "assistant", "content": echange["reponse"]})
         messages.append({"role": "user", "content": message})
+
+        # Streaming direct si on_chunk et pas d'outils forces
+        if on_chunk is not None and not mode_action:
+            try:
+                payload_stream = {"model": model, "messages": messages, "stream": True}
+                if parametres_supplementaires:
+                    payload_stream.update(parametres_supplementaires)
+                with requests.post(
+                    url,
+                    headers=headers,
+                    json=payload_stream,
+                    timeout=60,
+                    stream=True,
+                ) as r:
+                    r.raise_for_status()
+                    textes_stream = []
+                    for ligne in r.iter_lines():
+                        if not ligne:
+                            continue
+                        ligne_str = ligne.decode("utf-8") if isinstance(ligne, bytes) else ligne
+                        if ligne_str.startswith("data: "):
+                            ligne_str = ligne_str[6:]
+                        if ligne_str.strip() == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(ligne_str)
+                            delta = chunk.get("choices", [{}])[0].get("delta", {})
+                            t = delta.get("content", "")
+                            if t:
+                                textes_stream.append(t)
+                                try:
+                                    on_chunk(t)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            continue
+                    if textes_stream:
+                        return "".join(textes_stream)
+            except Exception:
+                # Fallback : mode classique
+                pass
 
         # Le mode action force uniquement la premiere selection
         # d'un outil. Apres execution, le modele doit pouvoir
@@ -176,7 +218,7 @@ class AIProvidersMixin:
 
         raise Exception("Trop d'appels d'outils enchaines.")
 
-    def _demander_groq(self, message, contexte="", historique=None):
+    def _demander_groq(self, message, contexte="", historique=None, on_chunk=None):
         def appeler_avec_cle(cle):
             headers = {
                 "Authorization": f"Bearer {cle}",
@@ -191,6 +233,7 @@ class AIProvidersMixin:
                 historique,
                 outils=self._obtenir_outils_autorises(),
                 mode_action=self.mode_action,
+                on_chunk=on_chunk,
             )
 
         try:
@@ -204,7 +247,7 @@ class AIProvidersMixin:
                 raise
             return appeler_avec_cle(self.api_key_1)
 
-    def _demander_openrouter(self, message, contexte="", historique=None):
+    def _demander_openrouter(self, message, contexte="", historique=None, on_chunk=None):
         headers = {
             "Authorization": f"Bearer {self.openrouter_key}",
             "Content-Type": "application/json"
@@ -218,8 +261,9 @@ class AIProvidersMixin:
             historique,
             outils=self._obtenir_outils_autorises(),
             mode_action=self.mode_action,
+            on_chunk=on_chunk,
         )
-    def _demander_mistral(self, message, contexte="", historique=None):
+    def _demander_mistral(self, message, contexte="", historique=None, on_chunk=None):
         headers = {
             "Authorization": f"Bearer {self.mistral_key}",
             "Content-Type": "application/json"
@@ -233,9 +277,10 @@ class AIProvidersMixin:
             historique,
             outils=self._obtenir_outils_autorises(),
             mode_action=self.mode_action,
+            on_chunk=on_chunk,
         )
 
-    def _demander_nvidia(self, message, contexte="", historique=None):
+    def _demander_nvidia(self, message, contexte="", historique=None, on_chunk=None):
         fournisseur = self.providers.get("nvidia", {})
         cle = os.getenv(fournisseur.get("api_key_env", "NVIDIA_API_KEY"))
         headers = {
@@ -251,6 +296,7 @@ class AIProvidersMixin:
             historique,
             outils=self._obtenir_outils_autorises(),
             mode_action=self.mode_action,
+            on_chunk=on_chunk,
             timeout=20,
             parametres_supplementaires={
                 "chat_template_kwargs": {"enable_thinking": False}
