@@ -39,7 +39,25 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
     jarvis = Jarvis()
     etapes = 0
 
+    # Reinitialiser le budget de cette mission
+    try:
+        from core import budget_guard as _bg
+        _bg.reinitialiser_mission(mission_id)
+    except Exception:
+        pass
+
     for _ in range(max_etapes):
+        # Verifier le budget de la mission
+        try:
+            from core import budget_guard as _bg2
+            _ok_m, _raison_m = _bg2.autorise_mission(mission_id)
+            if not _ok_m:
+                print(f"[Budget mission] {_raison_m}")
+                mm.mettre_a_jour_statut(mission_id, "bloquee")
+                return {"ok": False, "statut": "budget_mission", "etapes": etapes}
+        except Exception:
+            pass
+
         sous_taches = mm.obtenir_sous_taches(mission_id)
         if not sous_taches:
             return {"erreur": "aucune sous-tache apres planification", "statut": "vide"}
@@ -404,6 +422,12 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
             return {"ok": False, "statut": "exception", "etapes": etapes + 1, "echec_sur": st["id"]}
 
         etapes += 1
+        # Incrementer le compteur budget mission
+        try:
+            from core import budget_guard as _bg3
+            _bg3.enregistrer_appel_mission(mission_id)
+        except Exception:
+            pass
 
     return {"ok": False, "statut": "max_etapes", "etapes": etapes}
 

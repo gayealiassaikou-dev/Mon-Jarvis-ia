@@ -12,6 +12,11 @@ LIMITE_SESSION_DEFAUT = int(os.getenv("JARVIS_MAX_APPELS_SESSION", "100"))
 # Compteur de session (reset a chaque nouveau process Python)
 _session = {"appels": 0, "tokens": 0}
 
+# Compteur par mission (reset manuel entre missions)
+_missions = {}
+
+LIMITE_MISSION_DEFAUT = int(os.getenv("JARVIS_MAX_APPELS_MISSION", "15"))
+
 
 def _charger():
     aujourd = datetime.now().strftime("%Y-%m-%d")
@@ -56,6 +61,29 @@ def autorise():
         except Exception:
             pass
     return True, "OK"
+
+
+def autorise_mission(mission_id):
+    """Verifie si une mission a encore du budget."""
+    if not mission_id:
+        return True, "OK"
+    compte = _missions.get(mission_id, 0)
+    if compte >= LIMITE_MISSION_DEFAUT:
+        return False, f"Limite mission atteinte ({compte}/{LIMITE_MISSION_DEFAUT})"
+    return True, "OK"
+
+
+def enregistrer_appel_mission(mission_id):
+    """Incremente le compteur de la mission."""
+    if not mission_id:
+        return
+    _missions[mission_id] = _missions.get(mission_id, 0) + 1
+
+
+def reinitialiser_mission(mission_id):
+    """Remet a zero le compteur d'une mission."""
+    if mission_id in _missions:
+        del _missions[mission_id]
 
 
 def enregistrer_appel(tokens_estimes=500):
