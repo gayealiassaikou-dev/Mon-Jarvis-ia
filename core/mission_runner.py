@@ -70,19 +70,48 @@ def executer(max_missions=1, dry_run=False):
                 mm.mettre_a_jour_statut(mid, "bloquee")
             except Exception:
                 pass
+        finally:
+            # Incrementer les tentatives ; abandonner si > 3
+            try:
+                mission = mm.obtenir_mission(mid)
+                if mission and mission.get("statut") in ("bloquee", "en_cours"):
+                    tentatives = int(mission.get("tentatives", 0)) + 1
+                    donnees = mm._charger()
+                    for mmis in donnees["missions"]:
+                        if mmis["id"] == mid:
+                            mmis["tentatives"] = tentatives
+                            if tentatives >= 3:
+                                mmis["statut"] = "annulee"
+                                mmis["abandonnee"] = True
+                                print(f"[ABANDON] {mid} apres {tentatives} tentatives")
+                            break
+                    mm._sauvegarder(donnees)
+            except Exception as e2:
+                print(f"[ERR tentative] {e2}")
 
     print(f"\nTotal traitees : {traitees}")
     return traitees
 
 
 def boucle_watch(intervalle=60, max_par_cycle=3):
-    """Boucle de fond : traite les missions, dort, recommence."""
+    """Boucle de fond : traite les missions + verifie les triggers."""
     import time
     cycle = 0
     try:
         while True:
             cycle += 1
             print(f"\n[Cycle {cycle}] {time.strftime('%H:%M:%S')}")
+
+            # 1. Verifier les triggers (timer, fichier)
+            try:
+                from core.trigger_engine import verifier_et_executer
+                nt = verifier_et_executer(max_executions=3)
+                if nt:
+                    print(f"[Triggers] {nt} mission(s) creee(s)")
+            except Exception as e:
+                print(f"[ERREUR TRIGGERS] {type(e).__name__}: {e}")
+
+            # 2. Executer les missions pretes
             try:
                 n = executer(max_missions=max_par_cycle, dry_run=False)
                 if n == 0:

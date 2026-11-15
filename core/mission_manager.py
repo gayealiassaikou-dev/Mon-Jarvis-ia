@@ -258,6 +258,8 @@ class MissionManager:
         for m in self.lister_missions():
             if m.get("statut") not in {"en_cours", "bloquee"}:
                 continue
+            if m.get("abandonnee"):
+                continue
             nom = str(m.get("nom", "")).lower()
             if any(d in nom for d in MOTS_DANGEREUX):
                 continue

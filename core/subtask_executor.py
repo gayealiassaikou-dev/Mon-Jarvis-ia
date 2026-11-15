@@ -132,8 +132,13 @@ def executer_mission(mission_id, max_etapes=10):
                 mm.mettre_a_jour_statut(mission_id, "bloquee")
                 return {"ok": False, "statut": "bloquee", "etapes": etapes + 1, "echec_sur": st["id"]}
         except Exception as e:
-            mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(e)[:200])
             print(f"[ERREUR] {st['id']}: {type(e).__name__}: {e}")
+            try:
+                mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(e)[:200])
+            except Exception:
+                pass
+            mm.mettre_a_jour_statut(mission_id, "bloquee")
+            return {"ok": False, "statut": "exception", "etapes": etapes + 1, "echec_sur": st["id"]}
 
         etapes += 1
 
