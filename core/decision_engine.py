@@ -101,42 +101,41 @@ class DecisionEngine:
         self.brain_manager = brain_manager
         self.agent_manager = agent_manager
         self.ai_engine = ai_engine
-        self.api_key = os.getenv("GROQ_API_KEY")
-        self.url = "https://api.groq.com/openai/v1/chat/completions"
-        self.model = "llama-3.3-70b-versatile"
 
-        # Source unique de vérité pour le catalogue des outils.
-        # Les permissions de chaque agent sont appliquées ensuite
-        # par filtrer_outils().
+        self.providers = [
+            {"nom": "groq", "url": "https://api.groq.com/openai/v1/chat/completions", "model": "openai/gpt-oss-120b", "api_key_env": "GROQ_API_KEY", "type": "openai_compatible"},
+            {"nom": "mistral", "url": "https://api.mistral.ai/v1/chat/completions", "model": "mistral-small-latest", "api_key_env": "MISTRAL_API_KEY", "type": "openai_compatible"},
+            {"nom": "gemini", "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent", "model": "gemini-flash-lite-latest", "api_key_env": "GEMINI_API_KEY", "type": "gemini"},
+        ]
+
+        from core.agent_permissions import TOUS_LES_OUTILS
         self.outils_disponibles = list(TOUS_LES_OUTILS)
 
-    def _appeler_llm(self, prompt, timeout=15):
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "model": self.model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]
-        }
-
-        reponse = requests.post(
-            self.url,
-            headers=headers,
-            json=payload,
-            timeout=timeout
-        )
-
-        reponse.raise_for_status()
-
-        data = reponse.json()
-        return data["choices"][0]["message"]["content"].strip()
+    def _appeler_llm(self, prompt, timeout=8):
+        erreurs = []
+        for provider in self.providers:
+            api_key = os.getenv(provider["api_key_env"])
+            if not api_key:
+                continue
+            try:
+                if provider["type"] == "gemini":
+                    url = f"{provider['url']}?key={api_key}"
+                    payload = {"contents": [{"parts": [{"text": prompt}]}]}
+                    r = requests.post(url, json=payload, timeout=(3, timeout))
+                    r.raise_for_status()
+                    data = r.json()
+                    return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                else:
+                    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+                    payload = {"model": provider["model"], "messages": [{"role": "user", "content": prompt}]}
+                    r = requests.post(provider["url"], headers=headers, json=payload, timeout=(3, timeout))
+                    r.raise_for_status()
+                    data = r.json()
+                    return data["choices"][0]["message"]["content"].strip()
+            except Exception as e:
+                erreurs.append(f"{provider['nom']}: {type(e).__name__} {str(e)[:80]}")
+                continue
+        raise RuntimeError("DecisionEngine: aucun provider n a repondu. " + " | ".join(erreurs))
 
     def _nettoyer_json(self, texte):
         texte = texte.strip()
