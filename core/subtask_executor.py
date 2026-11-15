@@ -46,13 +46,25 @@ def executer_mission(mission_id, max_etapes=10):
         mm.mettre_a_jour_sous_tache(mission_id, st["id"], "en_cours")
 
         try:
-            reponse = jarvis.traiter_commande(st["objectif"], retourner_reponse=True)
-            if reponse and isinstance(reponse, str) and len(reponse.strip()) >= 5:
+            reponse = jarvis.traiter_commande(st["objectif"], retourner_reponse=True, agent_force=st["agent"])
+            SIGNES_ECHEC = [
+                "validation echouee", "je n'ai pas pu confirmer",
+                "erreur ia", "aucun outil execute",
+                "reussite non prouvee", "action(s) en echec",
+            ]
+            rep_str = str(reponse or "").lower()
+            est_echec = (
+                not reponse
+                or not isinstance(reponse, str)
+                or len(reponse.strip()) < 5
+                or any(sig in rep_str for sig in SIGNES_ECHEC)
+            )
+            if not est_echec:
                 mm.mettre_a_jour_sous_tache(mission_id, st["id"], "terminee", resultat=reponse[:500])
                 print(f"[OK] {st['id']}")
             else:
-                mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat="reponse vide")
-                print(f"[ECHEC] {st['id']}")
+                mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(reponse)[:500])
+                print(f"[ECHEC] {st['id']} : validation reelle echouee")
         except Exception as e:
             mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(e)[:200])
             print(f"[ERREUR] {st['id']}: {type(e).__name__}: {e}")

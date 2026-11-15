@@ -27,11 +27,46 @@
             "nom": "Calcule 5+5 en Python",
             "objectif": "test watch",
             "agents": [],
-            "sous_taches": [],
+            "sous_taches": [
+                {
+                    "id": "d0183199",
+                    "agent": "01_developpeur",
+                    "objectif": "Écrire un script Python qui calcule 5+5 et affiche le résultat",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Action(s) en echec detectee(s) : executer_programme_python: Erreur : le fichier espace_travail/calc_5_plus_5.py n'existe pas.",
+                    "date_creation": "2026-11-15T00:43:12",
+                    "date_maj": "2026-11-15T00:43:54"
+                },
+                {
+                    "id": "60c2e3ac",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Exécuter le script, vérifier que la sortie est 10 et valider le bon fonctionnement",
+                    "statut": "terminee",
+                    "dependances": [
+                        "d0183199"
+                    ],
+                    "resultat": "Je n'ai pas pu confirmer la réussite de cette action. Raison : Aucun outil execute alors que la mission en attendait : reussite non prouvee.",
+                    "date_creation": "2026-11-15T00:43:12",
+                    "date_maj": "2026-11-15T00:45:05"
+                },
+                {
+                    "id": "a9fe16e8",
+                    "agent": "00_directeur_ia",
+                    "objectif": "Valider le résultat du test et clôturer la mission",
+                    "statut": "terminee",
+                    "dependances": [
+                        "60c2e3ac"
+                    ],
+                    "resultat": "D'après mes documents officiels locaux :\n\n## Mission de Sam Sarr\n\n# Mission de Sam Sarr\n\n## Mission principale\n\nSam Sarr accompagne Caye Saikou dans ses projets.\n\nIl ne remplace pas l'utilisateur : il travaille avec lui.\n\n## Responsabilités\n\n- Comprendre les objectifs.\n- Planifier les projets.\n- Organiser les tâches.\n- Trouver des solutions.\n- Exécuter uniquement les actions autorisées.\n- Vérifier les résultats.\n- Conserver une mémoire utile.\n- Signaler les problèmes et les limites.\n\n## Méthode\n",
+                    "date_creation": "2026-11-15T00:43:12",
+                    "date_maj": "2026-11-15T00:45:05"
+                }
+            ],
             "priorite": "normale",
-            "statut": "en_cours",
+            "statut": "terminee",
             "date_creation": "2026-11-15T00:36:04",
-            "date_maj": "2026-11-15T00:36:04"
+            "date_maj": "2026-11-15T00:45:05"
         },
         {
             "id": "a23bf509",
@@ -79,6 +114,53 @@
             "statut": "terminee",
             "date_creation": "2026-11-15T00:40:35",
             "date_maj": "2026-11-15T00:40:53"
+        },
+        {
+            "id": "7e24b1e6",
+            "nom": "Cree le fichier espace_travail/pipeline_test.txt contenant Test Pipeline puis lis-le pour confirmer",
+            "objectif": "Test pipeline complet",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "c2c96b9d",
+                    "agent": "01_developpeur",
+                    "objectif": "Créer le fichier espace_travail/pipeline_test.txt contenant le texte \"Test Pipeline\".",
+                    "statut": "terminee",
+                    "dependances": [],
+                    "resultat": "Le fichier **espace_travail/pipeline_test.txt** a été créé avec le texte :\n\n```\nTest Pipeline\n```",
+                    "date_creation": "2026-11-15T00:48:15",
+                    "date_maj": "2026-11-15T00:48:26"
+                },
+                {
+                    "id": "c7ca66dd",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Lire le fichier espace_travail/pipeline_test.txt et vérifier que son contenu est \"Test Pipeline\".",
+                    "statut": "terminee",
+                    "dependances": [
+                        "c2c96b9d"
+                    ],
+                    "resultat": "Le fichier **espace_travail/pipeline_test.txt** a été lu avec succès et son contenu correspond exactement à :\n\n```\nTest Pipeline\n```",
+                    "date_creation": "2026-11-15T00:48:15",
+                    "date_maj": "2026-11-15T00:48:29"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "terminee",
+            "date_creation": "2026-11-15T00:42:57",
+            "date_maj": "2026-11-15T00:48:29"
+        },
+        {
+            "id": "0846058f",
+            "nom": "Exécuter le script, vérifier que la sortie vaut 10 et valider son bon fonctionnement",
+            "objectif": "Exécuter le script, vérifier que la sortie est 10 et valider le bon fonctionnement",
+            "agents": [
+                "01_developpeur"
+            ],
+            "sous_taches": [],
+            "priorite": "normale",
+            "statut": "bloquee",
+            "date_creation": "2026-11-15T00:44:17",
+            "date_maj": "2026-11-15T00:45:05"
         }
     ]
 }

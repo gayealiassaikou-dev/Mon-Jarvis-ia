@@ -367,7 +367,8 @@ class Jarvis:
                 )
 
     def traiter_commande(self, commande, retourner_reponse=False,
-                         activity_tracker=None, demande_id=None):
+                         activity_tracker=None, demande_id=None,
+                         agent_force=None):
         def suivre(message, statut="information"):
             if activity_tracker is not None and demande_id is not None:
                 try:
@@ -406,10 +407,14 @@ class Jarvis:
                 return
             suivre("Choix de l'agent", "en_cours")
             debut_mesure = time.perf_counter()
-            decision = self.decision_engine.decider(commande)
-            self.logger.enregistrer(
-                f"[PERFORMANCE] Choix de l'agent : {time.perf_counter() - debut_mesure:.2f} s"
-            )
+            if agent_force:
+                decision = {"agent": agent_force, "analyse": {"risques": "aucun"}, "outils_suggeres": []}
+                self.logger.enregistrer(f"[PERFORMANCE] Agent force : {agent_force}")
+            else:
+                decision = self.decision_engine.decider(commande)
+                self.logger.enregistrer(
+                    f"[PERFORMANCE] Choix de l'agent : {time.perf_counter() - debut_mesure:.2f} s"
+                )
             agent = decision["agent"]
             analyse = decision["analyse"]
 
