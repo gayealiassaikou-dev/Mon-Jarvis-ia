@@ -162,6 +162,9 @@ def executer_mission(mission_id, max_etapes=10):
                     blocs.extend(_re.findall(r"```(?:python)?\s*\n(.+?)```", src, _re.DOTALL))
                 if blocs:
                     code = max(blocs, key=len).strip()
+                    # Le script tourne DEJA dans espace_travail/ (cwd).
+                    # Retirer le prefixe "espace_travail/" pour eviter un sous-dossier.
+                    code = code.replace("espace_travail/", "").replace('espace_travail"', '"')
                     from core.tools import ecrire_fichier as _ecrire, executer_programme_python as _exec
                     chemin = f"espace_travail/sous_tache_{st['id']}.py"
                     try:
