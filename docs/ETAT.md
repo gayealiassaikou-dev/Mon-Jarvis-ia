@@ -117,7 +117,7 @@ input -> jarvis.traiter_commande(on_chunk=...)
 
 1. Velixir prod : P50 1.2s (free tier lent, pas le code)
 2. Groq lent (~15-20s) - retrogade apres Gemini
-3. verifiers.py 775L - dernier gros module
+3. `_verifier_resultat_outil` (590L monolithique dans verifiers.py 605L) - dernier gros bloc
 4. Supabase dependance critique (fallback local si down)
 5. Test E2E reel manuel (`pytest -m llm` a lancer explicitement)
 
