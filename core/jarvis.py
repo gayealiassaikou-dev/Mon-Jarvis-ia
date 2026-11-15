@@ -405,6 +405,31 @@ class Jarvis:
                 if retourner_reponse:
                     return reponse_locale
                 return
+            # Interception planification : "planifie X en N etapes"
+            import re as _re_plan
+            m_plan = _re_plan.match(r"^\s*(?:planifie|planifier|organise|decompose)\s+(.+?)(?:\s+en\s+(\d+)\s+(?:etapes?|taches?|sous-taches?))?\s*$", commande, _re_plan.IGNORECASE)
+            if m_plan and not agent_force:
+                objectif = m_plan.group(1).strip()
+                try:
+                    from core.mission_manager import MissionManager as _MM
+                    _mm = _MM()
+                    _mission = _mm.creer_mission(nom=objectif, objectif="Cree par Jarvis via commande planifie", priorite="normale")
+                    _mm.mettre_a_jour_statut(_mission["id"], "en_cours")
+                    from core.mission_planner import planifier as _planifier
+                    _plan = _planifier(_mission["id"])
+                    if _plan.get("ok"):
+                        msg = f"Mission {_mission['id']} planifiee en {_plan['nb']} sous-taches. Lance `python -m core.mission_runner --max 1` pour executer."
+                    else:
+                        msg = f"Mission {_mission['id']} creee mais planification echouee : {_plan.get('erreur')}"
+                except Exception as _e:
+                    msg = f"Erreur planification : {type(_e).__name__}: {_e}"
+                print(msg)
+                self.logger.enregistrer(f"[PLANIFIER] {msg}")
+                self.memory_manager.ajouter_echange(commande, msg)
+                if retourner_reponse:
+                    return msg
+                return
+
             suivre("Choix de l'agent", "en_cours")
             debut_mesure = time.perf_counter()
             if agent_force:

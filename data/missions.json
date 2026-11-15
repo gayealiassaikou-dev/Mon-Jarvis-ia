@@ -161,6 +161,52 @@
             "statut": "bloquee",
             "date_creation": "2026-11-15T00:44:17",
             "date_maj": "2026-11-15T00:45:05"
+        },
+        {
+            "id": "b2018244",
+            "nom": "un script qui calcule la moyenne de 3 notes",
+            "objectif": "Cree par Jarvis via commande planifie",
+            "agents": [],
+            "sous_taches": [
+                {
+                    "id": "ec310890",
+                    "agent": "05_architecte_ia",
+                    "objectif": "Définir les spécifications du script de calcul de la moyenne de 3 notes (langage, format d'entrée/sortie, gestion des erreurs).",
+                    "statut": "nouvelle",
+                    "dependances": [],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T00:51:41",
+                    "date_maj": "2026-11-15T00:51:41"
+                },
+                {
+                    "id": "64b93e9e",
+                    "agent": "01_developpeur",
+                    "objectif": "Implémenter le script selon les spécifications, accepter trois notes en entrée et retourner la moyenne.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "ec310890"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T00:51:41",
+                    "date_maj": "2026-11-15T00:51:41"
+                },
+                {
+                    "id": "e3b2b7b9",
+                    "agent": "08_testeur_ia",
+                    "objectif": "Écrire et exécuter des tests unitaires pour vérifier le calcul correct de la moyenne, y compris les cas limites et la gestion des erreurs.",
+                    "statut": "nouvelle",
+                    "dependances": [
+                        "64b93e9e"
+                    ],
+                    "resultat": null,
+                    "date_creation": "2026-11-15T00:51:41",
+                    "date_maj": "2026-11-15T00:51:41"
+                }
+            ],
+            "priorite": "normale",
+            "statut": "en_cours",
+            "date_creation": "2026-11-15T00:51:35",
+            "date_maj": "2026-11-15T00:51:35"
         }
     ]
 }
