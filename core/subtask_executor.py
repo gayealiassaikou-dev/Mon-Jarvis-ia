@@ -339,15 +339,61 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                     pass
                 print(f"[OK] {st['id']}")
             else:
-                mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(reponse)[:500])
+                # Boucle apprentissage active : chercher une solution existante
+                _retry_reussi = False
                 try:
-                    from core import learning as _learning
-                    _learning.enregistrer_echec(st["objectif"], str(reponse)[:200], st["agent"])
+                    from core import learning as _learning_retry
+                    _solutions = _learning_retry.conseils_pour(st["objectif"])
+                    if _solutions and "SOLUTION passee" in _solutions:
+                        print(f"[Apprentissage] Solution trouvee pour {st['id']}, retry intelligent...")
+                        _objectif_retry = (
+                            st["objectif"]
+                            + "\n\nVoici une solution qui a deja fonctionne pour un objectif similaire :"
+                            + _solutions
+                            + "\n\nApplique cette solution directement avec un outil."
+                        )
+                        try:
+                            avant3 = len(jarvis.ai_engine.derniers_resultats_outils)
+                            _rep3 = jarvis.traiter_commande(
+                                _objectif_retry,
+                                retourner_reponse=True,
+                                agent_force=st["agent"],
+                            )
+                            _new3 = jarvis.ai_engine.derniers_resultats_outils[avant3:]
+                            _rep3_str = str(_rep3 or "").lower()
+                            _encore_echec = (
+                                not _rep3
+                                or not isinstance(_rep3, str)
+                                or len(_rep3.strip()) < 5
+                                or any(sig in _rep3_str for sig in SIGNES_ECHEC)
+                                or (demande_action and not _new3)
+                            )
+                            if not _encore_echec:
+                                mm.mettre_a_jour_sous_tache(
+                                    mission_id, st["id"], "terminee", resultat=str(_rep3)[:500]
+                                )
+                                _learning_retry.enregistrer_solution(
+                                    st["objectif"], str(_rep3)[:300], st["agent"]
+                                )
+                                print(f"[OK] {st['id']} (apprentissage actif)")
+                                _retry_reussi = True
+                            else:
+                                print(f"[Apprentissage] Retry intelligent echoue aussi")
+                        except Exception as _e3:
+                            print(f"[Apprentissage] Erreur retry: {_e3}")
                 except Exception:
                     pass
-                print(f"[ECHEC] {st['id']} : validation reelle echouee")
-                mm.mettre_a_jour_statut(mission_id, "bloquee")
-                return {"ok": False, "statut": "bloquee", "etapes": etapes + 1, "echec_sur": st["id"]}
+
+                if not _retry_reussi:
+                    mm.mettre_a_jour_sous_tache(mission_id, st["id"], "bloquee", resultat=str(reponse)[:500])
+                    try:
+                        from core import learning as _learning
+                        _learning.enregistrer_echec(st["objectif"], str(reponse)[:200], st["agent"])
+                    except Exception:
+                        pass
+                    print(f"[ECHEC] {st['id']} : validation reelle echouee")
+                    mm.mettre_a_jour_statut(mission_id, "bloquee")
+                    return {"ok": False, "statut": "bloquee", "etapes": etapes + 1, "echec_sur": st["id"]}
         except Exception as e:
             print(f"[ERREUR] {st['id']}: {type(e).__name__}: {e}")
             try:
