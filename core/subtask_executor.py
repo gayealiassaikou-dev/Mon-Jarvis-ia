@@ -225,12 +225,28 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                                                     from core.tools import (
                                                         ecrire_fichier as _ef, lire_fichier as _lf,
                                                         creer_dossier as _cd, supprimer_fichier as _sf,
+                                                        executer_programme_python as _ep,
                                                     )
                                                     mapping = {
                                                         "ecrire_fichier": _ef, "lire_fichier": _lf,
                                                         "creer_dossier": _cd, "supprimer_fichier": _sf,
+                                                        "executer_script": None,  # traite plus bas
+                                                        "executer_programme_python": _ep,
+                                                        "executer_script_python": None,
                                                     }
-                                                    if nom_outil in mapping:
+                                                    if nom_outil == "executer_script" or nom_outil == "executer_script_python":
+                                                        # Le LLM renvoie du code Python a executer directement
+                                                        code_script = params.get("script", "") or params.get("code", "")
+                                                        if code_script:
+                                                            tmp_chemin = f"espace_travail/_e2e_{__import__('uuid').uuid4().hex[:8]}.py"
+                                                            _ef(tmp_chemin, code_script + "\n")
+                                                            res = _ep(tmp_chemin)
+                                                            print(f"[Fallback JSON] executer_script -> {str(res)[:150]}")
+                                                            if "code 0" in str(res).lower() or "succes" in str(res).lower():
+                                                                est_echec = False
+                                                            reponse = f"Script execute: {str(res)[:400]}"
+                                                            break
+                                                    elif nom_outil in mapping and mapping[nom_outil] is not None:
                                                         res = mapping[nom_outil](**params)
                                                         print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
                                                         est_echec = False
@@ -245,16 +261,38 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                             from core.tools import (
                                 ecrire_fichier as _ef, lire_fichier as _lf,
                                 creer_dossier as _cd, supprimer_fichier as _sf,
+                                executer_programme_python as _ep,
                             )
                             mapping = {
                                 "ecrire_fichier": _ef, "lire_fichier": _lf,
                                 "creer_dossier": _cd, "supprimer_fichier": _sf,
+                                "executer_programme_python": _ep,
                             }
-                            if nom_outil in mapping:
+                            if nom_outil in ("executer_script", "executer_script_python"):
+                                code_script = params.get("script", "") or params.get("code", "")
+                                if code_script:
+                                    import uuid as _uuid
+                                    tmp_chemin = f"espace_travail/_e2e_{_uuid.uuid4().hex[:8]}.py"
+                                    _ef(tmp_chemin, code_script + "\n")
+                                    res = _ep(tmp_chemin)
+                                    print(f"[Fallback JSON] executer_script -> {str(res)[:150]}")
+                                    if "code 0" in str(res).lower() or "succes" in str(res).lower():
+                                        est_echec = False
+                                    reponse = f"Script execute: {str(res)[:400]}"
+                                    break
+                            elif nom_outil in mapping:
                                 res = mapping[nom_outil](**params)
                                 print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
+                                # Executer le .py si c'est un script
+                                if nom_outil == "ecrire_fichier" and str(params.get("chemin", "")).endswith(".py"):
+                                    try:
+                                        sortie = _ep(params["chemin"])
+                                        print(f"[Fallback JSON] Execution {params['chemin']}: {str(sortie)[:150]}")
+                                        res = f"{res} | Execution: {str(sortie)[:200]}"
+                                    except Exception as _e2:
+                                        print(f"[Fallback JSON] Execution echouee: {_e2}")
                                 est_echec = False
-                                reponse = f"Outil {nom_outil} execute: {str(res)[:300]}"
+                                reponse = f"Outil {nom_outil} execute: {str(res)[:400]}"
                                 break
                     except Exception:
                         pass
