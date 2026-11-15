@@ -124,6 +124,9 @@ def executer_mission(mission_id, max_etapes=10):
                 or theorique_sans_action
                 or (demande_action and not nouveaux_outils)
             )
+            # Sauvegarde reponse originale (peut contenir du code a extraire)
+            reponse_originale = reponse
+
             # Retry force si aucun outil n'a ete appele
             if est_echec and demande_action and not nouveaux_outils:
                 print(f"[Retry force] {st['id']} : aucun outil, on force")
@@ -149,10 +152,14 @@ def executer_mission(mission_id, max_etapes=10):
                 except Exception as e2:
                     print(f"[Retry force ERREUR] {e2}")
 
-            # Fallback final : extraire code Python de la reponse et l'executer
-            if est_echec and demande_action and isinstance(reponse, str):
+            # Fallback final : extraire code Python (reponse courante OU originale)
+            if est_echec and demande_action:
                 import re as _re
-                blocs = _re.findall(r"```(?:python)?\s*\n(.+?)```", reponse, _re.DOTALL)
+                # Chercher le code dans la reponse courante ET dans l'originale
+                sources = [str(reponse or ""), str(reponse_originale or "")]
+                blocs = []
+                for src in sources:
+                    blocs.extend(_re.findall(r"```(?:python)?\s*\n(.+?)```", src, _re.DOTALL))
                 if blocs:
                     code = max(blocs, key=len).strip()
                     from core.tools import ecrire_fichier as _ecrire, executer_programme_python as _exec
