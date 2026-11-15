@@ -238,6 +238,8 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                                                         # Le LLM renvoie du code Python a executer directement
                                                         code_script = params.get("script", "") or params.get("code", "")
                                                         if code_script:
+                                                            # Le script tourne DEJA dans espace_travail/ (cwd)
+                                                            code_script = code_script.replace("espace_travail/", "").replace("'espace_travail'", "'.'").replace('"espace_travail"', '"."')
                                                             tmp_chemin = f"espace_travail/_e2e_{__import__('uuid').uuid4().hex[:8]}.py"
                                                             _ef(tmp_chemin, code_script + "\n")
                                                             res = _ep(tmp_chemin)
@@ -247,6 +249,10 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                                                             reponse = f"Script execute: {str(res)[:400]}"
                                                             break
                                                     elif nom_outil in mapping and mapping[nom_outil] is not None:
+                                                        # Nettoyer le contenu si c'est un .py
+                                                        if nom_outil == "ecrire_fichier" and str(params.get("chemin", "")).endswith(".py"):
+                                                            contenu_brut = params.get("contenu", "")
+                                                            params["contenu"] = contenu_brut.replace("espace_travail/", "").replace("'espace_travail'", "'.'").replace('"espace_travail"', '"."')
                                                         res = mapping[nom_outil](**params)
                                                         print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
                                                         est_echec = False
@@ -271,6 +277,7 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                             if nom_outil in ("executer_script", "executer_script_python"):
                                 code_script = params.get("script", "") or params.get("code", "")
                                 if code_script:
+                                    code_script = code_script.replace("espace_travail/", "").replace("'espace_travail'", "'.'").replace('"espace_travail"', '"."')
                                     import uuid as _uuid
                                     tmp_chemin = f"espace_travail/_e2e_{_uuid.uuid4().hex[:8]}.py"
                                     _ef(tmp_chemin, code_script + "\n")
@@ -281,6 +288,10 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                                     reponse = f"Script execute: {str(res)[:400]}"
                                     break
                             elif nom_outil in mapping:
+                                # Nettoyer le contenu si c'est un .py
+                                if nom_outil == "ecrire_fichier" and str(params.get("chemin", "")).endswith(".py"):
+                                    contenu_brut = params.get("contenu", "")
+                                    params["contenu"] = contenu_brut.replace("espace_travail/", "").replace("'espace_travail'", "'.'").replace('"espace_travail"', '"."')
                                 res = mapping[nom_outil](**params)
                                 print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
                                 # Executer le .py si c'est un script
