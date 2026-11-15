@@ -93,6 +93,9 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                 "quelle option", "je ne lancerai aucune modification",
                 "voulez-vous", "souhaitez-vous", "voulez vous",
                 "confirmez", "attendez confirmation",
+                "attends votre confirmation", "attend votre confirmation",
+                "attendre votre confirmation", "j'attends votre confirmation",
+                "en attente de confirmation", "avant d'agir",
                 "je peux :", "je peux\u00a0:",
             ]
             # Si l'objectif demande une action concrete, la reponse doit contenir
