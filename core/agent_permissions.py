@@ -1,7 +1,7 @@
 TOUS_LES_OUTILS = [
     "lire_fichier", "ecrire_fichier", "supprimer_fichier", "supprimer_dossier",
     "lister_fichiers", "creer_dossier",
-    "rechercher_web",
+    "rechercher_web", "chercher_opportunites",
     "creer_projet", "ajouter_tache", "lister_projets", "lister_taches",
     "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet",
     "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
@@ -30,7 +30,8 @@ PERMISSIONS_AGENTS = {
     ],
 
     "04_business": [
-        "rechercher_web", "lister_projets", "lister_taches", "lire_fichier"
+        "rechercher_web", "chercher_opportunites",
+        "lister_projets", "lister_taches", "lire_fichier"
     ],
 
     "05_architecte_ia": [

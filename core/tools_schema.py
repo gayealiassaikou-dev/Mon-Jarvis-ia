@@ -2,6 +2,7 @@
 import os
 import requests
 
+from core.business_intel import chercher_opportunites
 from core.tools import (
     definir_projet_actif, obtenir_projet_actif, executer_tests_python,
     executer_programme_python, reparer_syntaxe_python, diagnostiquer_code_python,
@@ -19,6 +20,20 @@ from core.outils_telephone import (
 )
 
 OUTILS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "chercher_opportunites",
+            "description": "Cherche des opportunites business rentables pour une niche (redaction, code, traduction, data). Retourne prix marche + sources.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "niche": {"type": "string", "description": "Niche: redaction, code, traduction ou data"}
+                },
+                "required": ["niche"]
+            }
+        }
+    },
     {
         "type": "function",
         "function": {
@@ -477,7 +492,8 @@ FONCTIONS_DISPONIBLES = {
     "corriger_code_python": corriger_code_python,
     "executer_tests_python": executer_tests_python,
     "executer_programme_python": executer_programme_python,
-    "gerer_musique": gerer_musique
+    "gerer_musique": gerer_musique,
+    "chercher_opportunites": chercher_opportunites
 }
 OUTILS.extend(SCHEMAS_TELEPHONE)
 FONCTIONS_DISPONIBLES.update(FONCTIONS_TELEPHONE)

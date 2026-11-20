@@ -314,10 +314,12 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                                 creer_dossier as _cd, supprimer_fichier as _sf,
                                 executer_programme_python as _ep,
                             )
+                            from core.business_intel import chercher_opportunites as _co
                             mapping = {
                                 "ecrire_fichier": _ef, "lire_fichier": _lf,
                                 "creer_dossier": _cd, "supprimer_fichier": _sf,
                                 "executer_programme_python": _ep,
+                                "chercher_opportunites": _co,
                             }
                             if nom_outil in ("executer_script", "executer_script_python"):
                                 code_script = params.get("script", "") or params.get("code", "")

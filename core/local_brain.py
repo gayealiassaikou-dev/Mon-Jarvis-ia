@@ -199,6 +199,12 @@ ACTION_PROGRAMMATION = re.compile(
 )
 
 
+ACTION_BUSINESS = re.compile(
+    r"\b(internet|en ligne|idee|idees|business|opportunite|opportunites|"
+    r"rapporte|rapportent|argent|trouve|trouver|cherche|chercher)\b"
+)
+
+
 class LocalBrain:
     """Répond sans IA. Retourne None si aucune règle ne correspond."""
 
@@ -740,6 +746,8 @@ class LocalBrain:
 
         # Garde-fou : une demande de programmation va aux fournisseurs IA, pas aux fiches locales.
         if ACTION_PROGRAMMATION.search(t):
+            return None
+        if ACTION_BUSINESS.search(t):
             return None
 
         sans_ponct = re.sub(r"[.,]", " ", t)

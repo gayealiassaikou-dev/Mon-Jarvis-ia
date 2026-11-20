@@ -30,7 +30,7 @@ def rechercher_web(requete):
         resultats = data.get("results", [])
         texte = ""
         for r in resultats:
-            texte += f"- {r.get('title')}: {r.get('content')[:200]}\n"
+            texte += f"- {r.get('title')}: {(r.get('content') or '')[:200]}\n  URL: {r.get('url')}\n"
         return texte if texte else "Aucun resultat trouve pour cette recherche."
     except requests.exceptions.Timeout:
         return "Erreur : la recherche web a expire (timeout)."

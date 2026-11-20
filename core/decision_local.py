@@ -74,7 +74,11 @@ class DecisionLocalMixin:
             "projet", "cherch", "recherch", "github", "git", "depot",
             "repo", "fichier", "dossier",
         )
-        if any(m.startswith(r) for m in mots for r in racines_action):
+        _racines_utiles = tuple(
+            r for r in racines_action
+            if not ("business" in mots and r in ("cherch", "recherch"))
+        )
+        if any(m.startswith(r) for m in mots for r in _racines_utiles):
             return None
         themes = {
             "01_developpeur": {"code", "python", "bug", "programme", "script",
@@ -106,6 +110,6 @@ class DecisionLocalMixin:
                 "validation_requise": False,
                 "resume": demande,
             },
-            "outils_suggeres": [],
+            "outils_suggeres": (["rechercher_web", "chercher_opportunites"] if scores[0][1] == "04_business" else []),
         }
 
