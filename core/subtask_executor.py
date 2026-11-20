@@ -294,6 +294,13 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                                                         res = mapping[nom_outil](**params)
                                                         print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
                                                         est_echec = False
+                                                        # Ajouter a nouveaux_outils pour cristallisation
+                                                        nouveaux_outils.append({
+                                                            "outil": nom_outil,
+                                                            "arguments": dict(params),
+                                                            "statut": "succes",
+                                                            "execute": True,
+                                                        })
                                                         reponse = f"Outil {nom_outil} execute: {str(res)[:300]}"
                                                     break
                                             except Exception:
@@ -341,6 +348,13 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                                     except Exception as _e2:
                                         print(f"[Fallback JSON] Execution echouee: {_e2}")
                                 est_echec = False
+                                # Ajouter a nouveaux_outils pour cristallisation
+                                nouveaux_outils.append({
+                                    "outil": nom_outil,
+                                    "arguments": dict(params),
+                                    "statut": "succes",
+                                    "execute": True,
+                                })
                                 reponse = f"Outil {nom_outil} execute: {str(res)[:400]}"
                                 break
                     except Exception:
