@@ -105,3 +105,8 @@ espace_travail/*
 requirements.lock
 
 generate_*.py
+
+# Sauvegardes manuelles (utiliser git a la place)
+core/*.bak*
+core/*.sauvegarde*
+core/*.avant*
