@@ -369,7 +369,8 @@ class AIProvidersMixin:
                                 continue
                     if textes_stream:
                         return "".join(textes_stream)
-                except Exception:
+                except Exception as _e_stream:
+                    print(f"[Gemini stream] coupure : {_e_stream!r}", flush=True)
                     # Fallback : revenir au mode classique
                     pass
 
