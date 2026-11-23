@@ -7,6 +7,7 @@ import threading
 import json as _json
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "core"))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from io import BytesIO
 from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
