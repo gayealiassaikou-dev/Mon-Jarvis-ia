@@ -177,4 +177,46 @@ def tenter(objectif):
         except Exception as e:
             return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
 
+    # 11. Torche
+    if _re_skip.search(r"\b(?:allume|active|eteins|eteindre|desactive|toggle).*torche\b|\btorche\b", obj, _re_skip.IGNORECASE):
+        try:
+            from core.actions_telephone import lampe_torche
+            _etat_torche = "off" if _re_skip.search(r"\b(?:eteins|eteindre|desactive|coupe|off)\b", obj, _re_skip.IGNORECASE) else "on"
+            r = lampe_torche(_etat_torche)
+            return {"ok": True, "outil": "lampe_torche", "message": f"Torche: {str(r)[:200]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 12. Batterie
+    if _re_skip.search(r"\bbatterie\b|\bniveau.*batterie\b", obj, _re_skip.IGNORECASE):
+        try:
+            from core.actions_telephone import lire_batterie
+            r = lire_batterie()
+            return {"ok": True, "outil": "lire_batterie", "message": f"Batterie: {str(r)[:200]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 13. Volume
+    m = _re_skip.search(r"\bvolume\b.*?(\d{1,3})|(\d{1,3}).*?\bvolume\b", obj, _re_skip.IGNORECASE)
+    if m:
+        niveau = int(m.group(1) or m.group(2))
+        if 0 <= niveau <= 100:
+            try:
+                from core.actions_telephone import regler_volume
+                # Termux : volume 0-15, on convertit depuis 0-100
+                _niveau_termux = max(0, min(15, round(niveau * 15 / 100)))
+                r = regler_volume(_niveau_termux)
+                return {"ok": True, "outil": "regler_volume", "message": f"Volume {niveau}% (niveau {_niveau_termux}/15): {str(r)[:200]}"}
+            except Exception as e:
+                return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
+    # 14. Wi-Fi
+    if _re_skip.search(r"\bwifi\b|\bwi-fi\b|\breseau\b", obj, _re_skip.IGNORECASE):
+        try:
+            from core.actions_telephone import lire_wifi
+            r = lire_wifi()
+            return {"ok": True, "outil": "lire_wifi", "message": f"Wi-Fi: {str(r)[:200]}"}
+        except Exception as e:
+            return {"ok": False, "erreur": f"{type(e).__name__}: {e}"}
+
     return None

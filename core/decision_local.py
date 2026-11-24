@@ -1,4 +1,5 @@
 """Decision locale sans LLM - extraite de decision_engine.py."""
+from core.agent_permissions import filtrer_outils  # noqa: F401
 
 
 class DecisionLocalMixin:

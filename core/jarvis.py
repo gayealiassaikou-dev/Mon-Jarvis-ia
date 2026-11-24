@@ -95,6 +95,22 @@ class Jarvis(StartupMixin, VoiceLoopMixin):
 
         resultat = self.command_manager.traiter(commande)
 
+        # Deterministe (0 LLM) : actions Android simples (torche, batterie, volume, wifi)
+        if "Commande inconnue" in resultat:
+            try:
+                from core import deterministic_actions
+                _det = deterministic_actions.tenter(commande)
+                if _det and _det.get("ok"):
+                    _msg = _det.get("message", "OK")
+                    self.logger.enregistrer(f"[DETERMINISTE] {_det.get('outil')}")
+                    self.memory_manager.ajouter_echange(commande, _msg)
+                    if retourner_reponse:
+                        return _msg
+                    print(_msg)
+                    return
+            except Exception:
+                pass
+
         if "Commande inconnue" in resultat:
             # Les recherches GitHub doivent passer par le moteur de décision,
             # jamais être interceptées par les fiches de connaissances locales.
