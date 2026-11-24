@@ -369,6 +369,36 @@ def charger_conversation(identifiant):
     return jsonify({"conversation": conversation, "messages": messages})
 
 
+@app.route("/api/missions", methods=["GET"])
+def lister_missions():
+    statut = request.args.get("statut")
+    missions = jarvis.mission_manager.lister_missions()
+    if statut:
+        missions = [m for m in missions if m.get("statut") == statut]
+    return jsonify({"missions": missions, "nombre": len(missions)})
+
+@app.route("/api/missions/<mission_id>", methods=["GET"])
+def obtenir_mission_route(mission_id):
+    mission = jarvis.mission_manager.obtenir_mission(mission_id)
+    if mission is None:
+        return jsonify({"erreur": "Mission introuvable"}), 404
+    mission_copy = dict(mission)
+    sous_taches = jarvis.mission_manager.obtenir_sous_taches(mission_id)
+    mission_copy["sous_taches"] = sous_taches
+    return jsonify(mission_copy)
+
+@app.route("/api/apprentissages", methods=["GET"])
+def lister_apprentissages():
+    chemin = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "apprentissages.json"))
+    try:
+        with open(chemin, "r", encoding="utf-8") as f:
+            data = _json.load(f)
+    except FileNotFoundError:
+        return jsonify({"erreur": "Fichier introuvable"}), 404
+    except ValueError:
+        return jsonify({"erreur": "JSON invalide"}), 500
+    return jsonify(data)
+
 @app.route("/envoyer", methods=["POST"])
 def envoyer():
     message = request.form["message"]
