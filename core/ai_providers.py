@@ -314,6 +314,8 @@ class AIProvidersMixin:
         contents.append({"role": "user", "parts": [{"text": message}]})
 
         payload = {"contents": contents, "tools": _convertir_outils_gemini(self._obtenir_outils_autorises())}
+        payload["generationConfig"] = {"temperature": 0.1}
+        payload["generationConfig"] = {"temperature": 0.1}
         if contexte:
             payload["systemInstruction"] = {"parts": [{"text": contexte}]}
 
