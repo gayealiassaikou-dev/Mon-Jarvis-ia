@@ -213,6 +213,27 @@ class VerifiersMixin(VerifiersGithubMixin):
                 "details": f"chercher_opportunites execute avec succes ; {len(sources)} source(s) reelle(s) retournee(s).",
             }
 
+        if nom_fonction == "creer_site_web":
+            if not isinstance(resultat, str):
+                return {
+                    "verifie": False,
+                    "details": f"creer_site_web a retourne un type invalide : {type(resultat).__name__}.",
+                }
+            if resultat.startswith("Erreur"):
+                return {
+                    "verifie": False,
+                    "details": f"creer_site_web a echoue : {resultat}",
+                }
+            if "cree et verifie" not in resultat:
+                return {
+                    "verifie": False,
+                    "details": "creer_site_web n'a pas confirme la creation verifiee des fichiers.",
+                }
+            return {
+                "verifie": True,
+                "details": resultat[:200],
+            }
+
         if nom_fonction == "supprimer_tache":
             if isinstance(resultat, str) and resultat.startswith("Erreur"):
                 return {

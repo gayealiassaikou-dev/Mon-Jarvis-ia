@@ -545,3 +545,22 @@ def _convertir_outils_gemini(outils):
 
 
 OUTILS_GEMINI = _convertir_outils_gemini(OUTILS)
+
+from core.tools_site_web import creer_site_web
+OUTILS.append({
+    "type": "function",
+    "function": {
+        "name": "creer_site_web",
+        "description": "Cree un site web statique (index.html, style.css, script.js) dans espace_travail/<nom>/ puis verifie les fichiers. Utiliser un nom simple en minuscules sans espaces.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "nom": {"type": "string", "description": "Nom du site (a-z, 0-9, -, _), max 40"},
+                "titre": {"type": "string", "description": "Titre affiche dans la page (defaut: Mon site)"},
+                "description": {"type": "string", "description": "Sous-titre (defaut: Site cree par Jarvis)"}
+            },
+            "required": ["nom"]
+        }
+    }
+})
+FONCTIONS_DISPONIBLES["creer_site_web"] = creer_site_web
