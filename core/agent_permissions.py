@@ -1,7 +1,7 @@
 TOUS_LES_OUTILS = [
     "lire_fichier", "ecrire_fichier", "supprimer_fichier", "supprimer_dossier",
     "lister_fichiers", "creer_dossier",
-    "rechercher_web", "chercher_opportunites", "lire_pdf",
+    "rechercher_web", "chercher_opportunites", "lire_pdf", "lire_page_web",
     "creer_projet", "ajouter_tache", "lister_projets", "lister_taches",
     "terminer_tache", "supprimer_tache", "supprimer_projet", "modifier_statut_projet",
     "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
@@ -18,7 +18,7 @@ PERMISSIONS_AGENTS = {
         "lire_fichier", "ecrire_fichier", "supprimer_fichier", "supprimer_dossier",
         "lister_fichiers", "creer_dossier",
         "github_lister_repos", "github_lire_fichier", "github_ecrire_fichier", "github_creer_repo",
-        "lire_pdf", "obtenir_projet_actif", "executer_programme_python", "reparer_syntaxe_python", "diagnostiquer_code_python", "analyser_erreur_python", "corriger_code_python"
+        "lire_pdf", "lire_page_web", "obtenir_projet_actif", "executer_programme_python", "reparer_syntaxe_python", "diagnostiquer_code_python", "analyser_erreur_python", "corriger_code_python"
     ],
 
     "02_designer": [
@@ -26,11 +26,11 @@ PERMISSIONS_AGENTS = {
     ],
 
     "03_recherche": [
-        "rechercher_web", "lire_fichier", "lister_fichiers", "lire_pdf"
+        "rechercher_web", "lire_fichier", "lister_fichiers", "lire_pdf", "lire_page_web"
     ],
 
     "04_business": [
-        "rechercher_web", "chercher_opportunites",
+        "rechercher_web", "chercher_opportunites", "lire_page_web",
         "lister_projets", "lister_taches", "lire_fichier"
     ],
 

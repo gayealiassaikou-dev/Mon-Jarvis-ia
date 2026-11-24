@@ -461,7 +461,7 @@ OUTILS_LECTURE_SEULE = frozenset({
     "lire_fichier", "lister_fichiers", "lister_projets", "lister_taches",
     "obtenir_projet_actif",
     "rechercher_web", "rechercher_souvenir",
-    "github_lister_repos", "github_lire_fichier", "lire_pdf",
+    "github_lister_repos", "github_lire_fichier", "lire_pdf", "lire_page_web",
 })
 
 FONCTIONS_DISPONIBLES = {
@@ -512,6 +512,22 @@ OUTILS.append({
     }
 })
 FONCTIONS_DISPONIBLES["lire_pdf"] = lire_pdf
+from core.tools_navigation import lire_page_web
+OUTILS.append({
+    "type": "function",
+    "function": {
+        "name": "lire_page_web",
+        "description": "Ouvre une page web (http/https) et en lit le texte. Utiliser apres rechercher_web pour lire une source en detail. Ne jamais pretendre avoir lu une page sans resultat de lecture.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "Adresse complete de la page, commencant par http:// ou https://"}
+            },
+            "required": ["url"]
+        }
+    }
+})
+FONCTIONS_DISPONIBLES["lire_page_web"] = lire_page_web
 OUTILS.extend(SCHEMAS_TELEPHONE)
 FONCTIONS_DISPONIBLES.update(FONCTIONS_TELEPHONE)
 

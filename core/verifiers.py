@@ -163,6 +163,7 @@ class VerifiersMixin(VerifiersGithubMixin):
             "github_lister_repos",
             "rechercher_web",
             "lire_pdf",
+            "lire_page_web",
         }:
             if isinstance(resultat, str) and resultat.startswith("Erreur"):
                 return {
