@@ -1,6 +1,8 @@
 import os
 import json
 import re
+import contextvars
+import threading
 import unicodedata
 import requests
 from dotenv import load_dotenv
@@ -11,13 +13,110 @@ from core.outils_telephone import SCHEMAS_TELEPHONE, FONCTIONS_TELEPHONE, verifi
 from core.tools_schema import OUTILS, OUTILS_GEMINI, _convertir_outils_gemini, FONCTIONS_DISPONIBLES, OUTILS_LECTURE_SEULE
 from core.ai_providers import AIProvidersMixin
 from core.verifiers import VerifiersMixin
+from core.tool_guard import verifier_execution
 
 load_dotenv()
 
 
 
 class AIEngine(AIProvidersMixin, VerifiersMixin):
+    # Creation atomique des ContextVar propres a chaque instance.
+    _verrou_contextvars = threading.Lock()
+
+    def _contextvar_pour(self, nom, defaut):
+        """Retourne le ContextVar de cette instance pour un etat de demande.
+
+        Chaque AIEngine possede ses propres ContextVar : deux moteurs ne
+        partagent donc jamais leurs valeurs, meme dans un meme contexte.
+        La valeur elle-meme reste isolee par contexte d'execution
+        (thread ou tache asyncio).
+        """
+        cle = "_contextvar_" + nom
+        var = self.__dict__.get(cle)
+        if var is not None:
+            return var
+
+        with self._verrou_contextvars:
+            var = self.__dict__.get(cle)
+            if var is None:
+                var = contextvars.ContextVar(
+                    f"ai_engine_{nom}_{id(self):x}",
+                    default=defaut,
+                )
+                self.__dict__[cle] = var
+        return var
+
+    def _initialiser_contextvars(self):
+        """Cree d'avance les ContextVar pour eviter toute course a la creation."""
+        for nom, defaut in (
+            ("agent_courant", None),
+            ("outils_autorises", None),
+            ("mode_action", False),
+            ("_message_utilisateur_courant", ""),
+            ("derniers_resultats_outils", None),
+            ("action_engagee", False),
+        ):
+            self._contextvar_pour(nom, defaut)
+
+    @property
+    def agent_courant(self):
+        return self._contextvar_pour("agent_courant", None).get()
+
+    @agent_courant.setter
+    def agent_courant(self, valeur):
+        self._contextvar_pour("agent_courant", None).set(valeur)
+
+    @property
+    def outils_autorises(self):
+        return self._contextvar_pour("outils_autorises", None).get()
+
+    @outils_autorises.setter
+    def outils_autorises(self, valeur):
+        self._contextvar_pour("outils_autorises", None).set(valeur)
+
+    @property
+    def mode_action(self):
+        return self._contextvar_pour("mode_action", False).get()
+
+    @mode_action.setter
+    def mode_action(self, valeur):
+        self._contextvar_pour("mode_action", False).set(valeur)
+
+    @property
+    def _message_utilisateur_courant(self):
+        return self._contextvar_pour("_message_utilisateur_courant", "").get()
+
+    @_message_utilisateur_courant.setter
+    def _message_utilisateur_courant(self, valeur):
+        self._contextvar_pour("_message_utilisateur_courant", "").set(valeur)
+
+    @property
+    def action_engagee(self):
+        return self._contextvar_pour("action_engagee", False).get()
+
+    @action_engagee.setter
+    def action_engagee(self, valeur):
+        self._contextvar_pour("action_engagee", False).set(valeur)
+
+    @property
+    def derniers_resultats_outils(self):
+        var = self._contextvar_pour("derniers_resultats_outils", None)
+        resultats = var.get()
+        if resultats is None:
+            # Liste neuve pour ce contexte : aucune liste mutable partagee.
+            resultats = []
+            var.set(resultats)
+        return resultats
+
+    @derniers_resultats_outils.setter
+    def derniers_resultats_outils(self, valeur):
+        self._contextvar_pour(
+            "derniers_resultats_outils", None
+        ).set(valeur)
+
     def __init__(self, memory_manager=None, logger=None):
+        self._initialiser_contextvars()
+
         self.memory_manager = memory_manager
         self.logger = logger
         self.derniers_resultats_outils = []
@@ -82,29 +181,25 @@ class AIEngine(AIProvidersMixin, VerifiersMixin):
         mode_action=False,
         message_utilisateur_origine=None,
         on_chunk=None,
+        agent=None,
     ):
         # Nouvelle demande : aucune action n'est encore engagée.
+        # Chaque etat est ecrit dans le contexte d'execution courant.
         self.action_engagee = False
         self.derniers_resultats_outils = []
 
-        ancien_outils_autorises = getattr(
-            self,
-            "outils_autorises",
-            None,
-        )
-        ancien_mode_action = getattr(
-            self,
-            "mode_action",
-            False,
-        )
+        cv_outils = self._contextvar_pour("outils_autorises", None)
+        cv_mode = self._contextvar_pour("mode_action", False)
+        cv_message = self._contextvar_pour("_message_utilisateur_courant", "")
+        cv_agent = self._contextvar_pour("agent_courant", None)
 
-        self.outils_autorises = outils_autorises
-        self.mode_action = bool(mode_action)
-        ancien_message = getattr(self, "_message_utilisateur_courant", "")
-        self._message_utilisateur_courant = str(
+        jeton_outils = cv_outils.set(outils_autorises)
+        jeton_mode = cv_mode.set(bool(mode_action))
+        jeton_message = cv_message.set(str(
             message if message_utilisateur_origine is None
             else message_utilisateur_origine
-        )
+        ))
+        jeton_agent = cv_agent.set(agent)
 
         from core import budget_guard
         ok, raison = budget_guard.autorise()
@@ -128,9 +223,12 @@ class AIEngine(AIProvidersMixin, VerifiersMixin):
                 pass
             return reponse
         finally:
-            self.outils_autorises = ancien_outils_autorises
-            self.mode_action = ancien_mode_action
-            self._message_utilisateur_courant = ancien_message
+            # Restauration exacte du contexte appelant, sans ecraser
+            # les valeurs d'une demande concurrente.
+            cv_agent.reset(jeton_agent)
+            cv_message.reset(jeton_message)
+            cv_mode.reset(jeton_mode)
+            cv_outils.reset(jeton_outils)
 
     # PATCH5_CONTRAT_OUTILS_V1
     def _obtenir_outils_autorises(self):
@@ -506,22 +604,17 @@ class AIEngine(AIProvidersMixin, VerifiersMixin):
             return resultat
 
         # -----------------------------------------------------
-        # Etat 2 : autorisation
+        # Etat 2 : autorisation (garde-fou central)
         # -----------------------------------------------------
         outils_autorises = getattr(self, "outils_autorises", None)
-
-        # Deny-by-default :
-        # None et [] signifient aucun outil autorisé.
-        outil_autorise = (
-            isinstance(outils_autorises, (list, tuple, set))
-            and nom_fonction in outils_autorises
+        decision = verifier_execution(
+            nom_fonction,
+            outils_autorises,
+            agent=getattr(self, "agent_courant", None),
         )
 
-        if not outil_autorise:
-            resultat = (
-                f"Erreur : loutil {nom_fonction} "
-                "nest pas autorise pour cette execution."
-            )
+        if not decision["autorise"]:
+            resultat = f"Erreur : {decision['raison']}"
 
             entree = self._normaliser_resultat_outil(
                 nom_fonction,
@@ -533,9 +626,9 @@ class AIEngine(AIProvidersMixin, VerifiersMixin):
                 execute=False,
                 verification={
                     "verifie": False,
-                    "details": "Outil non autorise."
+                    "details": decision["raison"],
                 },
-                statut="non_autorise",
+                statut=decision["statut"],
             )
 
             self._enregistrer_resultat_outil(entree)

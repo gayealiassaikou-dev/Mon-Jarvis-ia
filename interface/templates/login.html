@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#080d18">
+    <meta name="color-scheme" content="dark">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Connexion - Sam Sarr</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --fond: #080d18;
+            --panneau: #101a2c;
+            --bordure: #223552;
+            --texte: #e8f1ff;
+            --texte-doux: #93a7c4;
+            --accent: #42baff;
+            --accent-fonce: #168bff;
+            --erreur: #ff8a80;
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body { height: 100%; }
+
+        body {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background:
+                radial-gradient(circle at 50% 0%, #0d213d 0%, transparent 55%),
+                var(--fond);
+            color: var(--texte);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        }
+
+        main {
+            width: 100%;
+            max-width: 22rem;
+            padding: 2rem 1.75rem;
+            background: var(--panneau);
+            border: 1px solid var(--bordure);
+            border-radius: 1rem;
+            box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, .45);
+        }
+
+        .oeil {
+            display: block;
+            width: 84px;
+            height: auto;
+            margin: 0 auto 1rem;
+        }
+
+        h1 {
+            margin: 0 0 .35rem;
+            font-size: 1.35rem;
+            text-align: center;
+        }
+
+        .sous-titre {
+            margin: 0 0 1.5rem;
+            color: var(--texte-doux);
+            font-size: .9rem;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: .45rem;
+            font-size: .85rem;
+            color: var(--texte-doux);
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: .8rem .9rem;
+            margin-bottom: 1rem;
+            background: #0a1424;
+            border: 1px solid var(--bordure);
+            border-radius: .55rem;
+            color: var(--texte);
+            font: inherit;
+        }
+
+        input[type="password"]:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+            border-color: var(--accent);
+        }
+
+        button {
+            width: 100%;
+            padding: .85rem 1rem;
+            border: 0;
+            border-radius: .55rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent-fonce));
+            color: #02101f;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button:hover { filter: brightness(1.08); }
+
+        button:focus-visible {
+            outline: 2px solid #bcecff;
+            outline-offset: 2px;
+        }
+
+        .erreur {
+            margin: 0 0 1rem;
+            padding: .65rem .8rem;
+            border: 1px solid rgba(255, 138, 128, .45);
+            border-radius: .5rem;
+            background: rgba(255, 138, 128, .1);
+            color: var(--erreur);
+            font-size: .875rem;
+        }
+
+        .note {
+            margin: 1.25rem 0 0;
+            color: var(--texte-doux);
+            font-size: .75rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <svg class="oeil" viewBox="0 0 240 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Oeil de Sam Sarr">
+        <path d="M12 75 C42 31 82 12 120 12 C158 12 198 31 228 75 C198 119 158 138 120 138 C82 138 42 119 12 75Z" fill="#071b35" stroke="#42baff" stroke-width="5"/>
+        <circle cx="120" cy="75" r="38" fill="#168bff" stroke="#9be8ff" stroke-width="3"/>
+        <circle cx="120" cy="75" r="19" fill="#020817"/>
+        <circle cx="108" cy="61" r="8" fill="white"/>
+        <circle cx="137" cy="88" r="4" fill="#bcecff"/>
+    </svg>
+
+    <h1>Sam Sarr</h1>
+    <p class="sous-titre">Acces protege. Entre le mot de passe pour continuer.</p>
+
+    {% if erreur %}
+    <p class="erreur" role="alert">{{ erreur }}</p>
+    {% endif %}
+
+    <form method="post" action="{{ url_for('connexion') }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="suivant" value="{{ suivant }}">
+        <label for="mot_de_passe">Mot de passe</label>
+        <input
+            id="mot_de_passe"
+            name="mot_de_passe"
+            type="password"
+            autocomplete="current-password"
+            required
+            autofocus
+        >
+        <button type="submit">Se connecter</button>
+    </form>
+
+    <p class="note">Session valable 12 heures sur cet appareil.</p>
+</main>
+</body>
+</html>

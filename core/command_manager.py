@@ -77,9 +77,22 @@ class CommandManager:
         elif commande == "aide":
             return "Commandes disponibles : bonjour, qui es-tu, agents, memoire, version, heure, date, aide. Je sais aussi calculer (ex : combien font 12 fois 7). Pour la musique et les vidéos, vous pouvez dire : 'joue [titre]', 'mets la musique [titre]', 'cherche la vidéo [titre]', etc. Ajoutez 'populaire' pour des résultats tendances."
 
-        elif re.match(r"^(?:joue(?: moi)?|(?:mets|lance)(?: moi)?|(?:cherche|trouve)(?: moi)?)(?: une| la)?(?: musique| chanson| vidéo| vidéo musicale| clip)?(?: de| par| avec)?(?: l'| le| la)?(?: artiste| groupe| auteur)?(?: nommé| appelé)?(?: le| la)?(?: titre| morceau| nom)?(?: de)?(?: l'| le)?(?: genre| ambiance| style| année)?(?: de)?(?: l'| le)?(?: année)?(?: de)?(?: l'| le)?(?: mix| playlist)?(?: nommé| appelé)?(?: le| la)?(?: nom)?(?: de)?(?: l'| le)?(?: mix| playlist)? (.+)$", commande):
-            query = re.match(r"^(?:joue(?: moi)?|(?:mets|lance)(?: moi)?|(?:cherche|trouve)(?: moi)?)(?: une| la)?(?: musique| chanson| vidéo| vidéo musicale| clip)?(?: de| par| avec)?(?: l'| le| la)?(?: artiste| groupe| auteur)?(?: nommé| appelé)?(?: le| la)?(?: titre| morceau| nom)?(?: de)?(?: l'| le)?(?: genre| ambiance| style| année)?(?: de)?(?: l'| le)?(?: année)?(?: de)?(?: l'| le)?(?: mix| playlist)?(?: nommé| appelé)?(?: le| la)?(?: nom)?(?: de)?(?: l'| le)?(?: mix| playlist)? (.+)$", commande).group(1)
-            return self._traiter_media(query)
+        elif (
+            # Verbes medias purs : joue, mets, lance, play
+            re.search(r"\b(?:joue|mets|lance|play)\b", commande)
+            # OU verbes ambigus + mot media
+            or (
+                re.search(r"\b(?:cherche|trouve)\b", commande)
+                and re.search(r"\b(?:musique|chanson|vidéo|video|clip|playlist|morceau|album)\b", commande)
+            )
+        ):
+            # Retirer le verbe et les mots medias pour extraire la query
+            q = re.sub(r"^.*?\b(?:joue|mets|lance|play|cherche|trouve)\b", "", commande, count=1)
+            q = re.sub(r"\b(?:moi|une|la|le|les|des|du|de|une|musique|chanson|vidéo|video|clip|playlist|morceau|album|youtube|sur)\b", " ", q)
+            q = re.sub(r"\s+", " ", q).strip(" ,.!?;:-")
+            if q:
+                return self._traiter_media(q)
+            return "Commande media invalide."
 
         else:
             return "Commande inconnue. Tape aide pour voir les commandes."

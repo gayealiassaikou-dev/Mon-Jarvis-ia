@@ -1,3 +1,4 @@
+import os
 import unittest
 from unittest.mock import patch
 
@@ -6,6 +7,10 @@ from interface.app import app
 
 class TestInterfaceLocalFirst(unittest.TestCase):
     def setUp(self):
+        # Ce test porte sur le rendu local, pas sur l'authentification web.
+        self._sans_mot_de_passe = patch.dict(os.environ, {"JARVIS_WEB_PASSWORD": ""})
+        self._sans_mot_de_passe.start()
+        self.addCleanup(self._sans_mot_de_passe.stop)
         self.client = app.test_client()
 
     @patch("interface.app.jarvis.traiter_commande")

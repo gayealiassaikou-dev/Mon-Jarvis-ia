@@ -1,16 +1,32 @@
 import sys
 import os
+import hmac
+import hashlib
+import math
 import secrets
 import tempfile
 import queue
 import threading
+import time
 import json as _json
+from datetime import timedelta
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "core"))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    send_file,
+    send_from_directory,
+    redirect,
+    session,
+    url_for,
+    has_request_context,
+)
 from jarvis import Jarvis
 from voice_manager import VoiceManager
 from activity_tracker import ActivityTracker
@@ -22,6 +38,274 @@ jarvis = Jarvis()
 voice = VoiceManager()
 activity_tracker = ActivityTracker()
 conversation_store = ConversationStore()
+
+
+# ---------------------------------------------------------------------------
+# Authentification web (C1)
+#
+# Activee uniquement si JARVIS_WEB_PASSWORD est defini (vide = acces local
+# libre, comportement historique). La cle de signature des cookies vient de
+# JARVIS_SECRET_KEY ; a defaut une cle aleatoire est generee a chaque demarrage
+# (les sessions sont alors invalidees au redemarrage).
+# ---------------------------------------------------------------------------
+
+_VARIABLE_MOT_DE_PASSE = "JARVIS_WEB_PASSWORD"
+_VARIABLE_CLE_SESSION = "JARVIS_SECRET_KEY"
+_VARIABLE_MAX_TENTATIVES = "JARVIS_LOGIN_MAX_TENTATIVES"
+_VARIABLE_FENETRE_CONNEXIONS = "JARVIS_LOGIN_FENETRE_SECONDES"
+_VARIABLE_BLOCAGE_CONNEXIONS = "JARVIS_LOGIN_BLOCAGE_SECONDES"
+
+# Limitation des tentatives de connexion, en memoire et par adresse cliente.
+# Volontairement sans dependance : suffisant pour un deploiement mono-processus.
+_LIMITE_MAX_TENTATIVES_DEFAUT = 5
+_LIMITE_FENETRE_DEFAUT = 15 * 60
+_LIMITE_BLOCAGE_DEFAUT = 15 * 60
+_LIMITE_ENTREES_MAX = 2048
+_limite_connexions = {}
+_limite_verrou = threading.Lock()
+
+# Routes accessibles sans etre authentifie.
+_ENDPOINTS_PUBLICS = {
+    "connexion",
+    "deconnexion",
+    "health",
+    "static",
+    "service_worker",
+}
+
+app.secret_key = os.environ.get(_VARIABLE_CLE_SESSION) or secrets.token_hex(32)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("JARVIS_WEB_COOKIE_SECURE") == "1",
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=12),
+)
+
+
+def _mot_de_passe_attendu():
+    """Mot de passe attendu, lu a chaque requete (permet de le changer)."""
+    return os.environ.get(_VARIABLE_MOT_DE_PASSE, "")
+
+
+def _authentification_active():
+    return bool(_mot_de_passe_attendu())
+
+
+def _empreinte_mot_de_passe():
+    return hashlib.sha256(_mot_de_passe_attendu().encode("utf-8")).hexdigest()
+
+
+def _session_valide():
+    empreinte = session.get("empreinte")
+    return (
+        session.get("authentifie") is True
+        and isinstance(empreinte, str)
+        and bool(empreinte)
+        and hmac.compare_digest(empreinte, _empreinte_mot_de_passe())
+    )
+
+
+def _destination_sure(valeur):
+    """N'accepte qu'un chemin interne, jamais une redirection externe."""
+    if not isinstance(valeur, str) or not valeur or len(valeur) > 2000:
+        return None
+    if not valeur.startswith("/") or valeur.startswith("//"):
+        return None
+    if "\\" in valeur or "\n" in valeur or "\r" in valeur:
+        return None
+    return valeur
+
+
+def _attend_une_reponse_json():
+    return (
+        request.is_json
+        or request.path.startswith(("/api/", "/chat", "/conversations", "/activite"))
+    )
+
+
+def _entier_environment(nom, defaut):
+    try:
+        valeur = int(os.environ.get(nom, defaut))
+    except (TypeError, ValueError):
+        return defaut
+    return max(1, valeur)
+
+
+def _cle_client():
+    return request.remote_addr or "inconnu"
+
+
+def _nettoyer_limite(maintenant, fenetre):
+    """Borne la memoire : oublie les clients sans echec recent ni blocage."""
+    if len(_limite_connexions) <= _LIMITE_ENTREES_MAX:
+        return
+    for adresse, etat in list(_limite_connexions.items()):
+        if etat["bloque_jusqua"] <= maintenant and not any(
+            maintenant - instant < fenetre for instant in etat["echecs"]
+        ):
+            _limite_connexions.pop(adresse, None)
+
+
+def _secondes_de_blocage():
+    """Renvoie le temps de blocage restant, ou 0 si la connexion est permise."""
+    adresse = _cle_client()
+    maintenant = time.monotonic()
+    fenetre = _entier_environment(_VARIABLE_FENETRE_CONNEXIONS, _LIMITE_FENETRE_DEFAUT)
+
+    with _limite_verrou:
+        etat = _limite_connexions.get(adresse)
+        if etat is None:
+            return 0
+        if etat["bloque_jusqua"] > maintenant:
+            return max(1, math.ceil(etat["bloque_jusqua"] - maintenant))
+        if etat["bloque_jusqua"]:
+            # Le blocage a expire : on repart d'une ardoise propre.
+            _limite_connexions.pop(adresse, None)
+            return 0
+        etat["echecs"] = [
+            instant for instant in etat["echecs"] if maintenant - instant < fenetre
+        ]
+        if not etat["echecs"]:
+            _limite_connexions.pop(adresse, None)
+        return 0
+
+
+def _enregistrer_echec_connexion():
+    """Compte un echec ; renvoie la duree de blocage si le seuil est atteint."""
+    adresse = _cle_client()
+    maintenant = time.monotonic()
+    fenetre = _entier_environment(_VARIABLE_FENETRE_CONNEXIONS, _LIMITE_FENETRE_DEFAUT)
+    maximum = _entier_environment(_VARIABLE_MAX_TENTATIVES, _LIMITE_MAX_TENTATIVES_DEFAUT)
+    duree = _entier_environment(_VARIABLE_BLOCAGE_CONNEXIONS, _LIMITE_BLOCAGE_DEFAUT)
+
+    with _limite_verrou:
+        _nettoyer_limite(maintenant, fenetre)
+        etat = _limite_connexions.setdefault(
+            adresse, {"echecs": [], "bloque_jusqua": 0.0}
+        )
+        etat["echecs"] = [
+            instant for instant in etat["echecs"] if maintenant - instant < fenetre
+        ]
+        etat["echecs"].append(maintenant)
+        if len(etat["echecs"]) >= maximum:
+            etat["echecs"].clear()
+            etat["bloque_jusqua"] = maintenant + duree
+            return duree
+        return 0
+
+
+def _reinitialiser_limite_connexions(adresse=None):
+    """Oublie les echecs (connexion reussie, ou remise a zero explicite)."""
+    if adresse is None and has_request_context():
+        adresse = _cle_client()
+    with _limite_verrou:
+        if adresse is None:
+            _limite_connexions.clear()
+        else:
+            _limite_connexions.pop(adresse, None)
+
+
+def _message_blocage(secondes):
+    minutes = max(1, math.ceil(secondes / 60))
+    return (
+        "Trop de tentatives de connexion. "
+        f"Reessaie dans {minutes} minute{'s' if minutes > 1 else ''}."
+    )
+
+
+def _jeton_csrf():
+    jeton = session.get("csrf")
+    if not isinstance(jeton, str) or not jeton:
+        jeton = secrets.token_urlsafe(32)
+        session["csrf"] = jeton
+    return jeton
+
+
+def _csrf_valide():
+    recu = request.form.get("csrf", "")
+    attendu = session.get("csrf", "")
+    return (
+        isinstance(recu, str)
+        and isinstance(attendu, str)
+        and bool(recu)
+        and hmac.compare_digest(recu, attendu)
+    )
+
+
+@app.before_request
+def _exiger_authentification():
+    if not _authentification_active():
+        return None
+    if request.endpoint in _ENDPOINTS_PUBLICS:
+        return None
+    if _session_valide():
+        return None
+
+    if _attend_une_reponse_json():
+        return jsonify({"erreur": "Authentification requise."}), 401
+
+    suivant = request.full_path if request.query_string else request.path
+    return redirect(url_for("connexion", suivant=suivant))
+
+
+@app.route("/login", methods=["GET", "POST"])
+def connexion():
+    if not _authentification_active():
+        return redirect(url_for("accueil"))
+
+    suivant = _destination_sure(request.values.get("suivant")) or url_for("accueil")
+    erreur = None
+
+    if request.method == "POST":
+        if not _csrf_valide():
+            return render_template(
+                "login.html",
+                erreur="Formulaire expire. Reessaie.",
+                suivant=suivant,
+                csrf=_jeton_csrf(),
+            ), 400
+
+        blocage = _secondes_de_blocage()
+        if blocage:
+            return render_template(
+                "login.html",
+                erreur=_message_blocage(blocage),
+                suivant=suivant,
+                csrf=_jeton_csrf(),
+            ), 429, {"Retry-After": str(blocage)}
+
+        fourni = request.form.get("mot_de_passe", "")
+        if isinstance(fourni, str) and hmac.compare_digest(
+            fourni, _mot_de_passe_attendu()
+        ):
+            _reinitialiser_limite_connexions()
+            session.clear()
+            session["authentifie"] = True
+            session["empreinte"] = _empreinte_mot_de_passe()
+            session.permanent = True
+            return redirect(suivant)
+
+        duree = _enregistrer_echec_connexion()
+        if duree:
+            return render_template(
+                "login.html",
+                erreur=_message_blocage(duree),
+                suivant=suivant,
+                csrf=_jeton_csrf(),
+            ), 429, {"Retry-After": str(duree)}
+
+        erreur = "Mot de passe incorrect."
+
+    return render_template(
+        "login.html", erreur=erreur, suivant=suivant, csrf=_jeton_csrf()
+    ), (401 if erreur else 200)
+
+
+@app.route("/deconnexion", methods=["GET", "POST"])
+def deconnexion():
+    session.clear()
+    return redirect(url_for("connexion"))
+
 
 @app.route("/")
 def accueil():
@@ -377,6 +661,7 @@ def lister_missions():
         missions = [m for m in missions if m.get("statut") == statut]
     return jsonify({"missions": missions, "nombre": len(missions)})
 
+
 @app.route("/api/missions/<mission_id>", methods=["GET"])
 def obtenir_mission_route(mission_id):
     mission = jarvis.mission_manager.obtenir_mission(mission_id)
@@ -386,6 +671,7 @@ def obtenir_mission_route(mission_id):
     sous_taches = jarvis.mission_manager.obtenir_sous_taches(mission_id)
     mission_copy["sous_taches"] = sous_taches
     return jsonify(mission_copy)
+
 
 @app.route("/api/apprentissages", methods=["GET"])
 def lister_apprentissages():
@@ -398,6 +684,7 @@ def lister_apprentissages():
     except ValueError:
         return jsonify({"erreur": "JSON invalide"}), 500
     return jsonify(data)
+
 
 @app.route("/envoyer", methods=["POST"])
 def envoyer():
@@ -427,4 +714,9 @@ def vocal():
     )
 
 if __name__ == "__main__":
+    if not _authentification_active():
+        app.logger.warning(
+            "%s non defini : l'interface web est accessible sans authentification.",
+            _VARIABLE_MOT_DE_PASSE,
+        )
     app.run(host="0.0.0.0", port=5000)

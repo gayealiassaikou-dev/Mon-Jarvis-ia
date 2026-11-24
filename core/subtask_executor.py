@@ -82,7 +82,15 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
         try:
             # 1. Tentative deterministe (sans LLM) pour actions simples
             from core import deterministic_actions
-            det = deterministic_actions.tenter(st["objectif"])
+            from core.tool_guard import filtrer_outils_pour_agent
+            _outils_deterministes = filtrer_outils_pour_agent(
+                st["agent"], deterministic_actions.OUTILS_DETERMINISTES
+            )
+            det = deterministic_actions.tenter(
+                st["objectif"],
+                agent=st["agent"],
+                outils_autorises=_outils_deterministes,
+            )
             if det and det.get("ok"):
                 reponse = det.get("message", "OK")
                 nouveaux_outils = [{"outil": det.get("outil"), "statut": "succes", "execute": True}]

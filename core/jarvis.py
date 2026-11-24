@@ -23,7 +23,7 @@ from core.voice_manager import VoiceManager
 from core.ai_engine import AIEngine
 from core.voice_loop import VoiceLoopMixin
 from core.startup import StartupMixin
-from core.agent_permissions import obtenir_outils_autorises
+from core.tool_guard import filtrer_outils_pour_agent
 from core.contexte_ia import charger_contexte
 from core.paths import PROJECT_ROOT
 from core.reprise import sauvegarder_point
@@ -99,7 +99,16 @@ class Jarvis(StartupMixin, VoiceLoopMixin):
         if "Commande inconnue" in resultat:
             try:
                 from core import deterministic_actions
-                _det = deterministic_actions.tenter(commande)
+                _outils_deterministes = deterministic_actions.OUTILS_DETERMINISTES
+                if agent_force:
+                    _outils_deterministes = filtrer_outils_pour_agent(
+                        agent_force, _outils_deterministes
+                    )
+                _det = deterministic_actions.tenter(
+                    commande,
+                    agent=agent_force,
+                    outils_autorises=_outils_deterministes,
+                )
                 if _det and _det.get("ok"):
                     _msg = _det.get("message", "OK")
                     self.logger.enregistrer(f"[DETERMINISTE] {_det.get('outil')}")
@@ -248,11 +257,9 @@ class Jarvis(StartupMixin, VoiceLoopMixin):
             # On applique une seconde fois les permissions de l'agent
             # avant de transmettre les outils à l'AIEngine.
             outils_suggeres = decision.get("outils_suggeres", [])
-            outils_autorises_agent = obtenir_outils_autorises(agent)
-            outils_autorises = [
-                outil for outil in outils_suggeres
-                if outil in outils_autorises_agent
-            ]
+            outils_autorises = filtrer_outils_pour_agent(
+                agent, outils_suggeres
+            )
 
             suivre("Appel du moteur IA", "en_cours")
             debut_mesure = time.perf_counter()
@@ -263,6 +270,7 @@ class Jarvis(StartupMixin, VoiceLoopMixin):
                 outils_autorises=outils_autorises,
                 mode_action=bool(outils_autorises),
                 on_chunk=on_chunk,
+                agent=agent,
             )
             self.logger.enregistrer(
                 f"[PERFORMANCE] Appel principal du moteur IA : {time.perf_counter() - debut_mesure:.2f} s"

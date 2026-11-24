@@ -1,6 +1,52 @@
 """Execution deterministe des actions simples - sans LLM."""
 import re
 
+from core.tool_guard import verifier_execution
+
+
+# Liste explicite des outils que le chemin deterministe peut executer.
+# Aucun outil hors de cette liste ne peut etre appele ici.
+OUTILS_DETERMINISTES = (
+    "ecrire_fichier",
+    "lire_fichier",
+    "supprimer_fichier",
+    "creer_dossier",
+    "supprimer_dossier",
+    "lister_fichiers",
+    "creer_projet",
+    "lister_projets",
+    "lister_taches",
+    "terminer_tache",
+    "lampe_torche",
+    "lire_batterie",
+    "regler_volume",
+    "lire_wifi",
+)
+
+
+def _refus_autorisation(nom_outil, agent, outils_autorises):
+    """Retourne un refus structure, ou None si l'outil est autorise.
+
+    Deny-by-default : sans liste explicite, ou sans l'outil dans cette
+    liste, aucune execution n'est permise.
+    """
+    decision = verifier_execution(
+        nom_outil,
+        outils_autorises,
+        agent=agent,
+    )
+    if decision["autorise"]:
+        return None
+    return {
+        "ok": False,
+        "refuse": True,
+        "outil": nom_outil,
+        "statut": decision["statut"],
+        "code": decision["code"],
+        "erreur": decision["raison"],
+        "message": decision["raison"],
+    }
+
 
 def _extraire_chemin_et_contenu(objectif):
     """Detecte 'cree le fichier X contenant Y' -> (X, Y)."""
@@ -36,8 +82,13 @@ def _extraire_chemin(objectif, verbe):
     return None
 
 
-def tenter(objectif):
-    """Essaie d'executer l'objectif sans LLM. Retourne dict ou None."""
+def tenter(objectif, agent=None, outils_autorises=None):
+    """Essaie d'executer l'objectif sans LLM. Retourne dict ou None.
+
+    `outils_autorises` est obligatoire pour toute execution : None ou []
+    refuse tous les outils. `agent`, lorsqu'il est fourni, doit posseder
+    l'outil dans ses permissions declarees.
+    """
     if not objectif or not isinstance(objectif, str):
         return None
     obj = objectif.strip()
@@ -51,6 +102,9 @@ def tenter(objectif):
     # 1. Creer fichier X contenant Y
     chemin, contenu = _extraire_chemin_et_contenu(obj)
     if chemin:
+        refus = _refus_autorisation("ecrire_fichier", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import ecrire_fichier
             resultat = ecrire_fichier(chemin, contenu)
@@ -68,6 +122,9 @@ def tenter(objectif):
     # 2. Lire fichier X
     chemin = _extraire_chemin(obj, "lis|lire|lit|affiche|montre")
     if chemin:
+        refus = _refus_autorisation("lire_fichier", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import lire_fichier
             resultat = lire_fichier(chemin)
@@ -84,6 +141,9 @@ def tenter(objectif):
     # 3. Supprimer fichier X
     chemin = _extraire_chemin(obj, "supprime|supprimer")
     if chemin:
+        refus = _refus_autorisation("supprimer_fichier", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import supprimer_fichier
             resultat = supprimer_fichier(chemin)
@@ -101,6 +161,9 @@ def tenter(objectif):
     m = re.search(r"(?:cree|creer|créé|créer)\s+(?:le\s+|un\s+)?dossier\s+([^\s]+)", obj, re.IGNORECASE)
     if m:
         chemin = m.group(1).strip("'\",.;")
+        refus = _refus_autorisation("creer_dossier", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import creer_dossier
             r = creer_dossier(chemin)
@@ -113,6 +176,9 @@ def tenter(objectif):
     m = re.search(r"supprime(?:r)?\s+(?:le\s+|un\s+)?dossier\s+([^\s]+)", obj, re.IGNORECASE)
     if m:
         chemin = m.group(1).strip("'\",.;")
+        refus = _refus_autorisation("supprimer_dossier", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import supprimer_dossier
             r = supprimer_dossier(chemin)
@@ -125,6 +191,9 @@ def tenter(objectif):
     m = re.search(r"(?:liste|affiche|montre)\s+(?:les\s+)?(?:fichiers?|contenu)\s+(?:de\s+|du\s+|dans\s+)?([^\s]*)", obj, re.IGNORECASE)
     if m:
         dossier = (m.group(1) or ".").strip("'\",.;") or "."
+        refus = _refus_autorisation("lister_fichiers", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import lister_fichiers
             r = lister_fichiers(dossier)
@@ -137,6 +206,9 @@ def tenter(objectif):
     m = re.search(r"(?:cree|creer|créé|créer)\s+(?:le\s+|un\s+)?projet\s+(.+)", obj, re.IGNORECASE)
     if m:
         nom = m.group(1).strip("'\",.;")
+        refus = _refus_autorisation("creer_projet", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import creer_projet
             r = creer_projet(nom)
@@ -147,6 +219,9 @@ def tenter(objectif):
 
     # 8. Lister projets
     if re.search(r"(?:liste|affiche|montre)\s+(?:les\s+|mes\s+)?projets", obj, re.IGNORECASE):
+        refus = _refus_autorisation("lister_projets", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import lister_projets
             r = lister_projets()
@@ -157,6 +232,9 @@ def tenter(objectif):
 
     # 9. Lister taches
     if re.search(r"(?:liste|affiche|montre)\s+(?:les\s+|mes\s+)?taches", obj, re.IGNORECASE):
+        refus = _refus_autorisation("lister_taches", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import lister_taches
             r = lister_taches()
@@ -169,6 +247,9 @@ def tenter(objectif):
     m = re.search(r"(?:termine|terminer|finis|finir)\s+(?:la\s+)?tache\s+(.+)", obj, re.IGNORECASE)
     if m:
         nom = m.group(1).strip("'\",.;")
+        refus = _refus_autorisation("terminer_tache", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.tools import terminer_tache
             r = terminer_tache(nom)
@@ -179,6 +260,9 @@ def tenter(objectif):
 
     # 11. Torche
     if _re_skip.search(r"\b(?:allume|active|eteins|eteindre|desactive|toggle).*torche\b|\btorche\b", obj, _re_skip.IGNORECASE):
+        refus = _refus_autorisation("lampe_torche", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.actions_telephone import lampe_torche
             _etat_torche = "off" if _re_skip.search(r"\b(?:eteins|eteindre|desactive|coupe|off)\b", obj, _re_skip.IGNORECASE) else "on"
@@ -189,6 +273,9 @@ def tenter(objectif):
 
     # 12. Batterie
     if _re_skip.search(r"\bbatterie\b|\bniveau.*batterie\b", obj, _re_skip.IGNORECASE):
+        refus = _refus_autorisation("lire_batterie", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.actions_telephone import lire_batterie
             r = lire_batterie()
@@ -201,6 +288,9 @@ def tenter(objectif):
     if m:
         niveau = int(m.group(1) or m.group(2))
         if 0 <= niveau <= 100:
+            refus = _refus_autorisation("regler_volume", agent, outils_autorises)
+            if refus:
+                return refus
             try:
                 from core.actions_telephone import regler_volume
                 # Termux : volume 0-15, on convertit depuis 0-100
@@ -212,6 +302,9 @@ def tenter(objectif):
 
     # 14. Wi-Fi
     if _re_skip.search(r"\bwifi\b|\bwi-fi\b|\breseau\b", obj, _re_skip.IGNORECASE):
+        refus = _refus_autorisation("lire_wifi", agent, outils_autorises)
+        if refus:
+            return refus
         try:
             from core.actions_telephone import lire_wifi
             r = lire_wifi()
