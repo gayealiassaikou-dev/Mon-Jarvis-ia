@@ -461,7 +461,7 @@ OUTILS_LECTURE_SEULE = frozenset({
     "lire_fichier", "lister_fichiers", "lister_projets", "lister_taches",
     "obtenir_projet_actif",
     "rechercher_web", "rechercher_souvenir",
-    "github_lister_repos", "github_lire_fichier",
+    "github_lister_repos", "github_lire_fichier", "lire_pdf",
 })
 
 FONCTIONS_DISPONIBLES = {
@@ -495,6 +495,23 @@ FONCTIONS_DISPONIBLES = {
     "gerer_musique": gerer_musique,
     "chercher_opportunites": chercher_opportunites
 }
+from core.tools_pdf import lire_pdf
+OUTILS.append({
+    "type": "function",
+    "function": {
+        "name": "lire_pdf",
+        "description": "Lit le texte d'un fichier PDF du projet (20 pages max par appel). Utilise page_debut pour lire la suite. Ne jamais pretendre avoir lu un PDF sans resultat de lecture.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "chemin": {"type": "string", "description": "Chemin relatif du fichier .pdf"},
+                "page_debut": {"type": "integer", "description": "Premiere page a lire (defaut 1)"}
+            },
+            "required": ["chemin"]
+        }
+    }
+})
+FONCTIONS_DISPONIBLES["lire_pdf"] = lire_pdf
 OUTILS.extend(SCHEMAS_TELEPHONE)
 FONCTIONS_DISPONIBLES.update(FONCTIONS_TELEPHONE)
 

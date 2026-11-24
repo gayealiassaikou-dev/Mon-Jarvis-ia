@@ -162,6 +162,7 @@ class VerifiersMixin(VerifiersGithubMixin):
             "github_lire_fichier",
             "github_lister_repos",
             "rechercher_web",
+            "lire_pdf",
         }:
             if isinstance(resultat, str) and resultat.startswith("Erreur"):
                 return {
@@ -187,6 +188,28 @@ class VerifiersMixin(VerifiersGithubMixin):
                     f"{nom_fonction} execute avec succes ; "
                     "le resultat respecte le contrat de lecture externe."
                 ),
+            }
+
+        if nom_fonction == "chercher_opportunites":
+            if not isinstance(resultat, dict):
+                return {
+                    "verifie": False,
+                    "details": f"chercher_opportunites a retourne un type invalide : {type(resultat).__name__}.",
+                }
+            if resultat.get("ok") is not True:
+                return {
+                    "verifie": False,
+                    "details": f"chercher_opportunites a retourne une erreur : {resultat.get('erreur', 'inconnue')}",
+                }
+            sources = resultat.get("sources")
+            if not isinstance(sources, list) or not sources:
+                return {
+                    "verifie": False,
+                    "details": "chercher_opportunites n'a retourne aucune source reelle.",
+                }
+            return {
+                "verifie": True,
+                "details": f"chercher_opportunites execute avec succes ; {len(sources)} source(s) reelle(s) retournee(s).",
             }
 
         if nom_fonction == "supprimer_tache":
