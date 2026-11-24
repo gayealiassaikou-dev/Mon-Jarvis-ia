@@ -642,3 +642,33 @@ body {
         transition: none;
     }
 }
+
+/* Barre d'actions rapides */
+.barre-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #0d1421;
+    border-top: 1px solid #1a2233;
+}
+.barre-actions .action {
+    flex: 1 1 auto;
+    min-width: 100px;
+    padding: 8px 10px;
+    background: #1a2233;
+    color: #cfe3ff;
+    border: 1px solid #2a3a52;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.barre-actions .action:hover {
+    background: #24334a;
+    border-color: #4fc3f7;
+}
+.barre-actions .action:active {
+    background: #168bff;
+    color: #fff;
+}

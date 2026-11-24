@@ -72,6 +72,15 @@
     {% endif %}
 </main>
 
+<div class="barre-actions" id="barre-actions">
+    <button type="button" class="action" data-prompt="Cherche des opportunites business dans la niche code">💼 Opportunités</button>
+    <button type="button" class="action" data-prompt="Utilise creer_site_web pour un site nomme mon_site">🌐 Créer un site</button>
+    <button type="button" class="action" data-prompt="Allume la torche">🔦 Torche</button>
+    <button type="button" class="action" data-prompt="Quel est le niveau de la batterie ?">🔋 Batterie</button>
+    <button type="button" class="action" data-prompt="Regle le volume a 50">🔊 Volume 50</button>
+    <button type="button" class="action" data-prompt="Quel est le reseau Wi-Fi connecte ?">📶 Wi-Fi</button>
+</div>
+
 <form id="formulaire" class="saisie">
     <div class="boite">
         <textarea id="champ" rows="1" placeholder="Pose ta question à Sam Sarr" autocomplete="off"></textarea>
@@ -1102,6 +1111,21 @@ if ("serviceWorker" in navigator) {
     window.ecrire = function () { cacherPuce(); return ecrireOrigine.apply(this, arguments); };
   }
 })();
+/* action-buttons-init */
+document.querySelectorAll('.barre-actions .action').forEach(function(b) {
+    b.addEventListener('click', function() {
+        const prompt = b.getAttribute('data-prompt');
+        const champ = document.getElementById('champ');
+        if (champ) {
+            champ.value = prompt;
+            champ.dispatchEvent(new Event('input'));
+            const form = document.getElementById('formulaire');
+            if (form && typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            }
+        }
+    });
+});
 </script>
 </body>
 </html>
