@@ -371,7 +371,7 @@ def charger_conversation(identifiant):
 
 @app.route("/api/missions", methods=["GET"])
 def lister_missions():
-    statut = request.args.get("statut")
+        statut = request.args.get("statut")
     missions = jarvis.mission_manager.lister_missions()
     if statut:
         missions = [m for m in missions if m.get("statut") == statut]
@@ -383,6 +383,7 @@ def obtenir_mission_route(mission_id):
     if mission is None:
         return jsonify({"erreur": "Mission introuvable"}), 404
     mission_copy = dict(mission)
+
     sous_taches = jarvis.mission_manager.obtenir_sous_taches(mission_id)
     mission_copy["sous_taches"] = sous_taches
     return jsonify(mission_copy)
