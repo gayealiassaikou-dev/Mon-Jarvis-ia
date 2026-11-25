@@ -125,6 +125,9 @@ def diagnostiquer_code_python(chemin):
     if not _chemin_autorise(complet) or not _chemin_autorise(reel):
         return "Erreur : chemin en dehors du projet."
 
+    if _fichier_protege(reel):
+        return "Erreur : accès refusé, fichier ou dossier protégé."
+
     if not reel.endswith(".py") or not os.path.isfile(reel):
         return "Erreur : fichier Python introuvable."
 

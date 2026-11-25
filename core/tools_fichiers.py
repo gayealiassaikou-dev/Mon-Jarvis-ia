@@ -20,26 +20,118 @@ def _chemin_autorise(chemin_complet):
     except ValueError:
         return False
 
+# C3 - Protection des secrets et donnees personnelles.
+#
+# Ces protections s'appliquent aux outils fichiers (agents, chemin
+# deterministe, lecture PDF). Les modules internes (memoire, missions,
+# conversations, Supabase) continuent d'acceder directement a leurs fichiers :
+# aucune fonction legitime ne passe par lire_fichier/ecrire_fichier.
+DOSSIERS_SENSIBLES_RELATIFS = (
+    ("memory",),
+    ("data",),
+    ("backups",),
+    (".patches",),
+    ("interface", "data"),
+)
+
 FICHIERS_PROTEGES = [
     os.path.join(DOSSIER_AUTORISE, ".env"),
+    os.path.join(DOSSIER_AUTORISE, ".supabase_session.json"),
     os.path.join(DOSSIER_AUTORISE, ".git"),
 ]
 
 DOSSIERS_PROTEGES = [
     os.path.join(DOSSIER_AUTORISE, "core"),
     os.path.join(DOSSIER_AUTORISE, ".git"),
+] + [
+    os.path.join(DOSSIER_AUTORISE, *parties)
+    for parties in DOSSIERS_SENSIBLES_RELATIFS
 ]
 
-def _fichier_protege(chemin_complet):
-    for proteg in FICHIERS_PROTEGES:
-        if chemin_complet == proteg:
+# Modeles publics : ils ne contiennent aucun secret et restent lisibles.
+MODELES_FICHIERS_EXCLUS = frozenset({
+    ".env.example", ".env.sample", ".env.template",
+})
+
+
+def _est_dans(chemin, dossier):
+    try:
+        return os.path.commonpath([chemin, dossier]) == dossier
+    except ValueError:
+        return False
+
+
+def _nom_fichier_sensible(chemin):
+    """Detecte les secrets par nom, y compris leurs sauvegardes."""
+    nom = os.path.basename(chemin).lower()
+
+    if nom in {".env", ".git"} or nom.startswith(".supabase_session"):
+        return True
+    if nom.startswith(".env.") and nom not in MODELES_FICHIERS_EXCLUS:
+        return True
+    for prefixe in ("ai_providers.json", "conversations.db", "memory_index.db"):
+        if nom == prefixe or nom.startswith(prefixe):
             return True
+    return False
+
+
+def _dossier_sensible_relatif(chemin, racine):
+    """Vrai si le chemin est dans un dossier sensible relatif a la racine."""
+    try:
+        relatif = os.path.relpath(chemin, racine)
+    except ValueError:
+        return False
+
+    if relatif in (os.curdir, os.pardir) or relatif.startswith(os.pardir + os.sep):
+        return False
+
+    morceaux = tuple(
+        partie.lower() for partie in relatif.split(os.sep) if partie
+    )
+    return any(
+        morceaux[:len(sensible)] == sensible
+        for sensible in DOSSIERS_SENSIBLES_RELATIFS
+    )
+
+
+def _fichier_protege(chemin_complet):
+    """Vrai si le chemin est un secret, une donnee personnelle ou une sauvegarde.
+
+    Le controle utilise le chemin absolu ET le chemin reel : un lien
+    symbolique vers un fichier protege est donc refuse, comme un chemin
+    contenant '..'.
+    """
+    if not chemin_complet:
+        return False
+
+    candidats = []
+    for candidat in (
+        os.path.abspath(os.fspath(chemin_complet)),
+        os.path.realpath(os.fspath(chemin_complet)),
+    ):
+        if candidat not in candidats:
+            candidats.append(candidat)
+
+    for protege in FICHIERS_PROTEGES:
+        chemins_proteges = (
+            os.path.abspath(protege),
+            os.path.realpath(protege),
+        )
+        if any(candidat in chemins_proteges for candidat in candidats):
+            return True
+
     for dossier in DOSSIERS_PROTEGES:
-        try:
-            if os.path.commonpath([chemin_complet, dossier]) == dossier:
-                return True
-        except ValueError:
-            continue
+        dossier_reel = os.path.realpath(dossier)
+        if any(_est_dans(candidat, dossier_reel) for candidat in candidats):
+            return True
+
+    racine = os.path.realpath(DOSSIER_AUTORISE)
+    for candidat in candidats:
+        if _dossier_sensible_relatif(candidat, racine):
+            return True
+        if _nom_fichier_sensible(candidat):
+            return True
+
     return False
 
 
@@ -214,13 +306,19 @@ def ecrire_fichier(chemin, contenu):
 
 def supprimer_fichier(chemin):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
-    if not _chemin_autorise(chemin_complet):
+    chemin_reel = os.path.realpath(chemin_complet)
+
+    if not _chemin_autorise(chemin_complet) or not _chemin_autorise(chemin_reel):
         return "Erreur : accès refusé en dehors du projet."
-    if _fichier_protege(chemin_complet):
+    if os.path.islink(chemin_complet):
+        return "Erreur : la suppression d'un lien symbolique est refusée."
+    if _fichier_protege(chemin_complet) or _fichier_protege(chemin_reel):
         return f"Erreur : {chemin} est un fichier protege, suppression refusee."
-    if not os.path.exists(chemin_complet):
+    if not os.path.exists(chemin_reel):
         return f"Erreur : le fichier {chemin} n'existe pas, rien a supprimer."
-    os.remove(chemin_complet)
+    if os.path.isdir(chemin_reel):
+        return f"Erreur : {chemin} est un dossier, pas un fichier."
+    os.remove(chemin_reel)
     return f"Fichier {chemin} supprime avec succes."
 
 
@@ -295,10 +393,13 @@ def lister_fichiers_original_en_ligne(dossier="."):
     if not os.path.isdir(chemin_reel):
         return f"Erreur : {dossier} n'est pas un dossier."
 
-    elements = os.listdir(chemin_reel)
+    elements = [
+        nom for nom in os.listdir(chemin_reel)
+        if not _fichier_protege(os.path.join(chemin_reel, nom))
+    ]
 
     if not elements:
-        return f"Le dossier {dossier} est vide."
+        return f"Le dossier {dossier} est vide ou ne contient aucun element accessible."
 
     return "\n".join(sorted(elements))
 
