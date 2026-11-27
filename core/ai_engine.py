@@ -772,3 +772,85 @@ class AIEngine(AIProvidersMixin, VerifiersMixin):
 
         return resultat
 
+    # PATCH_C4_V7
+    def executer_outil_hors_llm(
+        self,
+        nom_fonction,
+        arguments=None,
+        agent=None,
+        outils_autorises=None,
+        message_utilisateur="",
+    ):
+        """Point d'entree unique pour executer un outil hors du LLM.
+
+        Pose les ContextVar de la demande courante, appelle le garde-fou
+        unique `_executer_outil`, puis restaure exactement le contexte
+        appelant (jetons + `finally`). Aucun appel direct d'outil n'est
+        effectue ici : permissions, validation d'arguments, verification
+        et enregistrement restent ceux de `_executer_outil`.
+
+        Retourne le contrat de resultat enregistre. En cas d'exception,
+        une entree synthetique de statut `exception` est retournee :
+        l'exception ne se propage jamais a l'appelant.
+        """
+        arguments = dict(arguments) if isinstance(arguments, dict) else {}
+
+        cv_agent = self._contextvar_pour("agent_courant", None)
+        cv_outils = self._contextvar_pour("outils_autorises", None)
+        cv_message = self._contextvar_pour("_message_utilisateur_courant", "")
+
+        jeton_agent = cv_agent.set(agent)
+        jeton_outils = cv_outils.set(outils_autorises)
+        jeton_message = cv_message.set(str(message_utilisateur or ""))
+
+        nombre_avant = len(self.derniers_resultats_outils)
+
+        try:
+            self._executer_outil(nom_fonction, arguments)
+        except Exception as exc:
+            self._enregistrer_resultat_outil(
+                self._normaliser_resultat_outil(
+                    nom_fonction,
+                    arguments,
+                    "Erreur outil : exception pendant l'execution : "
+                    f"{type(exc).__name__}: {exc}",
+                    disponible=nom_fonction in FONCTIONS_DISPONIBLES,
+                    autorise=False,
+                    arguments_valides=False,
+                    execute=False,
+                    verification={
+                        "verifie": False,
+                        "details": "Exception pendant l'execution de l'outil.",
+                    },
+                    statut="exception",
+                )
+            )
+        finally:
+            cv_message.reset(jeton_message)
+            cv_outils.reset(jeton_outils)
+            cv_agent.reset(jeton_agent)
+
+        for entree in reversed(self.derniers_resultats_outils[nombre_avant:]):
+            if (
+                isinstance(entree, dict)
+                and entree.get("outil") == nom_fonction
+            ):
+                return entree
+
+        # Aucune entree produite : contrat synthetique explicite, jamais
+        # un faux succes.
+        return self._normaliser_resultat_outil(
+            nom_fonction,
+            arguments,
+            "Erreur outil : aucune entree de resultat enregistree.",
+            disponible=nom_fonction in FONCTIONS_DISPONIBLES,
+            autorise=False,
+            arguments_valides=False,
+            execute=False,
+            verification={
+                "verifie": False,
+                "details": "Aucune entree de resultat enregistree.",
+            },
+            statut="exception",
+        )
+

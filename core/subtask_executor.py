@@ -1,5 +1,327 @@
 """Execute les sous-taches pretes d'une mission, dans l'ordre des dependances."""
+import inspect
+import os
+import uuid
+
 from core.mission_manager import MissionManager
+from core.tool_guard import filtrer_outils_pour_agent, verifier_execution
+
+# C4/V7 - liste blanche explicite des outils utilisables par le fallback
+# hors LLM. Aucun outil du catalogue n'est appele sans figurer ici ET dans
+# les permissions de l'agent de la sous-tache.
+OUTILS_HORS_LLM = (
+    "lire_fichier",
+    "ecrire_fichier",
+    "supprimer_fichier",
+    "lister_fichiers",
+    "creer_dossier",
+    "executer_programme_python",
+    "chercher_opportunites",
+)
+
+# Pseudo-outils : ils ne sont pas des outils du catalogue, mais deux
+# operations gardees (ecriture puis execution) avec les permissions des
+# deux outils reels correspondants.
+OUTILS_SCRIPT_HORS_LLM = ("executer_script", "executer_script_python")
+
+TAILLE_MAX_SCRIPT_HORS_LLM = 20000
+
+
+def _succes_hors_llm(entree):
+    """Critere unique de succes : execute ET statut succes ET verifie."""
+    if not isinstance(entree, dict):
+        return False
+    verification = entree.get("verification") or {}
+    return (
+        entree.get("execute") is True
+        and entree.get("statut") == "succes"
+        and verification.get("verifie") is True
+    )
+
+
+def _outils_autorises_hors_llm(agent):
+    """Liste blanche filtree par les permissions reelles de l'agent."""
+    return filtrer_outils_pour_agent(agent, OUTILS_HORS_LLM)
+
+
+def _valider_arguments_hors_llm(nom, arguments):
+    """Refuse tout outil hors liste blanche ou tout argument inconnu."""
+    if nom not in OUTILS_HORS_LLM:
+        return False, f"Erreur : l'outil {nom} n'est pas autorise hors LLM."
+
+    if not isinstance(arguments, dict):
+        return False, "Erreur : les arguments doivent etre un objet."
+
+    from core.tools_schema import FONCTIONS_DISPONIBLES
+
+    fonction = FONCTIONS_DISPONIBLES.get(nom)
+    if fonction is None:
+        return False, f"Erreur : outil inconnu : {nom}."
+
+    try:
+        inspect.signature(fonction).bind(**arguments)
+    except TypeError as exc:
+        return (
+            False,
+            f"Erreur validation : argument(s) invalide(s) pour {nom} : {exc}",
+        )
+
+    return True, None
+
+
+def _verifier_resultat_hors_llm(nom, arguments, resultat):
+    """Verification reelle minimale pour un moteur sans point d'entree."""
+    from core import tools_fichiers
+
+    racine = getattr(
+        tools_fichiers,
+        "DOSSIER_AUTORISE",
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    )
+    texte = str(resultat)
+
+    if texte.startswith(("Erreur", "ECHEC", "ÉCHEC")):
+        return {"verifie": False, "details": texte[:300]}
+
+    if nom == "ecrire_fichier":
+        chemin = os.path.join(racine, str(arguments.get("chemin", "")))
+        try:
+            with open(chemin, "r", encoding="utf-8") as fichier:
+                if fichier.read() != arguments.get("contenu"):
+                    return {
+                        "verifie": False,
+                        "details": "Contenu ecrit different du contenu demande.",
+                    }
+        except OSError as exc:
+            return {
+                "verifie": False,
+                "details": f"Ecriture non verifiable : {exc}",
+            }
+    elif nom == "creer_dossier":
+        chemin = os.path.join(racine, str(arguments.get("chemin", "")))
+        if not os.path.isdir(chemin):
+            return {
+                "verifie": False,
+                "details": "Dossier absent apres sa creation.",
+            }
+    elif nom == "executer_programme_python":
+        premiere = texte.splitlines()[0] if texte.splitlines() else ""
+        if not (premiere.startswith("SUCCES") and "code 0" in premiere):
+            return {"verifie": False, "details": premiere[:300]}
+
+    return {"verifie": True, "details": f"{nom} execute et verifie."}
+
+
+def _appeler_outil_hors_llm(jarvis, nom, arguments, agent):
+    """Execute un outil via le garde-fou unique, sans faux succes.
+
+    Retourne (ok, entree, message). `ok` n'est vrai que si le resultat
+    enregistre est reellement verifie.
+    """
+    autorises = _outils_autorises_hors_llm(agent)
+    decision = verifier_execution(nom, autorises, agent=agent)
+    if not decision["autorise"]:
+        return False, None, f"Erreur : {decision['raison']}"
+
+    valide, erreur = _valider_arguments_hors_llm(nom, arguments)
+    if not valide:
+        return False, None, erreur
+
+    moteur = getattr(jarvis, "ai_engine", None)
+    point_entree = getattr(moteur, "executer_outil_hors_llm", None)
+
+    if callable(point_entree):
+        entree = point_entree(
+            nom,
+            dict(arguments),
+            agent=agent,
+            outils_autorises=list(autorises),
+        )
+    else:
+        # Moteur de compatibilite sans point d'entree : appel direct du
+        # catalogue, mais seulement apres les memes controles de garde.
+        from core.tools_schema import FONCTIONS_DISPONIBLES
+
+        try:
+            resultat = FONCTIONS_DISPONIBLES[nom](**dict(arguments))
+        except Exception as exc:
+            return (
+                False,
+                None,
+                "Erreur outil : exception pendant l'execution : "
+                f"{type(exc).__name__}: {exc}",
+            )
+
+        verification = _verifier_resultat_hors_llm(nom, arguments, resultat)
+        entree = {
+            "outil": nom,
+            "arguments": dict(arguments),
+            "statut": "succes" if verification["verifie"] else "echec_execution",
+            "execute": True,
+            "resultat": str(resultat),
+            "verification": verification,
+        }
+
+    if _succes_hors_llm(entree):
+        return True, entree, str(entree.get("resultat", ""))
+
+    statut = entree.get("statut") if isinstance(entree, dict) else "inconnu"
+    detail = entree.get("resultat", "") if isinstance(entree, dict) else ""
+    return (
+        False,
+        entree,
+        f"Erreur : outil {nom} non verifie ({statut}) : {str(detail)[:300]}",
+    )
+
+
+def _decision_script_hors_llm(agent):
+    """Un script exige les permissions d'ecriture ET d'execution."""
+    autorises = _outils_autorises_hors_llm(agent)
+    for requis in ("ecrire_fichier", "executer_programme_python"):
+        decision = verifier_execution(requis, autorises, agent=agent)
+        if not decision["autorise"]:
+            return {
+                "autorise": False,
+                "raison": f"script refuse : {decision['raison']}",
+            }
+    return {"autorise": True, "raison": None}
+
+
+def _executer_script_hors_llm(jarvis, code, agent, identifiant):
+    """Ecrit puis execute un script, avec suppression garantie en finally."""
+    decision = _decision_script_hors_llm(agent)
+    if not decision["autorise"]:
+        return False, None, f"Erreur : {decision['raison']}"
+
+    if not isinstance(code, str) or not code.strip():
+        return False, None, "Erreur : script vide ou invalide."
+
+    if len(code) > TAILLE_MAX_SCRIPT_HORS_LLM:
+        return False, None, "Erreur : script trop volumineux pour le fallback."
+
+    # Le script tourne deja dans espace_travail/ (cwd du programme execute).
+    code = (
+        code.replace("espace_travail/", "")
+        .replace("'espace_travail'", "'.'")
+        .replace('"espace_travail"', '"."')
+    )
+    chemin = f"espace_travail/_e2e_{uuid.uuid4().hex[:8]}.py"
+
+    ok_ecriture, entree_ecriture, message = _appeler_outil_hors_llm(
+        jarvis,
+        "ecrire_fichier",
+        {"chemin": chemin, "contenu": code + "\n"},
+        agent,
+    )
+    if not ok_ecriture:
+        return False, entree_ecriture, f"Erreur : ecriture du script impossible : {message}"
+
+    try:
+        return _appeler_outil_hors_llm(
+            jarvis,
+            "executer_programme_python",
+            {"chemin": chemin},
+            agent,
+        )
+    finally:
+        try:
+            from core.tools_fichiers import supprimer_fichier
+
+            nettoyage = supprimer_fichier(chemin)
+            if isinstance(nettoyage, str) and nettoyage.startswith("Erreur"):
+                print(f"[Fallback] Nettoyage de {chemin} : {nettoyage[:150]}")
+        except Exception as exc:  # noqa: BLE001 - jamais masque
+            print(
+                "[Fallback] Nettoyage impossible de "
+                f"{chemin} : {type(exc).__name__}: {exc}"
+            )
+
+
+def _extraire_action_json(texte):
+    """Extrait le premier objet {action, parameters} equilibre du texte."""
+    import json as _json
+
+    if not isinstance(texte, str):
+        return None
+
+    depart = 0
+    while True:
+        debut = texte.find("{", depart)
+        if debut < 0:
+            return None
+
+        profondeur = 0
+        dans_chaine = False
+        echappe = False
+        for i in range(debut, len(texte)):
+            caractere = texte[i]
+            if dans_chaine:
+                if echappe:
+                    echappe = False
+                elif caractere == "\\":
+                    echappe = True
+                elif caractere == '"':
+                    dans_chaine = False
+                continue
+            if caractere == '"':
+                dans_chaine = True
+            elif caractere == "{":
+                profondeur += 1
+            elif caractere == "}":
+                profondeur -= 1
+                if profondeur == 0:
+                    try:
+                        obj = _json.loads(texte[debut:i + 1])
+                    except Exception:
+                        obj = None
+                    if isinstance(obj, dict) and isinstance(
+                        obj.get("action"), str
+                    ):
+                        params = obj.get("parameters")
+                        if params is None:
+                            params = obj.get("parametres")
+                        if not isinstance(params, dict):
+                            params = {}
+                        return obj["action"], params
+                    depart = i + 1
+                    break
+        else:
+            return None
+
+
+def _tenter_fallback_garde(jarvis, sources, agent, identifiant):
+    """Fallback JSON/code entierement garde.
+
+    Retourne None si rien n'a ete tente, sinon (ok, entree, message).
+    Aucun outil hors liste blanche n'est appele.
+    """
+    import re as _re
+
+    for source in sources:
+        action = _extraire_action_json(source)
+        if action is None:
+            continue
+        nom, params = action
+        if nom in OUTILS_SCRIPT_HORS_LLM:
+            return _executer_script_hors_llm(
+                jarvis,
+                params.get("script", "") or params.get("code", ""),
+                agent,
+                identifiant,
+            )
+        return _appeler_outil_hors_llm(jarvis, nom, params, agent)
+
+    blocs = []
+    for source in sources:
+        blocs.extend(
+            _re.findall(r"```(?:python)?\s*\n(.+?)```", source, _re.DOTALL)
+        )
+    if not blocs:
+        return None
+
+    return _executer_script_hors_llm(
+        jarvis, max(blocs, key=len).strip(), agent, identifiant
+    )
 
 
 def _pretes(sous_taches, statut_map):
@@ -241,156 +563,34 @@ def executer_mission(mission_id, max_etapes=10, auto_planifier=True):
                 except Exception as e2:
                     print(f"[Retry force ERREUR] {e2}")
 
-            # Fallback final : extraire code Python ou JSON d'action
+            # Fallback final : JSON d'action ou bloc Python, via le garde-fou
+            # unique. Aucun outil hors liste blanche, aucun faux succes.
             if est_echec and demande_action:
-                import re as _re
-                import json as _json
-                sources = [str(reponse or ""), str(reponse_originale or "")]
-
-                # 1. Detecter JSON {"action": "nom_outil", "parameters": {...}}
-                for src in sources:
-                    try:
-                        m_json = _re.search(r'\{[^{}]*"action"\s*:\s*"([^"]+)"[^{}]*"parameters"\s*:\s*(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})[^{}]*\}', src, _re.DOTALL)
-                        if not m_json:
-                            # Variante : chercher le premier { ... } equilibre
-                            start = src.find('{')
-                            if start >= 0:
-                                depth = 0
-                                for i in range(start, len(src)):
-                                    if src[i] == '{': depth += 1
-                                    elif src[i] == '}':
-                                        depth -= 1
-                                        if depth == 0:
-                                            candidate = src[start:i+1]
-                                            try:
-                                                obj = _json.loads(candidate)
-                                                if isinstance(obj, dict) and "action" in obj:
-                                                    m_json = True
-                                                    nom_outil = obj.get("action")
-                                                    params = obj.get("parameters", {})
-                                                    from core.tools import (
-                                                        ecrire_fichier as _ef, lire_fichier as _lf,
-                                                        creer_dossier as _cd, supprimer_fichier as _sf,
-                                                        executer_programme_python as _ep,
-                                                    )
-                                                    mapping = {
-                                                        "ecrire_fichier": _ef, "lire_fichier": _lf,
-                                                        "creer_dossier": _cd, "supprimer_fichier": _sf,
-                                                        "executer_script": None,  # traite plus bas
-                                                        "executer_programme_python": _ep,
-                                                        "executer_script_python": None,
-                                                    }
-                                                    if nom_outil == "executer_script" or nom_outil == "executer_script_python":
-                                                        # Le LLM renvoie du code Python a executer directement
-                                                        code_script = params.get("script", "") or params.get("code", "")
-                                                        if code_script:
-                                                            # Le script tourne DEJA dans espace_travail/ (cwd)
-                                                            code_script = code_script.replace("espace_travail/", "").replace("'espace_travail'", "'.'").replace('"espace_travail"', '"."')
-                                                            tmp_chemin = f"espace_travail/_e2e_{__import__('uuid').uuid4().hex[:8]}.py"
-                                                            _ef(tmp_chemin, code_script + "\n")
-                                                            res = _ep(tmp_chemin)
-                                                            print(f"[Fallback JSON] executer_script -> {str(res)[:150]}")
-                                                            if "code 0" in str(res).lower() or "succes" in str(res).lower():
-                                                                est_echec = False
-                                                            reponse = f"Script execute: {str(res)[:400]}"
-                                                            break
-                                                    elif nom_outil in mapping and mapping[nom_outil] is not None:
-                                                        # Nettoyer le contenu si c'est un .py
-                                                        if nom_outil == "ecrire_fichier" and str(params.get("chemin", "")).endswith(".py"):
-                                                            contenu_brut = params.get("contenu", "")
-                                                            params["contenu"] = contenu_brut.replace("espace_travail/", "").replace("'espace_travail'", "'.'").replace('"espace_travail"', '"."')
-                                                        res = mapping[nom_outil](**params)
-                                                        print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
-                                                        est_echec = False
-                                                        # Ajouter a nouveaux_outils pour cristallisation
-                                                        nouveaux_outils.append({
-                                                            "outil": nom_outil,
-                                                            "arguments": dict(params),
-                                                            "statut": "succes",
-                                                            "execute": True,
-                                                        })
-                                                        reponse = f"Outil {nom_outil} execute: {str(res)[:300]}"
-                                                    break
-                                            except Exception:
-                                                pass
-                                    if m_json: break
-                        if m_json and isinstance(m_json, _re.Match):
-                            nom_outil = m_json.group(1)
-                            params = _json.loads(m_json.group(2))
-                            from core.tools import (
-                                ecrire_fichier as _ef, lire_fichier as _lf,
-                                creer_dossier as _cd, supprimer_fichier as _sf,
-                                executer_programme_python as _ep,
-                            )
-                            from core.business_intel import chercher_opportunites as _co
-                            mapping = {
-                                "ecrire_fichier": _ef, "lire_fichier": _lf,
-                                "creer_dossier": _cd, "supprimer_fichier": _sf,
-                                "executer_programme_python": _ep,
-                                "chercher_opportunites": _co,
-                            }
-                            if nom_outil in ("executer_script", "executer_script_python"):
-                                code_script = params.get("script", "") or params.get("code", "")
-                                if code_script:
-                                    code_script = code_script.replace("espace_travail/", "").replace("'espace_travail'", "'.'").replace('"espace_travail"', '"."')
-                                    import uuid as _uuid
-                                    tmp_chemin = f"espace_travail/_e2e_{_uuid.uuid4().hex[:8]}.py"
-                                    _ef(tmp_chemin, code_script + "\n")
-                                    res = _ep(tmp_chemin)
-                                    print(f"[Fallback JSON] executer_script -> {str(res)[:150]}")
-                                    if "code 0" in str(res).lower() or "succes" in str(res).lower():
-                                        est_echec = False
-                                    reponse = f"Script execute: {str(res)[:400]}"
-                                    break
-                            elif nom_outil in mapping:
-                                # Nettoyer le contenu si c'est un .py
-                                if nom_outil == "ecrire_fichier" and str(params.get("chemin", "")).endswith(".py"):
-                                    contenu_brut = params.get("contenu", "")
-                                    params["contenu"] = contenu_brut.replace("espace_travail/", "").replace("'espace_travail'", "'.'").replace('"espace_travail"', '"."')
-                                res = mapping[nom_outil](**params)
-                                print(f"[Fallback JSON] {nom_outil} execute: {str(res)[:150]}")
-                                # Executer le .py si c'est un script
-                                if nom_outil == "ecrire_fichier" and str(params.get("chemin", "")).endswith(".py"):
-                                    try:
-                                        sortie = _ep(params["chemin"])
-                                        print(f"[Fallback JSON] Execution {params['chemin']}: {str(sortie)[:150]}")
-                                        res = f"{res} | Execution: {str(sortie)[:200]}"
-                                    except Exception as _e2:
-                                        print(f"[Fallback JSON] Execution echouee: {_e2}")
-                                est_echec = False
-                                # Ajouter a nouveaux_outils pour cristallisation
-                                nouveaux_outils.append({
-                                    "outil": nom_outil,
-                                    "arguments": dict(params),
-                                    "statut": "succes",
-                                    "execute": True,
-                                })
-                                reponse = f"Outil {nom_outil} execute: {str(res)[:400]}"
-                                break
-                    except Exception:
-                        pass
-
-                blocs = []
-                if est_echec:
-                    # 2. Fallback classique : extraire code Python
-                    for src in sources:
-                        blocs.extend(_re.findall(r"```(?:python)?\s*\n(.+?)```", src, _re.DOTALL))
-                if blocs:
-                    code = max(blocs, key=len).strip()
-                    # Le script tourne DEJA dans espace_travail/ (cwd).
-                    # Retirer le prefixe "espace_travail/" pour eviter un sous-dossier.
-                    code = code.replace("espace_travail/", "").replace('espace_travail"', '"')
-                    from core.tools import ecrire_fichier as _ecrire, executer_programme_python as _exec
-                    chemin = f"espace_travail/sous_tache_{st['id']}.py"
-                    try:
-                        _ecrire(chemin, code + "\n")
-                        print(f"[Fallback] Code extrait dans {chemin}")
-                        sortie = _exec(chemin)
-                        print(f"[Fallback] Execution: {str(sortie)[:200]}")
+                _ressort = _tenter_fallback_garde(
+                    jarvis,
+                    [str(reponse or ""), str(reponse_originale or "")],
+                    st["agent"],
+                    st["id"],
+                )
+                if _ressort is not None:
+                    _ok_fb, _entree_fb, _message_fb = _ressort
+                    print(f"[Fallback] {str(_message_fb)[:200]}")
+                    if _ok_fb:
                         est_echec = False
-                        reponse = f"Code ecrit dans {chemin} et execute. Sortie: {str(sortie)[:300]}"
-                    except Exception as e3:
-                        print(f"[Fallback ERREUR] {e3}")
+                        reponse = (
+                            "Outil execute et verifie : "
+                            + str(_message_fb)[:400]
+                        )
+                        if isinstance(_entree_fb, dict):
+                            nouveaux_outils.append({
+                                "outil": _entree_fb.get("outil"),
+                                "arguments": _entree_fb.get("arguments", {}),
+                                "statut": _entree_fb.get("statut"),
+                                "execute": _entree_fb.get("execute"),
+                                "verification": _entree_fb.get("verification"),
+                            })
+                    else:
+                        reponse = str(_message_fb)
 
             if not est_echec:
                 mm.mettre_a_jour_sous_tache(mission_id, st["id"], "terminee", resultat=reponse[:500])

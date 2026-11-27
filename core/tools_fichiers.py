@@ -5,6 +5,7 @@ import difflib
 import re
 import json
 import shutil
+import stat
 
 DOSSIER_AUTORISE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -135,6 +136,124 @@ def _fichier_protege(chemin_complet):
     return False
 
 
+# --- V2 : controle par descripteur (pas seulement par chemin) -------------
+#
+# Le controle de chemin seul reste sujet a une course (TOCTOU) et ne voit pas
+# les liens durs. Les operations sensibles ouvrent donc d'abord un descripteur
+# avec O_NOFOLLOW, puis valident le fichier REELLEMENT ouvert (fstat + inode +
+# /proc/self/fd). Un lien dur vers un fichier protege est detecte par inode.
+
+_O_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+_O_CLOEXEC = getattr(os, "O_CLOEXEC", 0)
+_O_DIRECTORY = getattr(os, "O_DIRECTORY", 0)
+
+
+def _drapeaux_ouverture(drapeaux):
+    return drapeaux | _O_NOFOLLOW | _O_CLOEXEC
+
+
+def _chemins_proteges_effectifs():
+    """Fichiers proteges, y compris ceux deduits de la racine courante."""
+    racine = os.path.realpath(DOSSIER_AUTORISE)
+    chemins = {os.path.realpath(os.fspath(p)) for p in FICHIERS_PROTEGES}
+    for parties in (
+        (".env",),
+        (".supabase_session.json",),
+        (".git", "config"),
+        (".git", "HEAD"),
+    ):
+        chemins.add(os.path.join(racine, *parties))
+    return chemins
+
+
+def _dossiers_proteges_effectifs():
+    """Dossiers proteges, y compris ceux deduits de la racine courante."""
+    racine = os.path.realpath(DOSSIER_AUTORISE)
+    dossiers = {os.path.realpath(os.fspath(d)) for d in DOSSIERS_PROTEGES}
+    dossiers.add(os.path.join(racine, "core"))
+    for parties in DOSSIERS_SENSIBLES_RELATIFS:
+        dossiers.add(os.path.join(racine, *parties))
+    return dossiers
+
+
+def _inode_protege(st_dev, st_ino, limite=20000):
+    """Vrai si (dev, ino) est un fichier protege (cas des liens durs)."""
+    for chemin in _chemins_proteges_effectifs():
+        try:
+            info = os.stat(chemin)
+        except OSError:
+            continue
+        if (info.st_dev, info.st_ino) == (st_dev, st_ino):
+            return True
+
+    vus = 0
+    for dossier in _dossiers_proteges_effectifs():
+        if not os.path.isdir(dossier):
+            continue
+        for racine, sous_dossiers, fichiers in os.walk(
+            dossier, followlinks=False
+        ):
+            sous_dossiers[:] = [
+                nom for nom in sous_dossiers
+                if nom not in ("objects", "__pycache__", ".pytest_cache")
+            ]
+            for nom in fichiers:
+                vus += 1
+                if vus > limite:
+                    return False
+                try:
+                    info = os.stat(
+                        os.path.join(racine, nom), follow_symlinks=False
+                    )
+                except OSError:
+                    continue
+                if (info.st_dev, info.st_ino) == (st_dev, st_ino):
+                    return True
+    return False
+
+
+def _chemin_du_descripteur(fd):
+    try:
+        return os.readlink(f"/proc/self/fd/{fd}")
+    except OSError:
+        return None
+
+
+def _descripteur_refuse(fd):
+    """Valide le fichier reellement ouvert, pas le chemin controle."""
+    try:
+        info = os.fstat(fd)
+    except OSError:
+        return True
+
+    if stat.S_ISREG(info.st_mode) and info.st_nlink > 1:
+        if _inode_protege(info.st_dev, info.st_ino):
+            return True
+
+    chemin = _chemin_du_descripteur(fd)
+    if not chemin or chemin.endswith(" (deleted)"):
+        return True
+
+    reel = os.path.realpath(chemin)
+    if not _chemin_autorise(reel):
+        return True
+    return _fichier_protege(reel)
+
+
+def _pre_controler(chemin_complet):
+    """Controle rapide avant ouverture.
+
+    Retourne None si le chemin est acceptable, sinon une cle de refus.
+    Ce controle ne suffit pas seul : la validation du descripteur reste
+    obligatoire apres l'ouverture (course possible entre les deux).
+    """
+    if not _chemin_autorise(chemin_complet):
+        return "hors_projet"
+    if _fichier_protege(os.path.realpath(chemin_complet)):
+        return "protege"
+    return None
+
+
 def _normaliser_nom_chemin(valeur):
     texte = unicodedata.normalize("NFKD", str(valeur))
     texte = texte.encode("ascii", "ignore").decode("ascii").lower()
@@ -246,42 +365,70 @@ def creer_parent_manquant_pour_ecriture(chemin):
         return False
 
     try:
-        os.mkdir(parent_reel)
+        dfd = os.open(
+            parent_du_parent,
+            _drapeaux_ouverture(os.O_RDONLY | _O_DIRECTORY),
+        )
+    except OSError:
+        return False
+    try:
+        if _descripteur_refuse(dfd):
+            return False
+        os.mkdir(os.path.basename(parent_reel), dir_fd=dfd)
         return True
     except OSError:
         return False
+    finally:
+        os.close(dfd)
 
 
 def lire_fichier(chemin):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
 
-    if not _chemin_autorise(chemin_complet):
+    refus = _pre_controler(chemin_complet)
+    if refus == "hors_projet":
         return "Erreur : accès refusé en dehors du projet."
-
-    chemin_reel = os.path.realpath(chemin_complet)
-
-    if _fichier_protege(chemin_reel):
+    if refus == "protege":
         return "Erreur : accès refusé, fichier ou dossier protégé."
 
-    if not os.path.exists(chemin_reel):
+    if not os.path.exists(chemin_complet):
         return f"Erreur : le fichier {chemin} n'existe pas."
 
-    with open(chemin_reel, "r", encoding="utf-8") as f:
-        return f.read()
+    if os.path.isdir(chemin_complet):
+        return f"Erreur : {chemin} est un dossier, pas un fichier."
+
+    try:
+        fd = os.open(chemin_complet, _drapeaux_ouverture(os.O_RDONLY))
+    except OSError as exc:
+        if isinstance(exc, FileNotFoundError):
+            return f"Erreur : le fichier {chemin} n'existe pas."
+        if getattr(exc, "errno", None) == 40:  # ELOOP
+            return "Erreur : accès refusé, fichier ou dossier protégé."
+        return f"Erreur : impossible de lire {chemin} : {exc}"
+
+    try:
+        if _descripteur_refuse(fd):
+            return "Erreur : accès refusé, fichier ou dossier protégé."
+        try:
+            with os.fdopen(fd, "r", encoding="utf-8") as fichier:
+                fd = -1
+                return fichier.read()
+        except UnicodeError as exc:
+            return f"Erreur : impossible de lire {chemin} : {exc}"
+    finally:
+        if fd != -1:
+            os.close(fd)
 
 def ecrire_fichier(chemin, contenu):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
 
-    if not _chemin_autorise(chemin_complet):
+    refus = _pre_controler(chemin_complet)
+    if refus == "hors_projet":
         return "Erreur : accès refusé en dehors du projet."
-
-    chemin_reel = os.path.realpath(chemin_complet)
-    if not _chemin_autorise(chemin_reel):
-        return "Erreur : accès refusé en dehors du projet."
-
-    if _fichier_protege(chemin_reel):
+    if refus == "protege":
         return f"Erreur : {chemin} est un fichier protege, modification refusee."
 
+    chemin_reel = os.path.realpath(chemin_complet)
     dossier_parent = os.path.dirname(chemin_reel)
     if not os.path.isdir(dossier_parent):
         return f"Erreur : le dossier parent de {chemin} n'existe pas. Creez d'abord le dossier cible."
@@ -293,32 +440,82 @@ def ecrire_fichier(chemin, contenu):
         return "Erreur : le contenu du fichier doit être du texte."
 
     try:
-        with open(chemin_reel, "w", encoding="utf-8") as f:
-            f.write(contenu)
-
-        with open(chemin_reel, "r", encoding="utf-8") as f:
-            if f.read() != contenu:
-                return f"Erreur : vérification échouée après écriture de {chemin}."
-
-        return f"Fichier {chemin} écrit et vérifié avec succès."
-    except (OSError, UnicodeError) as exc:
+        fd = os.open(chemin_reel, _drapeaux_ouverture(os.O_RDWR))
+    except FileNotFoundError:
+        try:
+            fd = os.open(
+                chemin_reel,
+                _drapeaux_ouverture(os.O_RDWR | os.O_CREAT | os.O_EXCL),
+                0o666,
+            )
+        except OSError as exc:
+            return f"Erreur : impossible d'écrire ou de vérifier {chemin} : {exc}"
+    except OSError as exc:
         return f"Erreur : impossible d'écrire ou de vérifier {chemin} : {exc}"
+
+    try:
+        if _descripteur_refuse(fd):
+            return f"Erreur : {chemin} est un fichier protege, modification refusee."
+        try:
+            with os.fdopen(fd, "r+", encoding="utf-8") as f:
+                fd = -1
+                f.seek(0)
+                f.truncate(0)
+                f.write(contenu)
+                f.flush()
+                f.seek(0)
+                if f.read() != contenu:
+                    return f"Erreur : vérification échouée après écriture de {chemin}."
+        except (OSError, UnicodeError) as exc:
+            return f"Erreur : impossible d'écrire ou de vérifier {chemin} : {exc}"
+    finally:
+        if fd != -1:
+            os.close(fd)
+
+    return f"Fichier {chemin} écrit et vérifié avec succès."
 
 def supprimer_fichier(chemin):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
     chemin_reel = os.path.realpath(chemin_complet)
 
-    if not _chemin_autorise(chemin_complet) or not _chemin_autorise(chemin_reel):
+    refus = _pre_controler(chemin_complet)
+    if refus == "hors_projet" or not _chemin_autorise(chemin_reel):
         return "Erreur : accès refusé en dehors du projet."
     if os.path.islink(chemin_complet):
         return "Erreur : la suppression d'un lien symbolique est refusée."
-    if _fichier_protege(chemin_complet) or _fichier_protege(chemin_reel):
+    if refus == "protege" or _fichier_protege(chemin_complet):
         return f"Erreur : {chemin} est un fichier protege, suppression refusee."
-    if not os.path.exists(chemin_reel):
+
+    dossier_parent = os.path.dirname(chemin_complet)
+    nom = os.path.basename(chemin_complet)
+
+    try:
+        dfd = os.open(
+            dossier_parent,
+            _drapeaux_ouverture(os.O_RDONLY | _O_DIRECTORY),
+        )
+    except OSError:
         return f"Erreur : le fichier {chemin} n'existe pas, rien a supprimer."
-    if os.path.isdir(chemin_reel):
-        return f"Erreur : {chemin} est un dossier, pas un fichier."
-    os.remove(chemin_reel)
+
+    try:
+        if _descripteur_refuse(dfd):
+            return f"Erreur : {chemin} est un fichier protege, suppression refusee."
+        try:
+            info = os.stat(nom, dir_fd=dfd, follow_symlinks=False)
+        except FileNotFoundError:
+            return f"Erreur : le fichier {chemin} n'existe pas, rien a supprimer."
+        if stat.S_ISLNK(info.st_mode):
+            return "Erreur : la suppression d'un lien symbolique est refusée."
+        if info.st_nlink > 1 and _inode_protege(info.st_dev, info.st_ino):
+            return f"Erreur : {chemin} est un fichier protege, suppression refusee."
+        if stat.S_ISDIR(info.st_mode):
+            return f"Erreur : {chemin} est un dossier, pas un fichier."
+        os.unlink(nom, dir_fd=dfd)
+    except OSError as exc:
+        return f"Erreur : impossible de supprimer {chemin} : {exc}"
+    finally:
+        os.close(dfd)
+
     return f"Fichier {chemin} supprime avec succes."
 
 
@@ -412,21 +609,70 @@ def lister_fichiers(*args, **kwargs):
         return '[Contenu des fichiers du serveur de Sam Sarr, PAS du depot GitHub]\n' + r
     return r
 
+def _creer_arborescence_controlee(chemin_reel):
+    """Cree le dossier et ses parents via dir_fd, sans suivre de lien."""
+    racine = os.path.realpath(DOSSIER_AUTORISE)
+    relatif = os.path.relpath(chemin_reel, racine)
+    if relatif.startswith(os.pardir + os.sep) or relatif == os.pardir:
+        return False
+
+    parties = [
+        partie for partie in relatif.split(os.sep)
+        if partie not in ("", os.curdir)
+    ]
+    if not parties:
+        return True
+
+    try:
+        dfd = os.open(
+            racine, _drapeaux_ouverture(os.O_RDONLY | _O_DIRECTORY)
+        )
+    except OSError:
+        return False
+
+    try:
+        for partie in parties:
+            try:
+                nfd = os.open(
+                    partie,
+                    _drapeaux_ouverture(os.O_RDONLY | _O_DIRECTORY),
+                    dir_fd=dfd,
+                )
+            except FileNotFoundError:
+                os.mkdir(partie, 0o777, dir_fd=dfd)
+                nfd = os.open(
+                    partie,
+                    _drapeaux_ouverture(os.O_RDONLY | _O_DIRECTORY),
+                    dir_fd=dfd,
+                )
+            if _descripteur_refuse(nfd):
+                os.close(nfd)
+                return False
+            os.close(dfd)
+            dfd = nfd
+        return True
+    except OSError:
+        return False
+    finally:
+        os.close(dfd)
+
+
 def creer_dossier(chemin):
     chemin_complet = os.path.abspath(os.path.join(DOSSIER_AUTORISE, chemin))
 
-    if not _chemin_autorise(chemin_complet):
+    refus = _pre_controler(chemin_complet)
+    if refus == "hors_projet":
         return "Erreur : accès refusé en dehors du projet."
+    if refus == "protege":
+        return "Erreur : création refusée dans un dossier protégé."
 
     chemin_reel = os.path.realpath(chemin_complet)
-
-    if _fichier_protege(chemin_reel):
-        return "Erreur : création refusée dans un dossier protégé."
 
     if os.path.exists(chemin_reel):
         return f"Le dossier {chemin} existe deja."
 
-    os.makedirs(chemin_reel)
+    if not _creer_arborescence_controlee(chemin_reel):
+        return "Erreur : création refusée dans un dossier protégé."
 
     return f"Dossier {chemin} cree avec succes."
 

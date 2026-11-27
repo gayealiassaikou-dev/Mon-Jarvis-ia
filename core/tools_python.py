@@ -297,6 +297,7 @@ def executer_tests_python():
             cwd=DOSSIER_AUTORISE,
             capture_output=True,
             text=True,
+            timeout=90,
             check=False
         )
     except subprocess.TimeoutExpired:
