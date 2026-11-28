@@ -3,7 +3,9 @@ import os
 import uuid
 from datetime import datetime
 
-CHEMIN_MISSIONS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "missions.json")
+from core import chemins
+
+CHEMIN_MISSIONS = chemins.chemin_missions()
 
 STATUTS_VALIDES = ["nouvelle", "en_cours", "terminee", "bloquee", "annulee"]
 PRIORITES_VALIDES = ["critique", "haute", "normale", "faible"]

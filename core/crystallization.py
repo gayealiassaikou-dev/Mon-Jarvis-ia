@@ -4,10 +4,9 @@ import os
 import re
 from datetime import datetime
 
-CHEMIN = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "crystallized.json"
-)
+from core import chemins
+
+CHEMIN = chemins.chemin_crystallized()
 
 # Outils autorises au rejeu (pas de suppression pour securite)
 OUTILS_REJOUABLES = {

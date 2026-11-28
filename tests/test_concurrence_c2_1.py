@@ -81,11 +81,9 @@ class TestConcurrenceC2_1(unittest.TestCase):
         observations = {}
         erreurs = []
 
-        racine_projet = os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))
-        )
+        # Le repertoire courant est le sandbox pytest (isolation automatique).
         dossier_temp = tempfile.TemporaryDirectory(
-            dir=os.path.join(racine_projet, "espace_travail")
+            dir=os.path.join(os.getcwd(), "espace_travail")
         )
         self.addCleanup(dossier_temp.cleanup)
         chemin_a = os.path.join(dossier_temp.name, "dossier_a")

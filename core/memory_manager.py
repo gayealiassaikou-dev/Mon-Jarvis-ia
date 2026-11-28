@@ -3,10 +3,14 @@ import os
 import re
 import unicodedata
 
+from core import chemins
+
+DOSSIER_MEMOIRE = chemins.dossier_memoire()
+
 
 class MemoryManager:
     def __init__(self):
-        dossier_memoire = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "memory"))
+        dossier_memoire = os.path.abspath(DOSSIER_MEMOIRE)
         self.chemin = os.path.join(dossier_memoire, "memory.json")
         self.chemin_archive = os.path.join(dossier_memoire, "historique_archive.json")
         self.limite_historique = 200

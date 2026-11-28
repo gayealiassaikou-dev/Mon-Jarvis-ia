@@ -4,14 +4,10 @@ import os
 import sqlite3
 from datetime import datetime
 
-CHEMIN_MEMORY = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "memory", "memory.json"
-)
-CHEMIN_INDEX = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "memory", "memory_index.db"
-)
+from core import chemins
+
+CHEMIN_MEMORY = chemins.chemin_memory_json()
+CHEMIN_INDEX = chemins.chemin_memory_index()
 
 
 def _charger_memory():

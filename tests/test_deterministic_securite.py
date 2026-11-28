@@ -13,11 +13,9 @@ from core.deterministic_actions import OUTILS_DETERMINISTES, tenter
 
 class TestDeterministicSecurite(unittest.TestCase):
     def setUp(self):
-        racine_projet = os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))
-        )
+        # Le repertoire courant est le sandbox pytest (isolation automatique).
         self.temp = tempfile.TemporaryDirectory(
-            dir=os.path.join(racine_projet, "espace_travail")
+            dir=os.path.join(os.getcwd(), "espace_travail")
         )
         self.addCleanup(self.temp.cleanup)
 

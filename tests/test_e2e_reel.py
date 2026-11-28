@@ -1,56 +1,66 @@
-"""Test E2E reel - UNIQUEMENT avec pytest -m llm. Consomme du budget LLM."""
+"""Test E2E reel - UNIQUEMENT avec pytest -m llm. Consomme du budget LLM.
+
+Toutes les ecritures restent dans le sandbox pytest (``tmp_path``) : les
+missions, la memoire, le budget et l'espace de travail reels ne sont jamais
+modifies. Aucun nettoyage ne sort du sandbox et aucun fichier de
+``.github/workflows/`` n'est touche.
+"""
+import glob
 import os
 import time
+
 import pytest
-from core.mission_manager import MissionManager
+
 from core import budget_guard
+from core.mission_manager import MissionManager
+
+MOTIFS_RESIDUS = (
+    "create_*.py",
+    "reel_*.py",
+    "_e2e_*.py",
+    "sous_tache_*.py",
+    "reel_e2e.txt",
+)
+
+
+def _dossier_travail():
+    return os.path.join(os.getcwd(), "espace_travail")
+
+
+def _verifier_sandbox(chemin):
+    """Refuse tout chemin hors du repertoire courant (sandbox pytest)."""
+    racine = os.path.realpath(os.getcwd())
+    reel = os.path.realpath(chemin)
+    if reel != racine and not reel.startswith(racine + os.sep):
+        raise AssertionError(f"chemin hors du sandbox de test : {reel}")
+    return reel
+
+
+def _nettoyer_residus():
+    """Supprime uniquement les fichiers produits dans le sandbox du test."""
+    dossier = _verifier_sandbox(_dossier_travail())
+    for motif in MOTIFS_RESIDUS:
+        for chemin in glob.glob(os.path.join(dossier, motif)):
+            _verifier_sandbox(chemin)
+            try:
+                os.remove(chemin)
+            except OSError:
+                pass
 
 
 def _tenter_mission(max_tentatives=2):
     """Lance une mission, retry si le LLM a bavarde. Max 2 tentatives."""
     from core.subtask_executor import executer_mission
 
-    _nettoyer_residus()  # Nettoyer avant
+    _nettoyer_residus()
 
     mm = MissionManager()
     for x in mm.lister_missions():
         if x["statut"] in ("en_cours", "bloquee"):
             mm.mettre_a_jour_statut(x["id"], "annulee")
 
-    chemin = "espace_travail/reel_e2e.txt"
+    chemin = os.path.join("espace_travail", "reel_e2e.txt")
     resultats = []
-
-    def _nettoyer_residus():
-        """Nettoie les fichiers parasites crees par le LLM pendant le test.
-        Ne supprime JAMAIS les fichiers trackes dans git."""
-        import glob
-        import subprocess
-
-        try:
-            result = subprocess.run(
-                ["git", "ls-files", ".github/", "espace_travail/"],
-                capture_output=True, text=True, timeout=5, check=False,
-            )
-            fichiers_trackes = set(result.stdout.strip().split("\n"))
-        except Exception:
-            fichiers_trackes = set()
-
-        for pattern in [
-            "espace_travail/create_*.py",
-            "espace_travail/reel_*.py",
-            "espace_travail/_e2e_*.py",
-            "espace_travail/sous_tache_*.py",
-            "espace_travail/reel_e2e.txt",
-            ".github/workflows/*.yml",
-            ".github/workflows/*.yaml",
-        ]:
-            for f in glob.glob(pattern):
-                if f in fichiers_trackes:
-                    continue
-                try:
-                    os.remove(f)
-                except Exception:
-                    pass
 
     for tentative in range(max_tentatives):
         mission = mm.creer_mission(
@@ -88,7 +98,6 @@ def test_pipeline_reel_mission_simple():
     print(f"\nResultat: succes={resultat['succes']}, consomme={consomme} appels")
 
     if not resultat["succes"]:
-        # Afficher les details pour debug
         for t in resultat.get("tentatives", []):
             print(f"  Tentative {t['tentative']}: {t['r']} ({t['duree']:.1f}s)")
 
@@ -96,40 +105,16 @@ def test_pipeline_reel_mission_simple():
         f"Echec apres 2 tentatives. Resultats: {resultat.get('tentatives')}"
     )
 
-    chemin = "espace_travail/reel_e2e.txt"
-    contenu = open(chemin).read()
+    chemin = os.path.join("espace_travail", "reel_e2e.txt")
+    with open(chemin, encoding="utf-8") as fichier:
+        contenu = fichier.read()
     print(f"Fichier OK: {repr(contenu)}")
     assert "REEL_OK" in contenu, "Contenu incorrect"
 
     assert consomme <= 8, f"Budget trop consomme: {consomme} (max 8)"
 
-    # Cleanup final exhaustif
+    _nettoyer_residus()
     try:
         os.remove(chemin)
-    except Exception:
+    except OSError:
         pass
-    import glob, subprocess
-    try:
-        result = subprocess.run(
-            ["git", "ls-files", ".github/", "espace_travail/"],
-            capture_output=True, text=True, timeout=5, check=False,
-        )
-        fichiers_trackes = set(result.stdout.strip().split("\n"))
-    except Exception:
-        fichiers_trackes = set()
-
-    for pattern in [
-        "espace_travail/create_*.py",
-        "espace_travail/reel_*.py",
-        "espace_travail/_e2e_*.py",
-        "espace_travail/sous_tache_*.py",
-        ".github/workflows/*.yml",
-        ".github/workflows/*.yaml",
-    ]:
-        for f in glob.glob(pattern):
-            if f in fichiers_trackes:
-                continue
-            try:
-                os.remove(f)
-            except Exception:
-                pass

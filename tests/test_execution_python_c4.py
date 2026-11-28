@@ -41,6 +41,21 @@ MARQUEUR = "SECRET_C4_NE_DOIT_PAS_SORTIR"
 RACINE_PROJET = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _racine_sandbox():
+    """Racine du projet isolee pour ce test.
+
+    L'isolation pytest definit ``JARVIS_WORK_DIR`` = ``<racine>/espace_travail``.
+    Les dossiers et scripts temporaires des tests C4 sont crees sous cette
+    racine, jamais dans le vrai ``espace_travail/`` du depot.
+    """
+    travail = os.environ.get("JARVIS_WORK_DIR")
+    if not travail:
+        raise RuntimeError(
+            "Isolation pytest absente : JARVIS_WORK_DIR n'est pas defini"
+        )
+    return os.path.dirname(travail)
+
+
 def _creer_lien_dur(source, cible):
     """Cree un lien dur (os.link absent de ce Python Termux)."""
     if hasattr(os, "link"):
@@ -58,7 +73,7 @@ def _creer_lien_dur(source, cible):
 class TestFichiersC4(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(
-            dir=os.path.join(RACINE_PROJET, "espace_travail"),
+            dir=os.path.join(_racine_sandbox(), "espace_travail"),
             prefix="c4_fichiers_",
         )
         self.addCleanup(self.temp.cleanup)
@@ -172,7 +187,7 @@ class _BaseExecutionC4(unittest.TestCase):
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(
-            dir=os.path.join(RACINE_PROJET, "espace_travail"),
+            dir=os.path.join(_racine_sandbox(), "espace_travail"),
             prefix="c4_exec_",
         )
         self.addCleanup(self.temp.cleanup)
@@ -182,7 +197,7 @@ class _BaseExecutionC4(unittest.TestCase):
         chemin = os.path.join(self.dossier, nom)
         with open(chemin, "w", encoding="utf-8") as fichier:
             fichier.write(source)
-        return os.path.relpath(chemin, RACINE_PROJET)
+        return os.path.relpath(chemin, _racine_sandbox())
 
     def executer(self, source, nom="script_c4.py"):
         return execution_python.executer_programme_python(
@@ -221,14 +236,14 @@ class TestLanceurC4(_BaseExecutionC4):
     # ------------------------------------------------------------------
     def test_T02_script_hors_espace_travail_refuse(self):
         with tempfile.TemporaryDirectory(
-            dir=RACINE_PROJET, prefix="c4_hors_"
+            dir=_racine_sandbox(), prefix="c4_hors_"
         ) as dehors:
             chemin = os.path.join(dehors, "script.py")
             with open(chemin, "w", encoding="utf-8") as fichier:
                 fichier.write("print('NE_DOIT_PAS_S_EXECUTER')\n")
 
             resultat = execution_python.executer_programme_python(
-                os.path.relpath(chemin, RACINE_PROJET)
+                os.path.relpath(chemin, _racine_sandbox())
             )
 
         self.assertTrue(resultat.startswith("Erreur"), resultat)
@@ -240,7 +255,7 @@ class TestLanceurC4(_BaseExecutionC4):
     # ------------------------------------------------------------------
     def test_T03_script_via_lien_symbolique_refuse(self):
         with tempfile.TemporaryDirectory(
-            dir=RACINE_PROJET, prefix="c4_cible_"
+            dir=_racine_sandbox(), prefix="c4_cible_"
         ) as dehors:
             cible = os.path.join(dehors, "cible.py")
             with open(cible, "w", encoding="utf-8") as fichier:
@@ -253,7 +268,7 @@ class TestLanceurC4(_BaseExecutionC4):
                 self.skipTest("liens symboliques indisponibles")
 
             resultat = execution_python.executer_programme_python(
-                os.path.relpath(lien, RACINE_PROJET)
+                os.path.relpath(lien, _racine_sandbox())
             )
 
         self.assertTrue(resultat.startswith("Erreur"), resultat)
@@ -277,7 +292,7 @@ class TestLanceurC4(_BaseExecutionC4):
             fichier.write("print('TEXTE')\n")
 
         resultat = execution_python.executer_programme_python(
-            os.path.relpath(chemin, RACINE_PROJET)
+            os.path.relpath(chemin, _racine_sandbox())
         )
 
         self.assertTrue(resultat.startswith("Erreur"), resultat)
@@ -751,7 +766,9 @@ class TestSecretsC4(_BaseExecutionC4):
     # T08 - .env : open() refuse, limite V1 reelle (ctypes)
     # ------------------------------------------------------------------
     def test_T08_env_refuse_puis_contournement_ctypes(self):
-        cible = os.path.join(RACINE_PROJET, ".env")
+        cible = os.path.join(_racine_sandbox(), ".env")
+        with open(cible, "w", encoding="utf-8") as fichier_env:
+            fichier_env.write("JETON_FACTICE_C4=ne_doit_pas_fuiter\n")
         source = (
             "import ctypes, os\n"
             f"cible = {cible!r}\n"
@@ -1033,7 +1050,7 @@ class TestFallbackGardeC4(_BaseExecutionC4):
 
     def _surveiller_e2e(self):
         """Nettoie uniquement les `_e2e_*.py` crees pendant ce test."""
-        racine = os.path.join(RACINE_PROJET, "espace_travail")
+        racine = os.path.join(_racine_sandbox(), "espace_travail")
         avant = set(glob.glob(os.path.join(racine, "_e2e_*.py")))
 
         def nettoyer():
@@ -1060,7 +1077,7 @@ class TestFallbackGardeC4(_BaseExecutionC4):
         )
         reponse = self._json("executer_script", {"script": script})
         marqueur = os.path.join(
-            RACINE_PROJET, "espace_travail", "t25_c4_pwn.txt"
+            _racine_sandbox(), "espace_travail", "t25_c4_pwn.txt"
         )
         self.addCleanup(
             lambda: os.path.exists(marqueur) and os.remove(marqueur)
@@ -1163,7 +1180,7 @@ class TestFallbackGardeC4(_BaseExecutionC4):
         )
         reponse = self._json("executer_script", {"script": script})
         marqueur = os.path.join(
-            RACINE_PROJET, "espace_travail", "t28_c4_ok.txt"
+            _racine_sandbox(), "espace_travail", "t28_c4_ok.txt"
         )
         self.addCleanup(
             lambda: os.path.exists(marqueur) and os.remove(marqueur)
@@ -1180,7 +1197,7 @@ class TestFallbackGardeC4(_BaseExecutionC4):
             resultat = executer_mission("mission_c4", auto_planifier=False)
 
         apres = set(glob.glob(
-            os.path.join(RACINE_PROJET, "espace_travail", "_e2e_*.py")
+            os.path.join(_racine_sandbox(), "espace_travail", "_e2e_*.py")
         ))
         self.assertTrue(resultat.get("ok"), resultat)
         self.assertTrue(os.path.exists(marqueur), resultat)
@@ -1239,7 +1256,7 @@ class TestFallbackGardeC4(_BaseExecutionC4):
             resultat = executer_mission("mission_c4", auto_planifier=False)
 
         apres = set(glob.glob(
-            os.path.join(RACINE_PROJET, "espace_travail", "_e2e_*.py")
+            os.path.join(_racine_sandbox(), "espace_travail", "_e2e_*.py")
         ))
         self.assertFalse(resultat.get("ok"), resultat)
         self.assertEqual(
@@ -1294,7 +1311,7 @@ class TestPointEntreeC4(unittest.TestCase):
 
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(
-            dir=os.path.join(RACINE_PROJET, "espace_travail"),
+            dir=os.path.join(_racine_sandbox(), "espace_travail"),
             prefix="c4_entree_",
         )
         self.addCleanup(self.temp.cleanup)

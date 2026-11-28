@@ -10,9 +10,11 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from core import chemins
+
 
 RACINE = Path(__file__).resolve().parent.parent
-FICHIER_SESSION = RACINE / ".supabase_session.json"
+FICHIER_SESSION = Path(chemins.fichier_session_supabase())
 TIMEOUT = 20
 
 
@@ -42,10 +44,15 @@ class SupabaseMemory:
             "expires_at": int(time.time()) + int(donnees.get("expires_in", 3600)),
         }
 
+        # Le fichier temporaire doit etre cree dans le meme dossier que la
+        # session : ``os.replace`` reste ainsi sur le meme systeme de fichiers
+        # et rien n'est ecrit a la racine reelle quand la session est redirigee.
+        dossier_session = FICHIER_SESSION.parent
+        os.makedirs(dossier_session, exist_ok=True)
         fd, chemin_temp = tempfile.mkstemp(
             prefix=".supabase_session_",
             suffix=".tmp",
-            dir=RACINE,
+            dir=dossier_session,
         )
 
         try:

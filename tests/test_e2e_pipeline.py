@@ -1,4 +1,10 @@
-"""Test E2E offline du pipeline complet (0 LLM, tout mocke)."""
+"""Test E2E offline du pipeline complet (0 LLM, tout mocke).
+
+Toutes les ecritures passent par la fixture ``espace_travail_isole`` :
+missions, apprentissages, cristallisation, budget et fichiers de travail
+sont confines dans le repertoire temporaire du test. Aucune donnee reelle
+de Jarvis n'est lue ni modifiee.
+"""
 import os
 import sys
 import json
@@ -6,21 +12,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
-def _cleanup(mission_id, fichiers):
-    from core.mission_manager import MissionManager
-    mm = MissionManager()
-    try:
-        mm.mettre_a_jour_statut(mission_id, "annulee")
-    except Exception:
-        pass
-    for f in fichiers:
-        try:
-            os.remove(f)
-        except Exception:
-            pass
-
-
-def test_pipeline_deterministe():
+def test_pipeline_deterministe(espace_travail_isole):
     """Mission simple -> deterministe -> fichier cree -> mission terminee. 0 LLM."""
     from core.mission_manager import MissionManager
     from core.subtask_executor import executer_mission
@@ -38,16 +30,16 @@ def test_pipeline_deterministe():
         [],
     )
 
-    try:
-        r = executer_mission(mission["id"], auto_planifier=False)
-        assert r.get("ok") is True, f"Echec pipeline: {r}"
-        assert os.path.exists(chemin), f"Fichier absent: {chemin}"
-        assert "DET_OK" in open(chemin).read()
-    finally:
-        _cleanup(mission["id"], [chemin])
+    r = executer_mission(mission["id"], auto_planifier=False)
+    assert r.get("ok") is True, f"Echec pipeline: {r}"
+    assert os.path.exists(chemin), f"Fichier absent: {chemin}"
+    with open(chemin, encoding="utf-8") as fichier:
+        assert "DET_OK" in fichier.read()
+    # Le fichier est bien dans le bac a sable, pas dans le vrai espace_travail.
+    assert os.path.realpath(chemin).startswith(str(espace_travail_isole))
 
 
-def test_pipeline_fallback_json(monkeypatch):
+def test_pipeline_fallback_json(espace_travail_isole):
     """Mission avec LLM qui renvoie JSON -> fallback JSON -> fichier cree. 0 LLM reel."""
     from core.mission_manager import MissionManager
     import core.jarvis
@@ -79,18 +71,17 @@ def test_pipeline_fallback_json(monkeypatch):
             [],
         )
 
-        try:
-            r = executer_mission(mission["id"], auto_planifier=False)
-            assert r.get("ok") is True, f"Pipeline echoue: {r}"
-            assert os.path.exists(chemin), f"Fichier absent: {chemin}"
-            assert "JSON_OK" in open(chemin).read()
-        finally:
-            _cleanup(mission["id"], [chemin])
+        r = executer_mission(mission["id"], auto_planifier=False)
+        assert r.get("ok") is True, f"Pipeline echoue: {r}"
+        assert os.path.exists(chemin), f"Fichier absent: {chemin}"
+        with open(chemin, encoding="utf-8") as fichier:
+            assert "JSON_OK" in fichier.read()
+        assert os.path.realpath(chemin).startswith(str(espace_travail_isole))
     finally:
         core.jarvis.Jarvis = orig
 
 
-def test_pipeline_fallback_python():
+def test_pipeline_fallback_python(espace_travail_isole):
     """Mission avec LLM qui renvoie ```python -> fallback python -> fichier cree."""
     from core.mission_manager import MissionManager
     import core.jarvis
@@ -116,18 +107,17 @@ def test_pipeline_fallback_python():
             [],
         )
 
-        try:
-            r = executer_mission(mission["id"], auto_planifier=False)
-            assert r.get("ok") is True, f"Pipeline echoue: {r}"
-            assert os.path.exists(chemin), f"Fichier absent. Dossier: {os.listdir('espace_travail') if os.path.exists('espace_travail') else 'N/A'}"
-            assert not os.path.exists("espace_travail/espace_travail"), "Bug double dossier"
-        finally:
-            _cleanup(mission["id"], [chemin, "espace_travail/sous_tache_*.py"])
+        r = executer_mission(mission["id"], auto_planifier=False)
+        assert r.get("ok") is True, f"Pipeline echoue: {r}"
+        dossier = os.listdir("espace_travail") if os.path.exists("espace_travail") else "N/A"
+        assert os.path.exists(chemin), f"Fichier absent. Dossier: {dossier}"
+        assert not os.path.exists("espace_travail/espace_travail"), "Bug double dossier"
+        assert os.path.realpath(chemin).startswith(str(espace_travail_isole))
     finally:
         core.jarvis.Jarvis = orig
 
 
-def test_pipeline_dependances():
+def test_pipeline_dependances(espace_travail_isole):
     """2 sous-taches dependantes -> executees dans l'ordre. 0 LLM."""
     from core.mission_manager import MissionManager
     from core.subtask_executor import executer_mission
@@ -146,19 +136,17 @@ def test_pipeline_dependances():
         [st1["id"]],
     )
 
-    try:
-        r = executer_mission(mission["id"], auto_planifier=False)
-        assert r.get("ok") is True, f"Pipeline echoue: {r}"
-        assert r.get("etapes") == 2
-        assert os.path.exists("espace_travail/step1.txt")
-        assert os.path.exists("espace_travail/step2.txt")
-    finally:
-        _cleanup(mission["id"], [
-            "espace_travail/step1.txt", "espace_travail/step2.txt",
-        ])
+    r = executer_mission(mission["id"], auto_planifier=False)
+    assert r.get("ok") is True, f"Pipeline echoue: {r}"
+    assert r.get("etapes") == 2
+    assert os.path.exists("espace_travail/step1.txt")
+    assert os.path.exists("espace_travail/step2.txt")
+    assert os.path.realpath("espace_travail/step1.txt").startswith(
+        str(espace_travail_isole)
+    )
 
 
-def test_pipeline_faux_succes_detecte():
+def test_pipeline_faux_succes_detecte(espace_travail_isole):
     """LLM bavard qui demande confirmation -> ECHEC detecte."""
     from core.mission_manager import MissionManager
     import core.jarvis
@@ -184,12 +172,9 @@ def test_pipeline_faux_succes_detecte():
             [],
         )
 
-        try:
-            r = executer_mission(mission["id"], auto_planifier=False)
-            assert r.get("ok") is False, f"Faux succes non detecte: {r}"
-            assert r.get("statut") in ("bloquee", "exception")
-            assert not os.path.exists("espace_travail/faux.txt")
-        finally:
-            _cleanup(mission["id"], ["espace_travail/faux.txt"])
+        r = executer_mission(mission["id"], auto_planifier=False)
+        assert r.get("ok") is False, f"Faux succes non detecte: {r}"
+        assert r.get("statut") in ("bloquee", "exception")
+        assert not os.path.exists("espace_travail/faux.txt")
     finally:
         core.jarvis.Jarvis = orig

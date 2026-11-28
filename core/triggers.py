@@ -4,10 +4,9 @@ import os
 import uuid
 from datetime import datetime
 
-CHEMIN = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "triggers.json"
-)
+from core import chemins
+
+CHEMIN = chemins.chemin_triggers()
 
 TYPES_VALIDES = {"timer", "fichier"}
 

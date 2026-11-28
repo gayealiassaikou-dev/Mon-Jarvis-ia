@@ -2,11 +2,12 @@
 import os
 import json
 
-DOSSIER_AUTORISE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from core import chemins
 
+DOSSIER_AUTORISE = str(chemins.RACINE_PROJET)
 
-CHEMIN_DONNEES = os.path.join(DOSSIER_AUTORISE, "data", "projets_taches.json")
-CHEMIN_PROJET_ACTIF = os.path.join(DOSSIER_AUTORISE, "data", "projet_actif.json")
+CHEMIN_DONNEES = chemins.chemin_projets_taches()
+CHEMIN_PROJET_ACTIF = chemins.chemin_projet_actif()
 
 def _charger_donnees():
     if not os.path.exists(CHEMIN_DONNEES):

@@ -3,7 +3,9 @@ import json
 import os
 from datetime import datetime
 
-CHEMIN = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "budget_journalier.json")
+from core import chemins
+
+CHEMIN = chemins.chemin_budget()
 
 LIMITE_APPELS_DEFAUT = int(os.getenv("JARVIS_MAX_APPELS_JOUR", "500"))
 LIMITE_TOKENS_DEFAUT = int(os.getenv("JARVIS_MAX_TOKENS_JOUR", "500000"))

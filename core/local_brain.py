@@ -614,8 +614,8 @@ class LocalBrain:
         """Lit memory.json en lecture seule ({} en cas de probleme)."""
         try:
             import json
-            from core.paths import MEMORY_DIR
-            with open(MEMORY_DIR / "memory.json", encoding="utf-8") as f:
+            from core import paths
+            with open(paths.MEMORY_DIR / "memory.json", encoding="utf-8") as f:
                 data = json.load(f)
             return data if isinstance(data, dict) else {}
         except Exception:
